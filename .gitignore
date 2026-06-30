@@ -1,6 +1,7 @@
 # Rust
 backend/target/
 backend/*.db
+backend/static/
 
 # Node
 frontend/node_modules/

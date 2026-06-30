@@ -71,6 +71,49 @@ impl Database {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (site_id) REFERENCES sites(id)
             );
+
+            CREATE TABLE IF NOT EXISTS upstreams (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                method TEXT NOT NULL DEFAULT 'round_robin',
+                keepalive INTEGER DEFAULT 32,
+                status TEXT NOT NULL DEFAULT 'enabled',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS upstream_servers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                upstream_id INTEGER NOT NULL,
+                address TEXT NOT NULL,
+                weight INTEGER DEFAULT 1,
+                max_fails INTEGER DEFAULT 3,
+                fail_timeout TEXT DEFAULT '30s',
+                backup INTEGER DEFAULT 0,
+                status TEXT NOT NULL DEFAULT 'enabled',
+                FOREIGN KEY (upstream_id) REFERENCES upstreams(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS access_rules (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                site_id INTEGER,
+                rule_type TEXT NOT NULL,
+                value TEXT NOT NULL,
+                description TEXT,
+                status TEXT NOT NULL DEFAULT 'enabled',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS templates (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT,
+                config TEXT NOT NULL,
+                variables TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
             "#,
         )
         .execute(&self.pool)

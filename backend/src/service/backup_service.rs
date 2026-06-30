@@ -48,3 +48,13 @@ pub async fn restore_backup(state: &AppState, backup_id: i64) -> anyhow::Result<
 
     Ok(backup)
 }
+
+/// 删除备份
+pub async fn delete_backup(state: &AppState, backup_id: i64) -> anyhow::Result<bool> {
+    let result = sqlx::query("DELETE FROM backups WHERE id = ?")
+        .bind(backup_id)
+        .execute(state.db.pool())
+        .await?;
+
+    Ok(result.rows_affected() > 0)
+}

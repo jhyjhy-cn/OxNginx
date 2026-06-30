@@ -68,6 +68,9 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/sites/{id}", get(api::site_api::get_site))
         .route("/api/sites/{id}", put(api::site_api::update_site))
         .route("/api/sites/{id}", delete(api::site_api::delete_site))
+        .route("/api/sites/batch/enable", post(api::site_api::batch_enable))
+        .route("/api/sites/batch/disable", post(api::site_api::batch_disable))
+        .route("/api/sites/batch/delete", post(api::site_api::batch_delete))
         // SSL证书
         .route("/api/certificates", get(api::auth_api::list_certificates))
         .route("/api/certificate/apply", post(api::auth_api::apply_certificate))
@@ -75,6 +78,10 @@ async fn main() -> anyhow::Result<()> {
         // Nginx操作
         .route("/api/nginx/test", post(api::nginx_api::test_config))
         .route("/api/nginx/reload", post(api::nginx_api::reload))
+        .route("/api/nginx/status", get(api::nginx_api::status))
+        .route("/api/nginx/start", post(api::nginx_api::start))
+        .route("/api/nginx/stop", post(api::nginx_api::stop))
+        .route("/api/nginx/restart", post(api::nginx_api::restart))
         // 日志
         .route("/api/log/access", get(api::log_api::access_log))
         .route("/api/log/error", get(api::log_api::error_log))
@@ -82,6 +89,38 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/backups/{site_id}", get(api::backup_api::list_backups))
         .route("/api/backups/{site_id}", post(api::backup_api::create_backup))
         .route("/api/backups/restore/{id}", post(api::backup_api::restore_backup))
+        .route("/api/backups/diff", post(api::backup_api::diff_backups))
+        .route("/api/backups/{id}", delete(api::backup_api::delete_backup))
+        // 配置文件管理
+        .route("/api/config/main", get(api::config_api::get_main_config))
+        .route("/api/config/main", put(api::config_api::save_main_config))
+        .route("/api/config/files", get(api::config_api::list_config_files))
+        .route("/api/config/file/{name}", get(api::config_api::get_site_config))
+        .route("/api/config/file/{name}", put(api::config_api::save_site_config))
+        .route("/api/config/file/{name}/toggle", post(api::config_api::toggle_site_config))
+        .route("/api/config/file/{name}", delete(api::config_api::delete_site_config))
+        // 上游服务器管理
+        .route("/api/upstreams", get(api::upstream_api::list_upstreams))
+        .route("/api/upstreams", post(api::upstream_api::create_upstream))
+        .route("/api/upstreams/{id}", get(api::upstream_api::get_upstream))
+        .route("/api/upstreams/{id}", put(api::upstream_api::update_upstream))
+        .route("/api/upstreams/{id}", delete(api::upstream_api::delete_upstream))
+        // 访问控制
+        .route("/api/access-rules", get(api::access_api::list_rules))
+        .route("/api/access-rules", post(api::access_api::create_rule))
+        .route("/api/access-rules/{id}", get(api::access_api::get_rule))
+        .route("/api/access-rules/{id}", put(api::access_api::update_rule))
+        .route("/api/access-rules/{id}", delete(api::access_api::delete_rule))
+        // 配置模板
+        .route("/api/templates", get(api::template_api::list_templates))
+        .route("/api/templates", post(api::template_api::create_template))
+        .route("/api/templates/{id}", get(api::template_api::get_template))
+        .route("/api/templates/{id}", put(api::template_api::update_template))
+        .route("/api/templates/{id}", delete(api::template_api::delete_template))
+        .route("/api/templates/{id}/preview", post(api::template_api::preview_template))
+        // 系统设置
+        .route("/api/settings", get(api::settings_api::get_settings))
+        .route("/api/settings", put(api::settings_api::update_settings))
         .layer(from_fn_with_state(state.clone(), middleware::auth_middleware));
 
     // 构建路由

@@ -45,6 +45,30 @@ const router = createRouter({
           meta: { title: '日志' },
         },
         {
+          path: 'config',
+          name: 'ConfigEditor',
+          component: () => import('@/views/ConfigEditor.vue'),
+          meta: { title: '配置编辑' },
+        },
+        {
+          path: 'upstreams',
+          name: 'Upstreams',
+          component: () => import('@/views/Upstreams.vue'),
+          meta: { title: '负载均衡' },
+        },
+        {
+          path: 'access',
+          name: 'AccessControl',
+          component: () => import('@/views/AccessControl.vue'),
+          meta: { title: '访问控制' },
+        },
+        {
+          path: 'templates',
+          name: 'Templates',
+          component: () => import('@/views/Templates.vue'),
+          meta: { title: '配置模板' },
+        },
+        {
           path: 'settings',
           name: 'Settings',
           component: () => import('@/views/Settings.vue'),
@@ -56,7 +80,7 @@ const router = createRouter({
 })
 
 // 路由守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
 
   if (to.path !== '/login' && !authStore.isAuthenticated) {

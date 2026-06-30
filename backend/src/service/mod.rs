@@ -2,3 +2,7 @@ pub mod site_service;
 pub mod dashboard_service;
 pub mod cert_service;
 pub mod backup_service;
+pub mod system_service;
+pub mod upstream_service;
+pub mod access_service;
+pub mod template_service;

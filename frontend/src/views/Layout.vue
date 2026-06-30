@@ -29,9 +29,29 @@
           <span>SSL证书</span>
         </el-menu-item>
 
+        <el-menu-item index="/upstreams">
+          <el-icon><Connection /></el-icon>
+          <span>负载均衡</span>
+        </el-menu-item>
+
+        <el-menu-item index="/access">
+          <el-icon><Shield /></el-icon>
+          <span>访问控制</span>
+        </el-menu-item>
+
+        <el-menu-item index="/templates">
+          <el-icon><Files /></el-icon>
+          <span>配置模板</span>
+        </el-menu-item>
+
         <el-menu-item index="/logs">
           <el-icon><Document /></el-icon>
           <span>日志</span>
+        </el-menu-item>
+
+        <el-menu-item index="/config">
+          <el-icon><Edit /></el-icon>
+          <span>配置编辑</span>
         </el-menu-item>
 
         <el-menu-item index="/settings">

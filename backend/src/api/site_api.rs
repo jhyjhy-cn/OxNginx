@@ -2,11 +2,18 @@ use axum::{
     extract::{Path, State},
     Json,
 };
+use serde::Deserialize;
 use serde_json::json;
 
 use crate::dto::{ApiResponse, CreateSiteRequest, UpdateSiteRequest};
 use crate::service::site_service;
 use crate::AppState;
+
+/// 批量操作请求
+#[derive(Debug, Deserialize)]
+pub struct BatchRequest {
+    pub ids: Vec<i64>,
+}
 
 /// 获取站点列表
 pub async fn list_sites(
@@ -115,4 +122,116 @@ pub async fn delete_site(
         Ok(false) => Json(json!(ApiResponse::<()>::error("删除站点失败"))),
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("删除站点失败: {}", e)))),
     }
+}
+
+/// 批量启用站点
+pub async fn batch_enable(
+    State(state): State<AppState>,
+    Json(req): Json<BatchRequest>,
+) -> Json<serde_json::Value> {
+    let mut success_count = 0;
+    let mut error_count = 0;
+
+    for id in &req.ids {
+        let update_req = UpdateSiteRequest {
+            name: None,
+            server_name: None,
+            listen: None,
+            ssl: None,
+            certificate_path: None,
+            key_path: None,
+            proxy_pass: None,
+            root_path: None,
+            status: Some("enabled".to_string()),
+        };
+
+        match site_service::update_site(&state, *id, update_req).await {
+            Ok(Some(site)) => {
+                // 重新生成配置
+                let config_content = crate::nginx::generate_site_config(&site);
+                let sites_enabled = &state.config.nginx.sites_enabled;
+                let _ = crate::nginx::write_site_config(sites_enabled, &site.name, &config_content).await;
+                success_count += 1;
+            }
+            _ => error_count += 1,
+        }
+    }
+
+    Json(json!(ApiResponse::success(serde_json::json!({
+        "success": success_count,
+        "error": error_count,
+    }))))
+}
+
+/// 批量禁用站点
+pub async fn batch_disable(
+    State(state): State<AppState>,
+    Json(req): Json<BatchRequest>,
+) -> Json<serde_json::Value> {
+    let mut success_count = 0;
+    let mut error_count = 0;
+
+    for id in &req.ids {
+        let update_req = UpdateSiteRequest {
+            name: None,
+            server_name: None,
+            listen: None,
+            ssl: None,
+            certificate_path: None,
+            key_path: None,
+            proxy_pass: None,
+            root_path: None,
+            status: Some("disabled".to_string()),
+        };
+
+        match site_service::update_site(&state, *id, update_req).await {
+            Ok(Some(site)) => {
+                // 删除配置文件
+                let sites_enabled = &state.config.nginx.sites_enabled;
+                let _ = crate::nginx::remove_site_config(sites_enabled, &site.name).await;
+                success_count += 1;
+            }
+            _ => error_count += 1,
+        }
+    }
+
+    Json(json!(ApiResponse::success(serde_json::json!({
+        "success": success_count,
+        "error": error_count,
+    }))))
+}
+
+/// 批量删除站点
+pub async fn batch_delete(
+    State(state): State<AppState>,
+    Json(req): Json<BatchRequest>,
+) -> Json<serde_json::Value> {
+    let mut success_count = 0;
+    let mut error_count = 0;
+
+    for id in &req.ids {
+        // 先获取站点信息
+        let site = match site_service::get_site(&state, *id).await {
+            Ok(Some(s)) => s,
+            _ => {
+                error_count += 1;
+                continue;
+            }
+        };
+
+        // 删除配置文件
+        let sites_enabled = &state.config.nginx.sites_enabled;
+        let _ = crate::nginx::remove_site_config(sites_enabled, &site.name).await;
+
+        // 删除数据库记录
+        match site_service::delete_site(&state, *id).await {
+            Ok(true) => success_count += 1,
+            _ => error_count += 1,
+        }
+    }
+
+    Json(json!(ApiResponse::success(serde_json::json!({
+        "success": success_count,
+        "error": error_count,
+    }))))
 }

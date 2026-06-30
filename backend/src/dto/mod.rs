@@ -104,3 +104,88 @@ pub struct NginxTestResult {
     pub success: bool,
     pub message: String,
 }
+
+/// 创建上游服务器请求
+#[derive(Debug, Deserialize)]
+pub struct CreateUpstreamRequest {
+    pub name: String,
+    #[serde(default = "default_method")]
+    pub method: String,
+    #[serde(default = "default_keepalive")]
+    pub keepalive: i32,
+    pub servers: Vec<UpstreamServerRequest>,
+}
+
+fn default_method() -> String {
+    "round_robin".into()
+}
+
+fn default_keepalive() -> i32 {
+    32
+}
+
+/// 上游服务器节点请求
+#[derive(Debug, Deserialize)]
+pub struct UpstreamServerRequest {
+    pub address: String,
+    #[serde(default = "default_weight")]
+    pub weight: i32,
+    #[serde(default = "default_max_fails")]
+    pub max_fails: i32,
+    #[serde(default = "default_fail_timeout")]
+    pub fail_timeout: String,
+    #[serde(default)]
+    pub backup: bool,
+}
+
+fn default_weight() -> i32 { 1 }
+fn default_max_fails() -> i32 { 3 }
+fn default_fail_timeout() -> String { "30s".into() }
+
+/// 更新上游服务器请求
+#[derive(Debug, Deserialize)]
+pub struct UpdateUpstreamRequest {
+    pub name: Option<String>,
+    pub method: Option<String>,
+    pub keepalive: Option<i32>,
+    pub status: Option<String>,
+    pub servers: Option<Vec<UpstreamServerRequest>>,
+}
+
+/// 创建访问控制规则请求
+#[derive(Debug, Deserialize)]
+pub struct CreateAccessRuleRequest {
+    pub site_id: Option<i64>,
+    pub rule_type: String,
+    pub value: String,
+    pub description: Option<String>,
+}
+
+/// 更新访问控制规则请求
+#[derive(Debug, Deserialize)]
+pub struct UpdateAccessRuleRequest {
+    pub site_id: Option<i64>,
+    pub rule_type: Option<String>,
+    pub value: Option<String>,
+    pub description: Option<String>,
+    pub status: Option<String>,
+}
+
+/// 创建配置模板请求
+#[derive(Debug, Deserialize)]
+pub struct CreateTemplateRequest {
+    pub name: String,
+    pub description: Option<String>,
+    pub config: String,
+    pub variables: Option<String>,
+}
+
+/// 更新配置模板请求
+#[derive(Debug, Deserialize)]
+pub struct UpdateTemplateRequest {
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub config: Option<String>,
+    pub variables: Option<String>,
+}
+

@@ -62,14 +62,22 @@
       <el-col :span="12">
         <el-card>
           <template #header>
-            <span>Nginx 信息</span>
+            <div class="card-header">
+              <span>Nginx 信息</span>
+              <el-tag :type="nginxStatus.running ? 'success' : 'danger'" size="small">
+                {{ nginxStatus.running ? '运行中' : '已停止' }}
+              </el-tag>
+            </div>
           </template>
           <el-descriptions :column="1" border>
             <el-descriptions-item label="版本">
-              {{ data.nginx_version || '-' }}
+              {{ nginxStatus.version || data.nginx_version || '-' }}
             </el-descriptions-item>
-            <el-descriptions-item label="Worker数量">
-              {{ data.worker_count }}
+            <el-descriptions-item label="PID">
+              {{ nginxStatus.pid || '-' }}
+            </el-descriptions-item>
+            <el-descriptions-item label="运行时间">
+              {{ nginxStatus.uptime || '-' }}
             </el-descriptions-item>
             <el-descriptions-item label="活跃连接">
               {{ data.active_connections }}
@@ -94,7 +102,20 @@
             </el-button>
             <el-button type="warning" @click="reloadNginx">
               <el-icon><Refresh /></el-icon>
-              重载Nginx
+              重载配置
+            </el-button>
+          </div>
+          <div class="quick-actions" style="margin-top: 12px">
+            <el-button
+              :type="nginxStatus.running ? 'danger' : 'success'"
+              @click="nginxStatus.running ? stopNginx() : startNginx()"
+            >
+              <el-icon><VideoPlay /></el-icon>
+              {{ nginxStatus.running ? '停止Nginx' : '启动Nginx' }}
+            </el-button>
+            <el-button type="info" @click="restartNginx">
+              <el-icon><RefreshRight /></el-icon>
+              重启Nginx
             </el-button>
           </div>
         </el-card>
@@ -104,7 +125,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import api from '@/api'
 
@@ -119,8 +140,16 @@ const data = ref({
   memory_total: 0,
 })
 
+const nginxStatus = reactive({
+  running: false,
+  pid: null as number | null,
+  version: '',
+  uptime: '',
+})
+
 onMounted(() => {
   fetchDashboard()
+  fetchNginxStatus()
 })
 
 async function fetchDashboard() {
@@ -131,6 +160,17 @@ async function fetchDashboard() {
     }
   } catch (error) {
     console.error('获取Dashboard数据失败:', error)
+  }
+}
+
+async function fetchNginxStatus() {
+  try {
+    const response = await api.get('/api/nginx/status')
+    if (response.data.code === 0) {
+      Object.assign(nginxStatus, response.data.data)
+    }
+  } catch (error) {
+    console.error('获取Nginx状态失败:', error)
   }
 }
 
@@ -157,6 +197,48 @@ async function reloadNginx() {
     }
   } catch (error) {
     ElMessage.error('重载失败')
+  }
+}
+
+async function startNginx() {
+  try {
+    const response = await api.post('/api/nginx/start')
+    if (response.data.code === 0) {
+      ElMessage.success('Nginx启动成功')
+      fetchNginxStatus()
+    } else {
+      ElMessage.error(response.data.message || '启动失败')
+    }
+  } catch (error) {
+    ElMessage.error('启动失败')
+  }
+}
+
+async function stopNginx() {
+  try {
+    const response = await api.post('/api/nginx/stop')
+    if (response.data.code === 0) {
+      ElMessage.success('Nginx已停止')
+      fetchNginxStatus()
+    } else {
+      ElMessage.error(response.data.message || '停止失败')
+    }
+  } catch (error) {
+    ElMessage.error('停止失败')
+  }
+}
+
+async function restartNginx() {
+  try {
+    const response = await api.post('/api/nginx/restart')
+    if (response.data.code === 0) {
+      ElMessage.success('Nginx重启成功')
+      fetchNginxStatus()
+    } else {
+      ElMessage.error(response.data.message || '重启失败')
+    }
+  } catch (error) {
+    ElMessage.error('重启失败')
   }
 }
 </script>
@@ -201,5 +283,11 @@ async function reloadNginx() {
 .quick-actions {
   display: flex;
   gap: 12px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 </style>

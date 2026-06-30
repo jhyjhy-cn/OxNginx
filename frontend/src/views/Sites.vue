@@ -4,14 +4,28 @@
       <template #header>
         <div class="card-header">
           <span>站点管理</span>
-          <el-button type="primary" @click="showAddDialog">
-            <el-icon><Plus /></el-icon>
-            添加站点
-          </el-button>
+          <div>
+            <el-button-group v-if="selectedSites.length > 0" style="margin-right: 12px">
+              <el-button size="small" @click="batchEnable">
+                批量启用 ({{ selectedSites.length }})
+              </el-button>
+              <el-button size="small" @click="batchDisable">
+                批量禁用 ({{ selectedSites.length }})
+              </el-button>
+              <el-button size="small" type="danger" @click="batchDelete">
+                批量删除 ({{ selectedSites.length }})
+              </el-button>
+            </el-button-group>
+            <el-button type="primary" @click="showAddDialog">
+              <el-icon><Plus /></el-icon>
+              添加站点
+            </el-button>
+          </div>
         </div>
       </template>
 
-      <el-table :data="sites" style="width: 100%" v-loading="loading">
+      <el-table :data="sites" style="width: 100%" v-loading="loading" @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55" />
         <el-table-column prop="name" label="名称" width="150" />
         <el-table-column prop="server_name" label="域名" min-width="200" />
         <el-table-column prop="listen" label="端口" width="80" />
@@ -108,6 +122,7 @@ interface Site {
 }
 
 const sites = ref<Site[]>([])
+const selectedSites = ref<Site[]>([])
 const loading = ref(false)
 const dialogVisible = ref(false)
 const isEdit = ref(false)
@@ -237,6 +252,63 @@ async function deleteSite(site: Site) {
   } catch (error: any) {
     if (error !== 'cancel') {
       ElMessage.error(error.response?.data?.message || '删除失败')
+    }
+  }
+}
+
+function handleSelectionChange(selection: Site[]) {
+  selectedSites.value = selection
+}
+
+async function batchEnable() {
+  try {
+    await ElMessageBox.confirm(`确定要启用选中的 ${selectedSites.value.length} 个站点吗？`, '提示')
+    const response = await api.post('/api/sites/batch/enable', {
+      ids: selectedSites.value.map(s => s.id),
+    })
+    if (response.data.code === 0) {
+      ElMessage.success(`成功启用 ${response.data.data.success} 个站点`)
+      fetchSites()
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.response?.data?.message || '操作失败')
+    }
+  }
+}
+
+async function batchDisable() {
+  try {
+    await ElMessageBox.confirm(`确定要禁用选中的 ${selectedSites.value.length} 个站点吗？`, '提示')
+    const response = await api.post('/api/sites/batch/disable', {
+      ids: selectedSites.value.map(s => s.id),
+    })
+    if (response.data.code === 0) {
+      ElMessage.success(`成功禁用 ${response.data.data.success} 个站点`)
+      fetchSites()
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.response?.data?.message || '操作失败')
+    }
+  }
+}
+
+async function batchDelete() {
+  try {
+    await ElMessageBox.confirm(`确定要删除选中的 ${selectedSites.value.length} 个站点吗？此操作不可恢复！`, '警告', {
+      type: 'warning',
+    })
+    const response = await api.post('/api/sites/batch/delete', {
+      ids: selectedSites.value.map(s => s.id),
+    })
+    if (response.data.code === 0) {
+      ElMessage.success(`成功删除 ${response.data.data.success} 个站点`)
+      fetchSites()
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.response?.data?.message || '操作失败')
     }
   }
 }

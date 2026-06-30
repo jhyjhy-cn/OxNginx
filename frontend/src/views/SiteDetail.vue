@@ -38,6 +38,30 @@
             style="margin-top: 10px"
           />
         </div>
+
+        <!-- 备份管理 -->
+        <el-card style="margin-top: 20px">
+          <template #header>
+            <div class="card-header">
+              <span>备份管理</span>
+              <el-button type="primary" size="small" @click="createBackup">
+                创建备份
+              </el-button>
+            </div>
+          </template>
+
+          <el-table :data="backups" style="width: 100%">
+            <el-table-column prop="version" label="版本" width="100" />
+            <el-table-column prop="created_at" label="创建时间" width="180" />
+            <el-table-column label="操作" width="250">
+              <template #default="{ row }">
+                <el-button size="small" @click="restoreBackup(row)">恢复</el-button>
+                <el-button size="small" @click="viewBackup(row)">查看</el-button>
+                <el-button size="small" type="danger" @click="deleteBackup(row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
       </template>
     </el-card>
   </div>
@@ -46,15 +70,24 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '@/api'
+
+interface Backup {
+  id: number
+  version: number
+  created_at: string
+}
 
 const route = useRoute()
 const loading = ref(false)
 const site = ref<any>(null)
 const configContent = ref('')
+const backups = ref<Backup[]>([])
 
 onMounted(() => {
   fetchSite()
+  fetchBackups()
 })
 
 async function fetchSite() {
@@ -69,6 +102,72 @@ async function fetchSite() {
     console.error('获取站点详情失败:', error)
   } finally {
     loading.value = false
+  }
+}
+
+async function fetchBackups() {
+  try {
+    const response = await api.get(`/api/backups/${route.params.id}`)
+    if (response.data.code === 0) {
+      backups.value = response.data.data || []
+    }
+  } catch (error) {
+    console.error('获取备份列表失败:', error)
+  }
+}
+
+async function createBackup() {
+  try {
+    const response = await api.post(`/api/backups/${route.params.id}`)
+    if (response.data.code === 0) {
+      ElMessage.success('备份创建成功')
+      fetchBackups()
+    } else {
+      ElMessage.error(response.data.message || '创建失败')
+    }
+  } catch (error: any) {
+    ElMessage.error(error.response?.data?.message || '创建失败')
+  }
+}
+
+async function restoreBackup(backup: Backup) {
+  try {
+    await ElMessageBox.confirm(`确定要恢复到版本 ${backup.version} 吗？`, '提示')
+    const response = await api.post(`/api/backups/restore/${backup.id}`)
+    if (response.data.code === 0) {
+      ElMessage.success('备份恢复成功')
+      fetchSite()
+    } else {
+      ElMessage.error(response.data.message || '恢复失败')
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.response?.data?.message || '恢复失败')
+    }
+  }
+}
+
+function viewBackup(_backup: Backup) {
+  // TODO: 实现查看备份内容
+  ElMessage.info('查看备份功能开发中')
+}
+
+async function deleteBackup(backup: Backup) {
+  try {
+    await ElMessageBox.confirm(`确定要删除版本 ${backup.version} 的备份吗？`, '提示', {
+      type: 'warning',
+    })
+    const response = await api.delete(`/api/backups/${backup.id}`)
+    if (response.data.code === 0) {
+      ElMessage.success('备份已删除')
+      fetchBackups()
+    } else {
+      ElMessage.error(response.data.message || '删除失败')
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.response?.data?.message || '删除失败')
+    }
   }
 }
 

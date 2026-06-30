@@ -35,3 +35,62 @@ pub async fn reload(
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("Nginx重载失败: {}", e)))),
     }
 }
+
+/// 获取Nginx状态
+pub async fn status(
+    State(state): State<AppState>,
+) -> Json<serde_json::Value> {
+    let status = crate::nginx::get_nginx_status(&state.config.nginx.bin).await;
+    Json(json!(ApiResponse::success(status)))
+}
+
+/// 启动Nginx
+pub async fn start(
+    State(state): State<AppState>,
+) -> Json<serde_json::Value> {
+    match crate::nginx::start_nginx(&state.config.nginx.bin).await {
+        Ok(true) => Json(json!(ApiResponse::success(NginxTestResult {
+            success: true,
+            message: "Nginx启动成功".into(),
+        }))),
+        Ok(false) => Json(json!(ApiResponse::<()>::error("Nginx启动失败"))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(format!("Nginx启动失败: {}", e)))),
+    }
+}
+
+/// 停止Nginx
+pub async fn stop(
+    State(state): State<AppState>,
+) -> Json<serde_json::Value> {
+    match crate::nginx::stop_nginx(&state.config.nginx.bin).await {
+        Ok(true) => Json(json!(ApiResponse::success(NginxTestResult {
+            success: true,
+            message: "Nginx已停止".into(),
+        }))),
+        Ok(false) => Json(json!(ApiResponse::<()>::error("Nginx停止失败"))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(format!("Nginx停止失败: {}", e)))),
+    }
+}
+
+/// 重启Nginx
+pub async fn restart(
+    State(state): State<AppState>,
+) -> Json<serde_json::Value> {
+    // 先测试配置
+    let test_result = crate::nginx::test_config(&state.config.nginx.bin).await;
+    if !test_result.success {
+        return Json(json!(ApiResponse::<()>::error(format!(
+            "配置测试失败，禁止重启: {}",
+            test_result.message
+        ))));
+    }
+
+    match crate::nginx::restart_nginx(&state.config.nginx.bin).await {
+        Ok(true) => Json(json!(ApiResponse::success(NginxTestResult {
+            success: true,
+            message: "Nginx重启成功".into(),
+        }))),
+        Ok(false) => Json(json!(ApiResponse::<()>::error("Nginx重启失败"))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(format!("Nginx重启失败: {}", e)))),
+    }
+}
