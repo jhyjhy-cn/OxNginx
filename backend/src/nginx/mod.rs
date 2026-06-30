@@ -119,11 +119,32 @@ pub struct NginxStatus {
     pub pid: Option<u32>,
     pub version: Option<String>,
     pub uptime: Option<String>,
+    #[serde(default)]
+    pub not_installed: bool,
 }
 
 /// 获取 Nginx 运行状态
 pub async fn get_nginx_status(nginx_bin: &str) -> NginxStatus {
     use tokio::process::Command;
+    use std::env::consts::OS;
+
+    tracing::debug!("[NginxStatus] 检测 nginx: bin={}, os={}", nginx_bin, OS);
+
+    // 先检测 nginx 是否可执行
+    let version_check = Command::new(nginx_bin).arg("-v").output().await;
+    let not_installed = version_check.is_err();
+
+    tracing::debug!("[NginxStatus] not_installed={}, version_check_err={}", not_installed, version_check.is_err());
+
+    if not_installed {
+        return NginxStatus {
+            running: false,
+            pid: None,
+            version: None,
+            uptime: None,
+            not_installed: true,
+        };
+    }
 
     // 检查进程是否存在
     let pid_output = Command::new("pgrep")
@@ -142,22 +163,14 @@ pub async fn get_nginx_status(nginx_bin: &str) -> NginxStatus {
     let running = pid.is_some();
 
     // 获取版本
-    let version = if running {
-        let version_output = Command::new(nginx_bin)
-            .arg("-v")
-            .output()
-            .await;
-        match version_output {
-            Ok(out) => {
-                let stderr = String::from_utf8_lossy(&out.stderr);
-                stderr.lines()
-                    .find(|l| l.contains("version"))
-                    .map(|l| l.trim().to_string())
-            }
-            _ => None,
+    let version = match version_check {
+        Ok(out) => {
+            let stderr = String::from_utf8_lossy(&out.stderr);
+            stderr.lines()
+                .find(|l| l.contains("version"))
+                .map(|l| l.trim().to_string())
         }
-    } else {
-        None
+        _ => None,
     };
 
     // 获取运行时间
@@ -182,6 +195,7 @@ pub async fn get_nginx_status(nginx_bin: &str) -> NginxStatus {
         pid,
         version,
         uptime,
+        not_installed: false,
     }
 }
 
@@ -216,6 +230,111 @@ pub async fn restart_nginx(nginx_bin: &str) -> anyhow::Result<bool> {
     tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
     // 再启动
     start_nginx(nginx_bin).await
+}
+
+/// 一键安装 Nginx（Windows/Linux）
+pub async fn install_nginx(install_dir: &str) -> anyhow::Result<NginxInstallResult> {
+    use tokio::process::Command;
+    use std::env::consts::OS;
+
+    let os = OS;
+
+    if os == "windows" {
+        // Windows: 下载 nginx 并解压到安装目录
+        let nginx_version = "1.30.3";
+        let download_url = format!(
+            "https://nginx.org/download/nginx-{}.zip",
+            nginx_version
+        );
+        let zip_path = format!("{}\\nginx-{}.zip", install_dir, nginx_version);
+
+        // 创建安装目录
+        tokio::fs::create_dir_all(install_dir).await?;
+
+        // 下载
+        tracing::info!("下载 Nginx {}...", nginx_version);
+        let output = Command::new("curl")
+            .args(["-L", "-o", &zip_path, &download_url])
+            .output()
+            .await?;
+
+        if !output.status.success() {
+            return Err(anyhow::anyhow!("下载 Nginx 失败"));
+        }
+
+        // 解压 - Windows 用 PowerShell Expand-Archive
+        tracing::info!("解压 Nginx...");
+        let ps_cmd = format!(
+            "Expand-Archive -Path '{}' -DestinationPath '{}' -Force",
+            zip_path, install_dir
+        );
+        let output = Command::new("powershell")
+            .args(["-Command", &ps_cmd])
+            .output()
+            .await?;
+
+        if !output.status.success() {
+            return Err(anyhow::anyhow!("解压 Nginx 失败"));
+        }
+
+        // 清理 zip
+        let _ = tokio::fs::remove_file(&zip_path).await;
+
+        // 返回 nginx.exe 路径和配置路径
+        let nginx_exe = format!("{}\\nginx-{}\\nginx.exe", install_dir, nginx_version);
+        let nginx_conf = format!("{}\\nginx-{}\\conf\\nginx.conf", install_dir, nginx_version);
+        let sites_enabled = format!("{}\\nginx-{}\\conf\\sites-enabled", install_dir, nginx_version);
+
+        tracing::info!("Nginx 安装完成: {}", nginx_exe);
+        Ok(NginxInstallResult {
+            bin: nginx_exe,
+            config: nginx_conf,
+            sites_enabled,
+        })
+    } else {
+        // Linux: 使用包管理器
+        let install_cmd = if Command::new("which").arg("apt-get").output().await.map(|o| o.status.success()).unwrap_or(false) {
+            "apt-get install -y nginx"
+        } else if Command::new("which").arg("yum").output().await.map(|o| o.status.success()).unwrap_or(false) {
+            "yum install -y nginx"
+        } else if Command::new("which").arg("dnf").output().await.map(|o| o.status.success()).unwrap_or(false) {
+            "dnf install -y nginx"
+        } else {
+            return Err(anyhow::anyhow!("未找到支持的包管理器"));
+        };
+
+        tracing::info!("安装 Nginx...");
+        let output = Command::new("sh")
+            .args(["-c", install_cmd])
+            .output()
+            .await?;
+
+        if !output.status.success() {
+            return Err(anyhow::anyhow!("安装 Nginx 失败"));
+        }
+
+        // 返回 nginx 路径
+        let nginx_path = Command::new("which")
+            .arg("nginx")
+            .output()
+            .await?;
+
+        let bin = String::from_utf8_lossy(&nginx_path.stdout).trim().to_string();
+        tracing::info!("Nginx 安装完成: {}", bin);
+        Ok(NginxInstallResult {
+            bin,
+            config: "/etc/nginx/nginx.conf".to_string(),
+            sites_enabled: "/etc/nginx/sites-enabled".to_string(),
+        })
+    }
+}
+
+/// Nginx 安装结果
+#[derive(Debug)]
+pub struct NginxInstallResult {
+    pub bin: String,
+    pub config: String,
+    pub sites_enabled: String,
 }
 
 /// 生成上游服务器配置

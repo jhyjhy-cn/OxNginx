@@ -35,7 +35,7 @@
         </el-menu-item>
 
         <el-menu-item index="/access">
-          <el-icon><Shield /></el-icon>
+          <el-icon><Key /></el-icon>
           <span>访问控制</span>
         </el-menu-item>
 

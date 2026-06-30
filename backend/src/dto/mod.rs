@@ -84,6 +84,7 @@ pub struct DashboardData {
     pub cpu_usage: f64,
     pub memory_usage: f64,
     pub memory_total: u64,
+    pub app_memory: u64, // 本程序占用内存 MB
 }
 
 /// 日志响应

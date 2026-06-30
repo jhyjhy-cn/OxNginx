@@ -21,12 +21,26 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::config::AppConfig;
 use crate::database::Database;
+use std::sync::{Arc, Mutex};
+use sysinfo::{System, Pid};
 
 /// 应用共享状态
-#[derive(Clone)]
 pub struct AppState {
     pub db: Database,
     pub config: AppConfig,
+    pub sys: Arc<Mutex<System>>,
+    pub pid: Pid,
+}
+
+impl Clone for AppState {
+    fn clone(&self) -> Self {
+        AppState {
+            db: self.db.clone(),
+            config: self.config.clone(),
+            sys: Arc::clone(&self.sys),
+            pid: self.pid,
+        }
+    }
 }
 
 #[tokio::main]
@@ -51,6 +65,8 @@ async fn main() -> anyhow::Result<()> {
     let state = AppState {
         db,
         config: config.clone(),
+        sys: Arc::new(Mutex::new(System::new_all())),
+        pid: Pid::from_u32(std::process::id()),
     };
 
     // 公开路由（无需认证）
@@ -82,6 +98,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/nginx/start", post(api::nginx_api::start))
         .route("/api/nginx/stop", post(api::nginx_api::stop))
         .route("/api/nginx/restart", post(api::nginx_api::restart))
+        .route("/api/nginx/install", post(api::nginx_api::install))
         // 日志
         .route("/api/log/access", get(api::log_api::access_log))
         .route("/api/log/error", get(api::log_api::error_log))

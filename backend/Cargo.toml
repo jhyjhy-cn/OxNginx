@@ -42,4 +42,5 @@ chrono = { version = "0.4", features = ["serde"] }
 
 # 系统信息
 num_cpus = "1"
+sysinfo = "0.31"
 

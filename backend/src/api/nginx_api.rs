@@ -94,3 +94,62 @@ pub async fn restart(
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("Nginx重启失败: {}", e)))),
     }
 }
+
+/// 一键安装Nginx
+pub async fn install(
+    State(state): State<AppState>,
+) -> Json<serde_json::Value> {
+    use std::env::consts::OS;
+    use std::path::PathBuf;
+
+    // 确定安装目录
+    let install_dir = if OS == "windows" {
+        // Windows: 使用用户目录或 ProgramData
+        std::env::var("USERPROFILE")
+            .map(|p| PathBuf::from(p).join("nginx").to_string_lossy().to_string())
+            .unwrap_or_else(|_| "C:\\nginx".to_string())
+    } else {
+        // Linux: 使用 /opt/nginx
+        "/opt/nginx".to_string()
+    };
+
+    tracing::info!("Nginx 安装目录: {}", install_dir);
+
+    match crate::nginx::install_nginx(&install_dir).await {
+        Ok(result) => {
+            tracing::info!("Nginx 安装成功: {}", result.bin);
+
+            // 更新配置文件
+            let config_path = std::env::var("CONFIG_PATH").unwrap_or_else(|_| "config.toml".into());
+            let mut config_content = match std::fs::read_to_string(&config_path) {
+                Ok(c) => c,
+                Err(e) => {
+                    return Json(json!(ApiResponse::<()>::error(format!("读取配置文件失败: {}", e))));
+                }
+            };
+
+            // 替换 nginx 配置
+            config_content = config_content
+                .replace(&state.config.nginx.bin, &result.bin)
+                .replace(&state.config.nginx.config, &result.config)
+                .replace(&state.config.nginx.sites_enabled, &result.sites_enabled);
+
+            if let Err(e) = std::fs::write(&config_path, &config_content) {
+                return Json(json!(ApiResponse::<()>::error(format!("写入配置文件失败: {}", e))));
+            }
+
+            tracing::info!("配置文件已更新: {}", config_path);
+
+            Json(json!(ApiResponse::success(serde_json::json!({
+                "message": "Nginx 安装成功",
+                "bin": result.bin,
+                "config": result.config,
+                "sites_enabled": result.sites_enabled
+            }))))
+        }
+        Err(e) => {
+            tracing::error!("Nginx 安装失败: {}", e);
+            Json(json!(ApiResponse::<()>::error(format!("Nginx 安装失败: {}", e))))
+        }
+    }
+}

@@ -19,7 +19,7 @@ pub async fn get_dashboard(state: &AppState) -> anyhow::Result<DashboardData> {
     let nginx_info = get_nginx_info(&state.config.nginx.bin).await;
 
     // 获取系统信息
-    let system_info = super::system_service::get_system_info().await
+    let system_info = super::system_service::get_system_info(state).await
         .unwrap_or_else(|_| super::system_service::SystemInfo {
             os: "unknown".to_string(),
             arch: "unknown".to_string(),
@@ -34,6 +34,7 @@ pub async fn get_dashboard(state: &AppState) -> anyhow::Result<DashboardData> {
             disk_total: 0,
             disk_used: 0,
             disk_usage: 0.0,
+            app_memory: 0,
         });
 
     Ok(DashboardData {
@@ -45,6 +46,7 @@ pub async fn get_dashboard(state: &AppState) -> anyhow::Result<DashboardData> {
         cpu_usage: system_info.cpu_usage,
         memory_usage: system_info.memory_usage,
         memory_total: system_info.memory_total,
+        app_memory: system_info.app_memory,
     })
 }
 
