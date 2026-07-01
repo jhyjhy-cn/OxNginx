@@ -10,6 +10,30 @@ pub async fn get_all_sites(state: &AppState) -> anyhow::Result<Vec<Site>> {
     Ok(sites)
 }
 
+/// 证书信息（含剩余天数）
+#[derive(Debug, serde::Serialize)]
+pub struct SiteCertInfo {
+    pub expire_time: Option<String>,
+    pub days_remaining: Option<i64>,
+}
+
+impl Site {
+    /// 读取证书过期时间
+    pub async fn get_cert_expire_info(&self) -> Option<SiteCertInfo> {
+        let cert_path = self.certificate_path.as_ref()?;
+        if cert_path.is_empty() {
+            return None;
+        }
+        let expire_time = crate::service::cert_service::get_cert_expire_info(cert_path).await?;
+        let now = chrono::Utc::now().naive_utc();
+        let days_remaining = (expire_time - now).num_days().max(0).try_into().ok();
+        Some(SiteCertInfo {
+            expire_time: Some(expire_time.format("%Y-%m-%d %H:%M:%S").to_string()),
+            days_remaining,
+        })
+    }
+}
+
 /// 获取单个站点
 pub async fn get_site(state: &AppState, id: i64) -> anyhow::Result<Option<Site>> {
     let site = sqlx::query_as::<_, Site>("SELECT * FROM sites WHERE id = ?")

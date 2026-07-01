@@ -1,5 +1,26 @@
 use crate::model::Certificate;
 use crate::AppState;
+use chrono::{NaiveDateTime, Utc};
+use std::process::Command;
+
+/// 从证书文件读取过期时间
+pub async fn get_cert_expire_info(cert_path: &str) -> Option<NaiveDateTime> {
+    let output = Command::new("openssl")
+        .args(["x509", "-in", cert_path, "-noout", "-enddate"])
+        .output()
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    let output_str = String::from_utf8_lossy(&output.stdout); // e.g. "notAfter=Jul 15 12:00:00 2026 GMT"
+    let date_str = output_str.trim().strip_prefix("notAfter=")?;
+    // Parse "Jul 15 12:00:00 2026 GMT" -> NaiveDateTime
+    let dt = chrono::DateTime::parse_from_str(&format!("{} +0000", date_str), "%b %d %H:%M:%S %Y %z")
+        .ok()?;
+    Some(dt.naive_utc())
+}
 
 /// 获取所有证书
 pub async fn get_all_certs(state: &AppState) -> anyhow::Result<Vec<Certificate>> {

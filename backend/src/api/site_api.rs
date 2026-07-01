@@ -25,6 +25,44 @@ pub async fn list_sites(
     }
 }
 
+/// 获取站点列表（含证书信息）
+pub async fn list_sites_with_certs(
+    State(state): State<AppState>,
+) -> Json<serde_json::Value> {
+    match site_service::get_all_sites(&state).await {
+        Ok(sites) => {
+            let mut result = Vec::new();
+            for site in sites {
+                if site.ssl == 1 {
+                    let cert_info = site.get_cert_expire_info().await;
+                    let json = serde_json::json!({
+                        "id": site.id,
+                        "name": site.name,
+                        "server_name": site.server_name,
+                        "listen": site.listen,
+                        "ssl": site.ssl,
+                        "certificate_path": site.certificate_path,
+                        "key_path": site.key_path,
+                        "proxy_pass": site.proxy_pass,
+                        "root_path": site.root_path,
+                        "config": site.config,
+                        "status": site.status,
+                        "created_at": site.created_at,
+                        "updated_at": site.updated_at,
+                        "expire_time": cert_info.as_ref().and_then(|c| c.expire_time.clone()),
+                        "cert_expire_days": cert_info.as_ref().and_then(|c| c.days_remaining),
+                    });
+                    result.push(json);
+                } else {
+                    result.push(serde_json::json!(site));
+                }
+            }
+            Json(json!(ApiResponse::success(result)))
+        }
+        Err(e) => Json(json!(ApiResponse::<()>::error(format!("获取站点列表失败: {}", e)))),
+    }
+}
+
 /// 获取单个站点
 pub async fn get_site(
     State(state): State<AppState>,
@@ -278,6 +316,76 @@ pub async fn batch_disable(
     Json(json!(ApiResponse::success(serde_json::json!({
         "success": success_count,
         "error": error_count,
+    }))))
+}
+
+/// 部署SSL证书（一键申请Let's Encrypt并绑定到站点）
+pub async fn deploy_ssl(
+    State(state): State<AppState>,
+    Path(id): Path<i64>,
+) -> Json<serde_json::Value> {
+    // 获取站点信息
+    let site = match site_service::get_site(&state, id).await {
+        Ok(Some(s)) => s,
+        Ok(None) => return Json(json!(ApiResponse::<()>::error("站点不存在"))),
+        Err(e) => return Json(json!(ApiResponse::<()>::error(format!("获取站点失败: {}", e)))),
+    };
+
+    // 申请证书
+    let cert = match crate::service::cert_service::apply_cert(&state, &site.server_name).await {
+        Ok(c) => c,
+        Err(e) => return Json(json!(ApiResponse::<()>::error(format!("证书申请失败: {}", e)))),
+    };
+
+    // 先取出要用的字段，避免 move 后再借用
+    let cert_domain = cert.domain.clone();
+    let cert_path = cert.cert_path.clone();
+    let key_path = cert.key_path.clone();
+    let expire_time = cert.expire_time.clone();
+
+    // 更新站点SSL配置
+    let update_req = crate::dto::UpdateSiteRequest {
+        name: None,
+        server_name: None,
+        listen: None,
+        ssl: Some(true),
+        certificate_path: cert_path.clone(),
+        key_path: key_path.clone(),
+        proxy_pass: None,
+        root_path: None,
+        status: None,
+    };
+
+    let updated_site = match site_service::update_site(&state, id, update_req).await {
+        Ok(Some(s)) => s,
+        Ok(None) => return Json(json!(ApiResponse::<()>::error("更新站点失败"))),
+        Err(e) => return Json(json!(ApiResponse::<()>::error(format!("更新站点失败: {}", e)))),
+    };
+
+    let config = state.get_config();
+    let sites_enabled = &config.nginx.sites_enabled;
+
+    // 生成并写入nginx配置
+    let config_content = crate::nginx::generate_site_config(&updated_site);
+    if let Err(e) = crate::nginx::write_site_config(sites_enabled, &site.name, &config_content).await {
+        return Json(json!(ApiResponse::<()>::error(format!("写入配置失败: {}", e))));
+    }
+
+    // 测试配置
+    let test_result = crate::nginx::test_config(&config.nginx.bin).await;
+    if !test_result.success {
+        let _ = crate::nginx::remove_site_config(sites_enabled, &site.name).await;
+        return Json(json!(ApiResponse::<()>::error(format!("配置测试失败: {}", test_result.message))));
+    }
+
+    // 重载nginx
+    let _ = crate::nginx::reload_nginx(&config.nginx.bin).await;
+
+    Json(json!(ApiResponse::success(serde_json::json!({
+        "domain": cert_domain,
+        "cert_path": cert_path,
+        "key_path": key_path,
+        "expire_time": expire_time,
     }))))
 }
 

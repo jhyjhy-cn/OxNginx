@@ -29,11 +29,15 @@
         <el-table-column prop="name" label="名称" width="150" />
         <el-table-column prop="server_name" label="域名" min-width="200" />
         <el-table-column prop="listen" label="端口" width="80" />
-        <el-table-column prop="ssl" label="SSL" width="80">
+        <el-table-column prop="ssl" label="SSL状态" width="160">
           <template #default="{ row }">
-            <el-tag :type="row.ssl ? 'success' : 'info'" size="small">
-              {{ row.ssl ? '是' : '否' }}
-            </el-tag>
+            <template v-if="row.ssl">
+              <el-tag type="success" size="small">已部署</el-tag>
+              <span v-if="row.cert_expire_days" style="margin-left:6px;font-size:12px;color:#909399">
+                剩余{{ row.cert_expire_days }}天
+              </span>
+            </template>
+            <el-tag v-else type="info" size="small">未部署</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="proxy_pass" label="反向代理" min-width="150" />
@@ -44,8 +48,9 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
+            <el-button v-if="!row.ssl" size="small" type="warning" @click="deploySSL(row)">SSL部署</el-button>
             <el-button size="small" @click="editSite(row)">编辑</el-button>
             <el-button
               size="small"
@@ -136,6 +141,8 @@ interface Site {
   proxy_pass: string | null
   root_path: string | null
   status: string
+  expire_time?: string
+  cert_expire_days?: number
 }
 
 const sites = ref<Site[]>([])
@@ -170,9 +177,16 @@ onMounted(() => {
 async function fetchSites() {
   loading.value = true
   try {
-    const response = await api.get('/api/sites')
+    const response = await api.get('/api/sites/with-certs')
     if (response.data.code === 0) {
-      sites.value = response.data.data || []
+      sites.value = (response.data.data || []).map((s: Site) => {
+        if (s.expire_time) {
+          const expireDate = new Date(s.expire_time)
+          const now = new Date()
+          s.cert_expire_days = Math.ceil((expireDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        }
+        return s
+      })
     }
   } catch (error) {
     console.error('获取站点列表失败:', error)
@@ -255,6 +269,27 @@ async function toggleSite(site: Site) {
     fetchSites()
   } catch (error: any) {
     ElMessage.error(error.response?.data?.message || '操作失败')
+  }
+}
+
+async function deploySSL(site: Site) {
+  try {
+    await ElMessageBox.confirm(
+      `将为「${site.server_name}」申请 Let's Encrypt 证书并绑定到该站点，是否继续？`,
+      'SSL 证书部署',
+      { type: 'warning' }
+    )
+    const response = await api.post(`/api/sites/${site.id}/deploy-ssl`)
+    if (response.data.code === 0) {
+      ElMessage.success('SSL 证书部署成功！')
+      fetchSites()
+    } else {
+      ElMessage.error(response.data.message || '部署失败')
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.response?.data?.message || error.message || '部署失败')
+    }
   }
 }
 
