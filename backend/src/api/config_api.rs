@@ -25,8 +25,9 @@ pub struct SaveConfigRequest {
 pub async fn list_config_files(
     State(state): State<AppState>,
 ) -> Json<serde_json::Value> {
-    let sites_available = format!("{}/../sites-available", state.config.nginx.sites_enabled);
-    let sites_enabled = &state.config.nginx.sites_enabled;
+    let config = state.get_config();
+    let sites_available = format!("{}/../sites-available", config.nginx.sites_enabled);
+    let sites_enabled = &config.nginx.sites_enabled;
 
     let mut files = Vec::new();
 
@@ -67,7 +68,8 @@ pub async fn list_config_files(
 pub async fn get_main_config(
     State(state): State<AppState>,
 ) -> Json<serde_json::Value> {
-    let config_path = &state.config.nginx.config;
+    let config = state.get_config();
+    let config_path = &config.nginx.config;
     match tokio::fs::read_to_string(config_path).await {
         Ok(content) => Json(json!(ApiResponse::success(ConfigContent {
             path: config_path.clone(),
@@ -82,7 +84,8 @@ pub async fn save_main_config(
     State(state): State<AppState>,
     Json(req): Json<SaveConfigRequest>,
 ) -> Json<serde_json::Value> {
-    let config_path = &state.config.nginx.config;
+    let config = state.get_config();
+    let config_path = &config.nginx.config;
 
     // 备份原配置
     let backup_path = format!("{}.bak.{}", config_path, chrono::Local::now().format("%Y%m%d%H%M%S"));
@@ -94,7 +97,7 @@ pub async fn save_main_config(
     match tokio::fs::write(config_path, &req.content).await {
         Ok(_) => {
             // 测试配置
-            let test_result = crate::nginx::test_config(&state.config.nginx.bin).await;
+            let test_result = crate::nginx::test_config(&config.nginx.bin).await;
             if test_result.success {
                 Json(json!(ApiResponse::success("配置保存成功")))
             } else {
@@ -114,7 +117,8 @@ pub async fn get_site_config(
     State(state): State<AppState>,
     Path(name): Path<String>,
 ) -> Json<serde_json::Value> {
-    let sites_available = format!("{}/../sites-available", state.config.nginx.sites_enabled);
+    let config = state.get_config();
+    let sites_available = format!("{}/../sites-available", config.nginx.sites_enabled);
     let config_path = format!("{}/{}", sites_available, name);
 
     match tokio::fs::read_to_string(&config_path).await {
@@ -132,7 +136,8 @@ pub async fn save_site_config(
     Path(name): Path<String>,
     Json(req): Json<SaveConfigRequest>,
 ) -> Json<serde_json::Value> {
-    let sites_available = format!("{}/../sites-available", state.config.nginx.sites_enabled);
+    let config = state.get_config();
+    let sites_available = format!("{}/../sites-available", config.nginx.sites_enabled);
     let config_path = format!("{}/{}", sites_available, name);
 
     // 备份原配置
@@ -145,7 +150,7 @@ pub async fn save_site_config(
     match tokio::fs::write(&config_path, &req.content).await {
         Ok(_) => {
             // 测试配置
-            let test_result = crate::nginx::test_config(&state.config.nginx.bin).await;
+            let test_result = crate::nginx::test_config(&config.nginx.bin).await;
             if test_result.success {
                 Json(json!(ApiResponse::success("配置保存成功")))
             } else {
@@ -165,8 +170,9 @@ pub async fn toggle_site_config(
     State(state): State<AppState>,
     Path(name): Path<String>,
 ) -> Json<serde_json::Value> {
-    let sites_available = format!("{}/../sites-available", state.config.nginx.sites_enabled);
-    let sites_enabled = &state.config.nginx.sites_enabled;
+    let config = state.get_config();
+    let sites_available = format!("{}/../sites-available", config.nginx.sites_enabled);
+    let sites_enabled = &config.nginx.sites_enabled;
 
     let source = format!("{}/{}", sites_available, name);
     let target = format!("{}/{}", sites_enabled, name);
@@ -187,7 +193,7 @@ pub async fn toggle_site_config(
         match tokio::fs::copy(&source, &target).await {
             Ok(_) => {
                 // 测试配置
-                let test_result = crate::nginx::test_config(&state.config.nginx.bin).await;
+                let test_result = crate::nginx::test_config(&config.nginx.bin).await;
                 if test_result.success {
                     Json(json!(ApiResponse::success("配置已启用")))
                 } else {
@@ -206,8 +212,9 @@ pub async fn delete_site_config(
     State(state): State<AppState>,
     Path(name): Path<String>,
 ) -> Json<serde_json::Value> {
-    let sites_available = format!("{}/../sites-available", state.config.nginx.sites_enabled);
-    let sites_enabled = &state.config.nginx.sites_enabled;
+    let config = state.get_config();
+    let sites_available = format!("{}/../sites-available", config.nginx.sites_enabled);
+    let sites_enabled = &config.nginx.sites_enabled;
 
     let source = format!("{}/{}", sites_available, name);
     let target = format!("{}/{}", sites_enabled, name);

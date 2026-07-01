@@ -40,9 +40,10 @@ pub async fn create_upstream(
     State(state): State<AppState>,
     Json(req): Json<CreateUpstreamRequest>,
 ) -> Json<serde_json::Value> {
+    let config = state.get_config();
     // 生成配置并测试
-    let config = crate::nginx::generate_upstream_config_from_request(&req);
-    let test_result = crate::nginx::test_config(&state.config.nginx.bin).await;
+    let upstream_config = crate::nginx::generate_upstream_config_from_request(&req);
+    let test_result = crate::nginx::test_config(&config.nginx.bin).await;
     if !test_result.success {
         return Json(json!(ApiResponse::<()>::error(format!("配置测试失败: {}", test_result.message))));
     }
@@ -50,9 +51,9 @@ pub async fn create_upstream(
     match upstream_service::create_upstream(&state, req).await {
         Ok((upstream, servers)) => {
             // 写入配置文件
-            let config_dir = format!("{}/../conf.d", state.config.nginx.sites_enabled);
+            let config_dir = format!("{}/../conf.d", config.nginx.sites_enabled);
             let config_path = format!("{}/upstream-{}.conf", config_dir, upstream.name);
-            let _ = tokio::fs::write(&config_path, &config).await;
+            let _ = tokio::fs::write(&config_path, &upstream_config).await;
 
             Json(json!(ApiResponse::success(serde_json::json!({
                 "upstream": upstream,
@@ -72,10 +73,11 @@ pub async fn update_upstream(
     match upstream_service::update_upstream(&state, id, req).await {
         Ok(Some((upstream, servers))) => {
             // 重新生成配置
-            let config = crate::nginx::generate_upstream_config(&upstream, &servers);
-            let config_dir = format!("{}/../conf.d", state.config.nginx.sites_enabled);
+            let upstream_config = crate::nginx::generate_upstream_config(&upstream, &servers);
+            let config = state.get_config();
+            let config_dir = format!("{}/../conf.d", config.nginx.sites_enabled);
             let config_path = format!("{}/upstream-{}.conf", config_dir, upstream.name);
-            let _ = tokio::fs::write(&config_path, &config).await;
+            let _ = tokio::fs::write(&config_path, &upstream_config).await;
 
             Json(json!(ApiResponse::success(serde_json::json!({
                 "upstream": upstream,
@@ -100,7 +102,8 @@ pub async fn delete_upstream(
     };
 
     // 删除配置文件
-    let config_dir = format!("{}/../conf.d", state.config.nginx.sites_enabled);
+    let config = state.get_config();
+    let config_dir = format!("{}/../conf.d", config.nginx.sites_enabled);
     let config_path = format!("{}/upstream-{}.conf", config_dir, upstream.name);
     let _ = tokio::fs::remove_file(&config_path).await;
 

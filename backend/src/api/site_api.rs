@@ -42,6 +42,7 @@ pub async fn create_site(
     State(state): State<AppState>,
     Json(req): Json<CreateSiteRequest>,
 ) -> Json<serde_json::Value> {
+    let config = state.get_config();
     // 生成配置
     let site_model = crate::model::Site {
         id: 0,
@@ -61,13 +62,13 @@ pub async fn create_site(
     let config_content = crate::nginx::generate_site_config(&site_model);
 
     // 备份并写入配置
-    let sites_enabled = &state.config.nginx.sites_enabled;
+    let sites_enabled = &config.nginx.sites_enabled;
     if let Err(e) = crate::nginx::write_site_config(sites_enabled, &req.name, &config_content).await {
         return Json(json!(ApiResponse::<()>::error(format!("写入配置文件失败: {}", e))));
     }
 
     // 测试配置
-    let test_result = crate::nginx::test_config(&state.config.nginx.bin).await;
+    let test_result = crate::nginx::test_config(&config.nginx.bin).await;
     if !test_result.success {
         // 回滚：删除配置文件
         let _ = crate::nginx::remove_site_config(sites_enabled, &req.name).await;
@@ -91,7 +92,8 @@ pub async fn update_site(
         Ok(Some(site)) => {
             // 重新生成配置
             let config_content = crate::nginx::generate_site_config(&site);
-            let sites_enabled = &state.config.nginx.sites_enabled;
+            let config = state.get_config();
+            let sites_enabled = &config.nginx.sites_enabled;
             let _ = crate::nginx::write_site_config(sites_enabled, &site.name, &config_content).await;
             Json(json!(ApiResponse::success(site)))
         }
@@ -113,7 +115,8 @@ pub async fn delete_site(
     };
 
     // 删除配置文件
-    let sites_enabled = &state.config.nginx.sites_enabled;
+    let config = state.get_config();
+    let sites_enabled = &config.nginx.sites_enabled;
     let _ = crate::nginx::remove_site_config(sites_enabled, &site.name).await;
 
     // 删除数据库记录
@@ -149,7 +152,8 @@ pub async fn batch_enable(
             Ok(Some(site)) => {
                 // 重新生成配置
                 let config_content = crate::nginx::generate_site_config(&site);
-                let sites_enabled = &state.config.nginx.sites_enabled;
+                let config = state.get_config();
+                let sites_enabled = &config.nginx.sites_enabled;
                 let _ = crate::nginx::write_site_config(sites_enabled, &site.name, &config_content).await;
                 success_count += 1;
             }
@@ -187,7 +191,8 @@ pub async fn batch_disable(
         match site_service::update_site(&state, *id, update_req).await {
             Ok(Some(site)) => {
                 // 删除配置文件
-                let sites_enabled = &state.config.nginx.sites_enabled;
+                let config = state.get_config();
+                let sites_enabled = &config.nginx.sites_enabled;
                 let _ = crate::nginx::remove_site_config(sites_enabled, &site.name).await;
                 success_count += 1;
             }
@@ -220,7 +225,8 @@ pub async fn batch_delete(
         };
 
         // 删除配置文件
-        let sites_enabled = &state.config.nginx.sites_enabled;
+        let config = state.get_config();
+        let sites_enabled = &config.nginx.sites_enabled;
         let _ = crate::nginx::remove_site_config(sites_enabled, &site.name).await;
 
         // 删除数据库记录

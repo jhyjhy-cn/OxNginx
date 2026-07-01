@@ -49,7 +49,8 @@ pub async fn restore_backup(
             // 恢复配置文件
             if let Some(site_id) = backup.site_id {
                 if let Ok(Some(site)) = crate::service::site_service::get_site(&state, site_id).await {
-                    let sites_enabled = &state.config.nginx.sites_enabled;
+                    let config = state.get_config();
+                    let sites_enabled = &config.nginx.sites_enabled;
                     let _ = crate::nginx::write_site_config(sites_enabled, &site.name, &backup.config).await;
                 }
             }

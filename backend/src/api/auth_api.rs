@@ -37,10 +37,11 @@ pub async fn login(
     }
 
     // 生成JWT
+    let config = state.get_config();
     match auth::generate_token(
         &user.username,
-        &state.config.auth.jwt_secret,
-        state.config.auth.jwt_expires_hours,
+        &config.auth.jwt_secret,
+        config.auth.jwt_expires_hours,
     ) {
         Ok(token) => Json(json!(ApiResponse::success(LoginResponse {
             token,

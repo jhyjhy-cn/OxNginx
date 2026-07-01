@@ -17,7 +17,8 @@ pub async fn apply_cert(
 ) -> anyhow::Result<Certificate> {
     use tokio::process::Command;
 
-    let acme_bin = &state.config.acme.bin;
+    let config = state.get_config();
+    let acme_bin = &config.acme.bin;
 
     // 调用acme.sh申请证书
     let output = Command::new(acme_bin)
@@ -66,7 +67,8 @@ pub async fn renew_cert(state: &AppState, id: i64) -> anyhow::Result<bool> {
         None => return Ok(false),
     };
 
-    let output = Command::new(&state.config.acme.bin)
+    let config = state.get_config();
+    let output = Command::new(&config.acme.bin)
         .args(["--renew", "-d", &cert.domain, "--force"])
         .output()
         .await?;

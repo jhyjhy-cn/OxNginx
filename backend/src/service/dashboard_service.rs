@@ -16,7 +16,8 @@ pub async fn get_dashboard(state: &AppState) -> anyhow::Result<DashboardData> {
             .await?;
 
     // 获取Nginx信息
-    let nginx_info = get_nginx_info(&state.config.nginx.bin).await;
+    let config = state.get_config();
+    let nginx_info = get_nginx_info(&config.nginx.bin).await;
 
     // 获取系统信息
     let system_info = super::system_service::get_system_info(state).await

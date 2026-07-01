@@ -24,7 +24,8 @@ pub async fn auth_middleware(
         _ => return Err(StatusCode::UNAUTHORIZED),
     };
 
-    match auth::verify_token(token, &state.config.auth.jwt_secret) {
+    let config = state.get_config();
+    match auth::verify_token(token, &config.auth.jwt_secret) {
         Ok(_claims) => Ok(next.run(request).await),
         Err(_) => Err(StatusCode::UNAUTHORIZED),
     }

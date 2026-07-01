@@ -55,22 +55,23 @@ pub struct UpdateSettingsRequest {
 pub async fn get_settings(
     State(state): State<AppState>,
 ) -> Json<serde_json::Value> {
+    let config = state.get_config();
     // 获取系统信息
     let hostname = get_hostname().unwrap_or_else(|_| "unknown".to_string());
-    let nginx_version = get_nginx_version(&state.config.nginx.bin).await;
+    let nginx_version = get_nginx_version(&config.nginx.bin).await;
 
     let settings = SettingsResponse {
         server: ServerSettings {
-            host: state.config.server.host.clone(),
-            port: state.config.server.port,
+            host: config.server.host.clone(),
+            port: config.server.port,
         },
         nginx: NginxSettings {
-            bin: state.config.nginx.bin.clone(),
-            config: state.config.nginx.config.clone(),
-            sites_enabled: state.config.nginx.sites_enabled.clone(),
+            bin: config.nginx.bin.clone(),
+            config: config.nginx.config.clone(),
+            sites_enabled: config.nginx.sites_enabled.clone(),
         },
         acme: AcmeSettings {
-            bin: state.config.acme.bin.clone(),
+            bin: config.acme.bin.clone(),
         },
         system: SystemInfo {
             os: std::env::consts::OS.to_string(),
@@ -87,7 +88,7 @@ pub async fn get_settings(
 
 /// 更新系统设置
 pub async fn update_settings(
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
     Json(req): Json<UpdateSettingsRequest>,
 ) -> Json<serde_json::Value> {
     // 读取现有配置
@@ -138,7 +139,19 @@ pub async fn update_settings(
     // 保存配置
     let new_content = toml::to_string_pretty(&config).unwrap();
     match std::fs::write(&config_path, new_content) {
-        Ok(_) => Json(json!(ApiResponse::success("设置已保存，重启后生效"))),
+        Ok(_) => {
+            // 重新加载配置到内存
+            match crate::config::AppConfig::load() {
+                Ok(new_config) => {
+                    state.update_config(new_config);
+                    tracing::info!("内存配置已更新");
+                }
+                Err(e) => {
+                    tracing::error!("重新加载配置失败: {}", e);
+                }
+            }
+            Json(json!(ApiResponse::success("设置已保存")))
+        }
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("保存配置文件失败: {}", e)))),
     }
 }

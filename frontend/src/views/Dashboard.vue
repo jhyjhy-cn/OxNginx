@@ -153,19 +153,19 @@
             <el-icon><Plus /></el-icon>
             添加站点
           </el-button>
-          <el-button type="success" class="action-btn" @click="testNginx">
+          <el-button type="success" class="action-btn" :loading="loading.test" @click="testNginx">
             <el-icon><Check /></el-icon>
             测试配置
           </el-button>
-          <el-button type="warning" class="action-btn" @click="reloadNginx">
+          <el-button type="warning" class="action-btn" :loading="loading.reload" @click="reloadNginx">
             <el-icon><Refresh /></el-icon>
             重载配置
           </el-button>
-          <el-button :type="nginxStatus.running ? 'danger' : 'success'" class="action-btn" @click="nginxStatus.running ? stopNginx() : startNginx()">
+          <el-button :type="nginxStatus.running ? 'danger' : 'success'" class="action-btn" :loading="loading.startStop" @click="nginxStatus.running ? stopNginx() : startNginx()">
             <el-icon><VideoPlay /></el-icon>
             {{ nginxStatus.running ? '停止' : '启动' }}
           </el-button>
-          <el-button type="info" class="action-btn" @click="restartNginx">
+          <el-button type="info" class="action-btn" :loading="loading.restart" @click="restartNginx">
             <el-icon><RefreshRight /></el-icon>
             重启
           </el-button>
@@ -200,6 +200,13 @@ const nginxStatus = reactive({
   version: '',
   uptime: '',
   notInstalled: false,
+})
+
+const loading = reactive({
+  test: false,
+  reload: false,
+  startStop: false,
+  restart: false,
 })
 
 let refreshTimer: number | null = null
@@ -263,6 +270,7 @@ async function fetchNginxStatus() {
 }
 
 async function testNginx() {
+  loading.test = true
   try {
     const response = await api.post('/api/nginx/test')
     if (response.data.code === 0 && response.data.data.success) {
@@ -272,10 +280,13 @@ async function testNginx() {
     }
   } catch (error) {
     ElMessage.error('测试失败')
+  } finally {
+    loading.test = false
   }
 }
 
 async function reloadNginx() {
+  loading.reload = true
   try {
     const response = await api.post('/api/nginx/reload')
     if (response.data.code === 0) {
@@ -285,48 +296,62 @@ async function reloadNginx() {
     }
   } catch (error) {
     ElMessage.error('重载失败')
+  } finally {
+    loading.reload = false
   }
 }
 
 async function startNginx() {
+  loading.startStop = true
   try {
     const response = await api.post('/api/nginx/start')
     if (response.data.code === 0) {
       ElMessage.success('Nginx启动成功')
-      fetchNginxStatus()
+      await delay(500)
+      await fetchNginxStatus()
     } else {
       ElMessage.error(response.data.message || '启动失败')
     }
   } catch (error) {
     ElMessage.error('启动失败')
+  } finally {
+    loading.startStop = false
   }
 }
 
 async function stopNginx() {
+  loading.startStop = true
   try {
     const response = await api.post('/api/nginx/stop')
     if (response.data.code === 0) {
       ElMessage.success('Nginx已停止')
-      fetchNginxStatus()
+      await delay(500)
+      await fetchNginxStatus()
     } else {
       ElMessage.error(response.data.message || '停止失败')
     }
   } catch (error) {
     ElMessage.error('停止失败')
+  } finally {
+    loading.startStop = false
   }
 }
 
 async function restartNginx() {
+  loading.restart = true
   try {
     const response = await api.post('/api/nginx/restart')
     if (response.data.code === 0) {
       ElMessage.success('Nginx重启成功')
-      fetchNginxStatus()
+      await delay(1000)
+      await fetchNginxStatus()
     } else {
       ElMessage.error(response.data.message || '重启失败')
     }
   } catch (error) {
     ElMessage.error('重启失败')
+  } finally {
+    loading.restart = false
   }
 }
 
@@ -336,13 +361,17 @@ async function installNginx() {
     const response = await api.post('/api/nginx/install')
     if (response.data.code === 0) {
       ElMessage.success('Nginx 安装成功')
-      fetchNginxStatus()
+      await fetchNginxStatus()
     } else {
       ElMessage.error(response.data.message || '安装失败')
     }
   } catch (error) {
     ElMessage.error('安装失败')
   }
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
 }
 </script>
 

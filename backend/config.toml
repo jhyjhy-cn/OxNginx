@@ -6,9 +6,9 @@ host = "0.0.0.0"
 path = "./data.db"
 
 [nginx]
-bin = "/usr/sbin/nginx"
-config = "/etc/nginx/nginx.conf"
-sites_enabled = "/etc/nginx/sites-enabled"
+bin = "C:/Users/Hongyu/nginx/nginx-1.30.3/nginx.exe"
+config = "C:/Users/Hongyu/nginx/nginx-1.30.3/conf/nginx.conf"
+sites_enabled = "C:/Users/Hongyu/nginx/nginx-1.30.3/conf/sites-enabled"
 
 [acme]
 bin = "/root/.acme.sh/acme.sh"
