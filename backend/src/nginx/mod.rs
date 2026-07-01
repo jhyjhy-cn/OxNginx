@@ -601,6 +601,10 @@ pub async fn install_nginx(install_dir: &str) -> anyhow::Result<NginxInstallResu
             return Err(anyhow::anyhow!("安装 Nginx 失败: {}", stderr));
         }
 
+        // 清理 nginx 默认站点配置，避免干扰自定义站点
+        let cleanup = "sudo rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf";
+        let _ = Command::new("sh").args(["-c", cleanup]).output().await;
+
         // apt-get/yum/dnf 都将 nginx 装到 /usr/sbin/nginx
         let bin = "/usr/sbin/nginx".to_string();
         tracing::info!("Nginx 安装完成: {}", bin);
