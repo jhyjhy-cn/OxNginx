@@ -32,6 +32,7 @@ pub async fn get_system_info(state: &AppState) -> anyhow::Result<SystemInfo> {
     // 刷新进程列表，获取本程序内存占用
     let mut sys = state.sys.lock().unwrap();
     sys.refresh_cpu_all();
+    sys.refresh_memory();
     sys.refresh_processes(sysinfo::ProcessesToUpdate::All);
     let app_memory = sys
         .process(state.pid)

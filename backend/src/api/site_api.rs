@@ -46,10 +46,14 @@ pub async fn create_site(
 
     // 如果未指定根目录，以站点名称自动创建
     if req.root_path.is_none() || req.root_path.as_deref() == Some("") {
-        let nginx_dir = std::path::Path::new(&config.nginx.bin)
-            .parent()
-            .unwrap_or(std::path::Path::new("."));
-        let auto_root = nginx_dir.join("html").join(&req.name).to_string_lossy().to_string();
+        let auto_root = if cfg!(target_os = "linux") {
+            format!("/var/www/html/{}", req.name)
+        } else {
+            let nginx_dir = std::path::Path::new(&config.nginx.bin)
+                .parent()
+                .unwrap_or(std::path::Path::new("."));
+            nginx_dir.join("html").join(&req.name).to_string_lossy().to_string()
+        };
         req.root_path = Some(auto_root);
     }
 
@@ -158,7 +162,18 @@ pub async fn delete_site(
     if req.delete_files {
         if let Some(ref root_path) = site.root_path {
             if !root_path.is_empty() {
-                let _ = tokio::fs::remove_dir_all(root_path).await;
+                #[cfg(target_os = "linux")]
+                {
+                    let cmd = format!("sudo rm -rf '{}'", root_path);
+                    let _ = tokio::process::Command::new("sh")
+                        .args(["-c", &cmd])
+                        .output()
+                        .await;
+                }
+                #[cfg(target_os = "windows")]
+                {
+                    let _ = tokio::fs::remove_dir_all(root_path).await;
+                }
             }
         }
     }

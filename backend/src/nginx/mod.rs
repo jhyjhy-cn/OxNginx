@@ -51,8 +51,11 @@ pub fn generate_site_config(site: &Site) -> String {
         let root_path = root_path.replace('\\', "/");
         config.push_str(&format!("\n    root {};\n", root_path));
         config.push_str("    index index.html index.htm;\n");
+        config.push_str("\n    location = /index.html {\n");
+        config.push_str("        expires -1;\n");
+        config.push_str("    }\n");
         config.push_str("\n    location / {\n");
-        config.push_str("        try_files $uri $uri/ /index.html;\n");
+        config.push_str("        try_files $uri $uri/ =404;\n");
         config.push_str("    }\n");
     }
 
@@ -65,32 +68,55 @@ pub fn generate_site_config(site: &Site) -> String {
 pub async fn test_config(nginx_bin: &str) -> NginxTestResult {
     use tokio::process::Command;
 
-    let nginx_dir = match get_nginx_dir(nginx_bin) {
-        Some(dir) => dir,
-        None => return NginxTestResult {
-            success: false,
-            message: "无法获取 nginx 安装目录".to_string(),
-        },
-    };
-
-    let output = Command::new(nginx_bin)
-        .current_dir(&nginx_dir)
-        .arg("-t")
-        .output()
-        .await;
-
-    match output {
-        Ok(out) => {
-            let stderr = String::from_utf8_lossy(&out.stderr);
-            NginxTestResult {
+    #[cfg(target_os = "linux")]
+    {
+        let nginx_dir = match get_nginx_dir(nginx_bin) {
+            Some(dir) => dir,
+            None => return NginxTestResult {
+                success: false,
+                message: "无法获取 nginx 安装目录".to_string(),
+            },
+        };
+        let output = Command::new("sh")
+            .args(["-c", &format!("cd {} && sudo {} -t", nginx_dir.display(), nginx_bin)])
+            .output()
+            .await;
+        match output {
+            Ok(out) => NginxTestResult {
                 success: out.status.success(),
-                message: stderr.to_string(),
-            }
+                message: String::from_utf8_lossy(&out.stderr).to_string(),
+            },
+            Err(e) => NginxTestResult {
+                success: false,
+                message: format!("执行nginx命令失败: {}", e),
+            },
         }
-        Err(e) => NginxTestResult {
-            success: false,
-            message: format!("执行nginx命令失败: {}", e),
-        },
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        let nginx_dir = match get_nginx_dir(nginx_bin) {
+            Some(dir) => dir,
+            None => return NginxTestResult {
+                success: false,
+                message: "无法获取 nginx 安装目录".to_string(),
+            },
+        };
+        let output = Command::new(nginx_bin)
+            .current_dir(&nginx_dir)
+            .arg("-t")
+            .output()
+            .await;
+        match output {
+            Ok(out) => NginxTestResult {
+                success: out.status.success(),
+                message: String::from_utf8_lossy(&out.stderr).to_string(),
+            },
+            Err(e) => NginxTestResult {
+                success: false,
+                message: format!("执行nginx命令失败: {}", e),
+            },
+        }
     }
 }
 
@@ -100,49 +126,105 @@ pub async fn write_site_config(
     site_name: &str,
     config: &str,
 ) -> anyhow::Result<()> {
-    tracing::info!("write_site_config: sites_enabled={}, site_name={}", sites_enabled, site_name);
-    // 确保 sites-enabled 目录存在
-    tokio::fs::create_dir_all(sites_enabled).await?;
+    use tokio::process::Command;
+
     let config_path = format!("{}/{}.conf", sites_enabled, site_name);
     tracing::info!("write_site_config: config_path={}", config_path);
-    tokio::fs::write(&config_path, config).await?;
+
+    #[cfg(target_os = "linux")]
+    {
+        let tmp = "/tmp/.ox_nginx_conf_tmp";
+        tokio::fs::write(tmp, config).await?;
+        let cmd = format!("sudo mkdir -p '{}' && sudo mv '{}' '{}'", sites_enabled, tmp, config_path);
+        let output = Command::new("sh").arg("-c").arg(&cmd).output().await?;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(anyhow::anyhow!("写入站点配置失败: {}", stderr));
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        tokio::fs::create_dir_all(sites_enabled).await?;
+        tokio::fs::write(&config_path, config).await?;
+    }
+
     Ok(())
 }
 
 /// 删除站点配置文件
 pub async fn remove_site_config(sites_enabled: &str, site_name: &str) -> anyhow::Result<()> {
+    use tokio::process::Command;
+
     let config_path = format!("{}/{}.conf", sites_enabled, site_name);
-    if tokio::fs::metadata(&config_path).await.is_ok() {
-        tokio::fs::remove_file(&config_path).await?;
+
+    #[cfg(target_os = "linux")]
+    {
+        let cmd = format!("sudo rm -f '{}'", config_path);
+        let _ = Command::new("sh").arg("-c").arg(&cmd).output().await;
     }
+
+    #[cfg(target_os = "windows")]
+    {
+        if tokio::fs::metadata(&config_path).await.is_ok() {
+            tokio::fs::remove_file(&config_path).await?;
+        }
+    }
+
     Ok(())
 }
 
 /// 确保 nginx.conf 中包含 sites-enabled 目录的 include 指令
 pub async fn ensure_sites_enabled_include(nginx_config: &str, sites_enabled: &str) -> anyhow::Result<()> {
-    let content = tokio::fs::read_to_string(nginx_config).await?;
-    // 检查是否已包含 sites-enabled 的 include
-    if content.contains("sites-enabled") {
-        return Ok(());
+    use tokio::process::Command;
+
+    #[cfg(target_os = "linux")]
+    {
+        let tmp = "/tmp/.ox_nginx_nginx_conf_tmp";
+        // 读取原文件
+        let output = Command::new("sh")
+            .args(["-c", &format!("sudo cat '{}'", nginx_config)])
+            .output()
+            .await?;
+        let content = String::from_utf8_lossy(&output.stdout);
+        if content.contains("sites-enabled") {
+            return Ok(());
+        }
+        let sites_path = sites_enabled.replace('\\', "/");
+        let include_line = format!("\n    include {}/*.conf;\n", sites_path);
+        if let Some(pos) = content.rfind('}') {
+            let mut new_content = content[..pos].to_string();
+            new_content.push_str(&include_line);
+            new_content.push_str("}\n");
+            tokio::fs::write(tmp, &new_content).await?;
+            let cmd = format!("sudo mv '{}' '{}'", tmp, nginx_config);
+            let _ = Command::new("sh").arg("-c").arg(&cmd).output().await;
+        }
+        Ok(())
     }
-    // 在 http 块的最后一个 } 前插入 include 指令
-    // 使用正斜杠路径
-    let sites_path = sites_enabled.replace('\\', "/");
-    let include_line = format!("\n    include {}/*.conf;\n", sites_path);
-    // 找到最后一个 } (http块的结束大括号)
-    if let Some(pos) = content.rfind('}') {
-        let mut new_content = content[..pos].to_string();
-        new_content.push_str(&include_line);
-        new_content.push_str("}\n");
-        tokio::fs::write(nginx_config, new_content).await?;
+
+    #[cfg(target_os = "windows")]
+    {
+        let content = tokio::fs::read_to_string(nginx_config).await?;
+        if content.contains("sites-enabled") {
+            return Ok(());
+        }
+        let sites_path = sites_enabled.replace('\\', "/");
+        let include_line = format!("\n    include {}/*.conf;\n", sites_path);
+        if let Some(pos) = content.rfind('}') {
+            let mut new_content = content[..pos].to_string();
+            new_content.push_str(&include_line);
+            new_content.push_str("}\n");
+            tokio::fs::write(nginx_config, new_content).await?;
+        }
+        Ok(())
     }
-    Ok(())
 }
 
 /// 创建默认 index.html
 pub async fn create_default_index(root_path: &str) -> anyhow::Result<()> {
-    tokio::fs::create_dir_all(root_path).await?;
-    let index_path = format!("{}/index.html", root_path);
+    use tokio::process::Command;
+
     let content = r#"<!DOCTYPE html>
 <html>
 <head>
@@ -162,7 +244,25 @@ pub async fn create_default_index(root_path: &str) -> anyhow::Result<()> {
     </div>
 </body>
 </html>"#;
-    tokio::fs::write(&index_path, content).await?;
+
+    #[cfg(target_os = "linux")]
+    {
+        let tmp = "/tmp/.ox_nginx_index_tmp";
+        tokio::fs::write(tmp, content).await?;
+        let cmd = format!("sudo mkdir -p '{}' && sudo mv '{}' '{}/index.html'", root_path, tmp, root_path);
+        let output = Command::new("sh").arg("-c").arg(&cmd).output().await?;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(anyhow::anyhow!("创建站点目录失败: {}", stderr));
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        tokio::fs::create_dir_all(root_path).await?;
+        tokio::fs::write(&format!("{}/index.html", root_path), content).await?;
+    }
+
     Ok(())
 }
 
@@ -314,29 +414,30 @@ pub async fn get_nginx_status(nginx_bin: &str) -> NginxStatus {
 pub async fn start_nginx(nginx_bin: &str) -> anyhow::Result<bool> {
     use tokio::process::Command;
 
-    // nginx 需要从其安装目录运行
-    let nginx_dir = get_nginx_dir(nginx_bin)
-        .ok_or_else(|| anyhow::anyhow!("无法获取 nginx 安装目录"))?;
-
-    tracing::info!("启动 Nginx: bin={}, dir={}", nginx_bin, nginx_dir.display());
-
-    // 使用 spawn 启动，不等待进程结束（nginx 是守护进程）
-    let child = Command::new(nginx_bin)
-        .current_dir(&nginx_dir)
-        .spawn();
-
-    match child {
-        Ok(_child) => {
-            // 等待一小段时间让 nginx 完成启动
-            tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-            // 检查 nginx 是否正在运行
-            let status = get_nginx_status(nginx_bin).await;
-            Ok(status.running)
+    #[cfg(target_os = "linux")]
+    {
+        tracing::info!("启动 Nginx (systemctl)");
+        let output = Command::new("sh")
+            .args(["-c", "sudo systemctl start nginx"])
+            .output()
+            .await?;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(anyhow::anyhow!("启动 Nginx 失败: {}", stderr));
         }
-        Err(e) => {
-            tracing::error!("启动 Nginx 失败: {}", e);
-            Err(anyhow::anyhow!("启动 Nginx 失败: {}", e))
-        }
+        Ok(true)
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        let nginx_dir = get_nginx_dir(nginx_bin)
+            .ok_or_else(|| anyhow::anyhow!("无法获取 nginx 安装目录"))?;
+        tracing::info!("启动 Nginx: bin={}, dir={}", nginx_bin, nginx_dir.display());
+        let child = Command::new(nginx_bin)
+            .current_dir(&nginx_dir)
+            .spawn()?;
+        tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+        Ok(child.id().is_some())
     }
 }
 
@@ -344,46 +445,77 @@ pub async fn start_nginx(nginx_bin: &str) -> anyhow::Result<bool> {
 pub async fn stop_nginx(nginx_bin: &str) -> anyhow::Result<bool> {
     use tokio::process::Command;
 
-    let nginx_dir = get_nginx_dir(nginx_bin)
-        .ok_or_else(|| anyhow::anyhow!("无法获取 nginx 安装目录"))?;
+    #[cfg(target_os = "linux")]
+    {
+        tracing::info!("停止 Nginx (systemctl)");
+        let output = Command::new("sh")
+            .args(["-c", "sudo systemctl stop nginx"])
+            .output()
+            .await?;
+        Ok(output.status.success())
+    }
 
-    tracing::info!("停止 Nginx: bin={}", nginx_bin);
-
-    let output = Command::new(nginx_bin)
-        .current_dir(&nginx_dir)
-        .args(["-s", "stop"])
-        .output()
-        .await?;
-
-    Ok(output.status.success())
+    #[cfg(target_os = "windows")]
+    {
+        let nginx_dir = get_nginx_dir(nginx_bin)
+            .ok_or_else(|| anyhow::anyhow!("无法获取 nginx 安装目录"))?;
+        tracing::info!("停止 Nginx: bin={}", nginx_bin);
+        let output = Command::new(nginx_bin)
+            .current_dir(&nginx_dir)
+            .args(["-s", "stop"])
+            .output()
+            .await?;
+        Ok(output.status.success())
+    }
 }
 
 /// 重载 Nginx 配置
 pub async fn reload_nginx(nginx_bin: &str) -> anyhow::Result<bool> {
     use tokio::process::Command;
 
-    let nginx_dir = get_nginx_dir(nginx_bin)
-        .ok_or_else(|| anyhow::anyhow!("无法获取 nginx 安装目录"))?;
+    #[cfg(target_os = "linux")]
+    {
+        tracing::info!("重载 Nginx 配置 (systemctl)");
+        let output = Command::new("sh")
+            .args(["-c", "sudo systemctl reload nginx"])
+            .output()
+            .await?;
+        Ok(output.status.success())
+    }
 
-    tracing::info!("重载 Nginx 配置: bin={}", nginx_bin);
-
-    let output = Command::new(nginx_bin)
-        .current_dir(&nginx_dir)
-        .args(["-s", "reload"])
-        .output()
-        .await?;
-
-    Ok(output.status.success())
+    #[cfg(target_os = "windows")]
+    {
+        let nginx_dir = get_nginx_dir(nginx_bin)
+            .ok_or_else(|| anyhow::anyhow!("无法获取 nginx 安装目录"))?;
+        tracing::info!("重载 Nginx 配置: bin={}", nginx_bin);
+        let output = Command::new(nginx_bin)
+            .current_dir(&nginx_dir)
+            .args(["-s", "reload"])
+            .output()
+            .await?;
+        Ok(output.status.success())
+    }
 }
 
 /// 重启 Nginx
 pub async fn restart_nginx(nginx_bin: &str) -> anyhow::Result<bool> {
-    // 先停止
-    let _ = stop_nginx(nginx_bin).await;
-    // 等待一小段时间
-    tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
-    // 再启动
-    start_nginx(nginx_bin).await
+    #[cfg(target_os = "linux")]
+    {
+        use tokio::process::Command;
+        tracing::info!("重启 Nginx (systemctl)");
+        let output = Command::new("sh")
+            .args(["-c", "sudo systemctl restart nginx"])
+            .output()
+            .await?;
+        Ok(output.status.success())
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        stop_nginx(nginx_bin).await?;
+        tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+        start_nginx(nginx_bin).await
+    }
 }
 
 /// 一键安装 Nginx（Windows/Linux）
@@ -448,32 +580,29 @@ pub async fn install_nginx(install_dir: &str) -> anyhow::Result<NginxInstallResu
     } else {
         // Linux: 使用包管理器
         let install_cmd = if Command::new("which").arg("apt-get").output().await.map(|o| o.status.success()).unwrap_or(false) {
-            "apt-get install -y nginx"
+            "sudo apt-get install -y nginx"
         } else if Command::new("which").arg("yum").output().await.map(|o| o.status.success()).unwrap_or(false) {
-            "yum install -y nginx"
+            "sudo yum install -y nginx"
         } else if Command::new("which").arg("dnf").output().await.map(|o| o.status.success()).unwrap_or(false) {
-            "dnf install -y nginx"
+            "sudo dnf install -y nginx"
         } else {
             return Err(anyhow::anyhow!("未找到支持的包管理器"));
         };
 
         tracing::info!("安装 Nginx...");
         let output = Command::new("sh")
-            .args(["-c", install_cmd])
+            .args(["-c", &install_cmd])
             .output()
             .await?;
 
         if !output.status.success() {
-            return Err(anyhow::anyhow!("安装 Nginx 失败"));
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            tracing::error!("Nginx 安装失败: {}", stderr);
+            return Err(anyhow::anyhow!("安装 Nginx 失败: {}", stderr));
         }
 
-        // 返回 nginx 路径
-        let nginx_path = Command::new("which")
-            .arg("nginx")
-            .output()
-            .await?;
-
-        let bin = String::from_utf8_lossy(&nginx_path.stdout).trim().to_string();
+        // apt-get/yum/dnf 都将 nginx 装到 /usr/sbin/nginx
+        let bin = "/usr/sbin/nginx".to_string();
         tracing::info!("Nginx 安装完成: {}", bin);
         Ok(NginxInstallResult {
             bin,

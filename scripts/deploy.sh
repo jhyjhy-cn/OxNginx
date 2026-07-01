@@ -39,6 +39,9 @@ if ! id "$SERVICE_USER" &>/dev/null; then
     useradd -r -s /bin/false -d "$INSTALL_DIR" "$SERVICE_USER" 2>/dev/null || true
 fi
 
+# 加入 adm 组（读取 nginx 日志需要）
+usermod -aG adm "$SERVICE_USER" 2>/dev/null || true
+
 # 创建目录结构
 mkdir -p "$INSTALL_DIR"
 mkdir -p "$CONFIG_DIR"
@@ -109,6 +112,12 @@ fi
 
 # ============ 创建 systemd 服务 ============
 info "创建系统服务..."
+
+# 允许 ox-nginx 用户无密码执行 Nginx 安装（apt-get/yum/dnf）
+cat > /etc/sudoers.d/$APP_NAME << EOF
+$APP_NAME ALL=(ALL) NOPASSWD: /usr/sbin/nginx *, /usr/bin/apt-get install *, /usr/bin/yum install *, /usr/bin/dnf install *, /usr/bin/systemctl start nginx, /usr/bin/systemctl stop nginx, /usr/bin/systemctl restart nginx, /usr/bin/systemctl reload nginx, /usr/bin/systemctl enable nginx, /usr/bin/mkdir *, /usr/bin/mv *, /usr/bin/rm *
+EOF
+chmod 440 /etc/sudoers.d/$APP_NAME
 
 cat > /etc/systemd/system/$APP_NAME.service << EOF
 [Unit]

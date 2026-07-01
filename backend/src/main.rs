@@ -80,6 +80,7 @@ fn main() -> anyhow::Result<()> {
     let config = AppConfig::load()?;
     tracing::info!("配置加载完成");
 
+    rt.block_on(async {
         // 初始化数据库
         let db = Database::new(&config.database.path).await?;
         tracing::info!("数据库初始化完成");
@@ -171,5 +172,8 @@ fn main() -> anyhow::Result<()> {
 
         axum::serve(listener, app).await?;
 
-        Ok(())
-    })?;
+        Ok::<(), anyhow::Error>(())
+    });
+
+    Ok(())
+}
