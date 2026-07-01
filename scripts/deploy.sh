@@ -115,7 +115,7 @@ info "创建系统服务..."
 
 # 允许 ox-nginx 用户无密码执行 Nginx 安装（apt-get/yum/dnf）
 cat > /etc/sudoers.d/$APP_NAME << EOF
-$APP_NAME ALL=(ALL) NOPASSWD: /usr/sbin/nginx *, /usr/bin/apt-get install *, /usr/bin/yum install *, /usr/bin/dnf install *, /usr/bin/systemctl start nginx, /usr/bin/systemctl stop nginx, /usr/bin/systemctl restart nginx, /usr/bin/systemctl reload nginx, /usr/bin/systemctl enable nginx, /usr/bin/mkdir *, /usr/bin/mv *, /usr/bin/rm *
+$APP_NAME ALL=(ALL) NOPASSWD: /usr/sbin/nginx *, /usr/bin/apt-get install *, /usr/bin/yum install *, /usr/bin/dnf install *, /usr/bin/systemctl start nginx, /usr/bin/systemctl stop nginx, /usr/bin/systemctl restart nginx, /usr/bin/systemctl reload nginx, /usr/bin/systemctl enable nginx, /usr/bin/mkdir *, /usr/bin/mv *, /usr/bin/rm *, /usr/bin/killall *, /root/.acme.sh/acme.sh *, /bin/cp *, /usr/bin/cp *, /bin/chmod *, /usr/bin/chmod *, /bin/ls *, /usr/bin/ls *
 EOF
 chmod 440 /etc/sudoers.d/$APP_NAME
 
