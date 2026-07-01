@@ -4,6 +4,16 @@ version = "1.0.0"
 edition = "2021"
 description = "轻量级Nginx可视化管理面板"
 
+[profile.release]
+# LTO (Link Time Optimization): 跨 crate 链接时优化，减小二进制体积
+lto = true
+# 单码元生成单元：更好的优化效果，但编译更慢
+codegen-units = 1
+# 优化级别：z = 优化体积优先，s = 优化大小，2 = 平衡
+opt-level = "z"
+# 剥离调试符号和DWARF信息
+strip = true
+
 [dependencies]
 # Web框架
 axum = { version = "0.7", features = ["macros"] }

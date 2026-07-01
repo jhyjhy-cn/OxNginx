@@ -125,6 +125,8 @@ WorkingDirectory=$INSTALL_DIR
 ExecStart=$INSTALL_DIR/$APP_NAME
 Environment=RUST_LOG=info
 Environment=CONFIG_PATH=$CONFIG_DIR/config.toml
+# 限制 Tokio 线程数以降低内存占用（默认会创建多线程）
+Environment=TOKIO_RT_MAX_THREADS=2
 Restart=always
 RestartSec=5
 StandardOutput=append:$LOG_DIR/access.log
@@ -159,6 +161,7 @@ show_menu() {
     echo -e "${CYAN}║${NC}  ${GREEN}5${NC} = 查看日志                        ${CYAN}║${NC}"
     echo -e "${CYAN}║${NC}  ${GREEN}6${NC} = 面板信息                        ${CYAN}║${NC}"
     echo -e "${CYAN}║${NC}  ${GREEN}7${NC} = 重置密码                        ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}  ${RED}8${NC} = 卸载                            ${CYAN}║${NC}"
     echo -e "${CYAN}║${NC}  ${GREEN}0${NC} = 退出                            ${CYAN}║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════╝${NC}"
     echo ""
@@ -242,6 +245,43 @@ reset_password() {
     read -p "按 Enter 返回菜单..."
 }
 
+uninstall() {
+    echo ""
+    echo -e "${RED}⚠️  警告：即将完全卸载 OxNginx！${NC}"
+    echo -e "${RED}   这将删除：${NC}"
+    echo -e "${RED}   - 所有程序文件${NC}"
+    echo -e "${RED}   - 所有配置和数据${NC}"
+    echo -e "${RED}   - systemd 服务${NC}"
+    echo -e "${RED}   - 管理命令 on${NC}"
+    echo ""
+    read -p "确定要卸载吗？(输入 \"YES\" 确认): " confirm
+    if [ "$confirm" != "YES" ]; then
+        echo -e "${YELLOW}已取消${NC}"
+        echo ""
+        read -p "按 Enter 返回菜单..."
+        return
+    fi
+
+    echo -e "${YELLOW}正在停止服务...${NC}"
+    systemctl stop ox-nginx 2>/dev/null || true
+    systemctl disable ox-nginx 2>/dev/null || true
+
+    echo -e "${YELLOW}正在删除文件...${NC}"
+    rm -rf /opt/ox-nginx
+    rm -f /etc/systemd/system/ox-nginx.service
+    rm -f /usr/local/bin/on
+
+    echo -e "${YELLOW}正在删除用户...${NC}"
+    userdel ox-nginx 2>/dev/null || true
+
+    systemctl daemon-reload
+
+    echo ""
+    echo -e "${GREEN}✅ OxNginx 已完全卸载${NC}"
+    echo ""
+    exit 0
+}
+
 # 主循环
 while true; do
     show_menu
@@ -255,6 +295,7 @@ while true; do
         5) show_logs ;;
         6) show_info ;;
         7) reset_password ;;
+        8) uninstall ;;
         0) echo -e "${GREEN}再见！${NC}"; exit 0 ;;
         *) echo -e "${RED}无效选项，请重新输入${NC}"; sleep 1 ;;
     esac
