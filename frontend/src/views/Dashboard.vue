@@ -21,25 +21,36 @@
         </div>
         <div class="status-actions">
           <el-button
-            :type="nginxStatus.running ? 'danger' : 'success'"
-            :loading="loading.startStop"
-            @click="toggleNginx"
+            v-if="nginxStatus.not_installed"
+            type="primary"
+            :loading="loading.install"
+            @click="installNginx"
           >
-            <el-icon v-if="!loading.startStop"><VideoPlay v-if="!nginxStatus.running" /><VideoPause v-else /></el-icon>
-            {{ nginxStatus.running ? '停止' : '启动' }}
+            <el-icon v-if="!loading.install"><Download /></el-icon>
+            一键安装
           </el-button>
-          <el-button :loading="loading.restart" @click="restartNginx">
-            <el-icon v-if="!loading.restart"><RefreshRight /></el-icon>
-            重启
-          </el-button>
-          <el-button :loading="loading.reload" @click="reloadConfig">
-            <el-icon v-if="!loading.reload"><Refresh /></el-icon>
-            重载配置
-          </el-button>
-          <el-button :loading="loading.test" @click="testConfig">
-            <el-icon v-if="!loading.test"><Finished /></el-icon>
-            测试配置
-          </el-button>
+          <template v-else>
+            <el-button
+              :type="nginxStatus.running ? 'danger' : 'success'"
+              :loading="loading.startStop"
+              @click="toggleNginx"
+            >
+              <el-icon v-if="!loading.startStop"><VideoPlay v-if="!nginxStatus.running" /><VideoPause v-else /></el-icon>
+              {{ nginxStatus.running ? '停止' : '启动' }}
+            </el-button>
+            <el-button :loading="loading.restart" @click="restartNginx">
+              <el-icon v-if="!loading.restart"><RefreshRight /></el-icon>
+              重启
+            </el-button>
+            <el-button :loading="loading.reload" @click="reloadConfig">
+              <el-icon v-if="!loading.reload"><Refresh /></el-icon>
+              重载配置
+            </el-button>
+            <el-button :loading="loading.test" @click="testConfig">
+              <el-icon v-if="!loading.test"><Finished /></el-icon>
+              测试配置
+            </el-button>
+          </template>
         </div>
       </div>
     </el-card>
@@ -163,6 +174,7 @@ import {
   Box,
   Document,
   Setting,
+  Download,
 } from '@element-plus/icons-vue'
 import api from '@/api'
 
@@ -202,6 +214,7 @@ const loading = reactive({
   reload: false,
   startStop: false,
   restart: false,
+  install: false,
 })
 
 let refreshTimer: ReturnType<typeof setInterval> | null = null
@@ -346,6 +359,26 @@ async function testConfig() {
     ElMessage.error(error.response?.data?.message || '测试失败')
   } finally {
     loading.test = false
+  }
+}
+
+async function installNginx() {
+  loading.install = true
+  try {
+    ElMessage.info('正在安装 Nginx，请稍候...')
+    const response = await api.post('/api/nginx/install')
+    if (response.data.code === 0) {
+      ElMessage.success('Nginx 安装成功')
+      await delay(1000)
+      await fetchNginxStatus()
+      await fetchDashboard()
+    } else {
+      ElMessage.error(response.data.message || '安装失败')
+    }
+  } catch (error: any) {
+    ElMessage.error(error.response?.data?.message || '安装失败')
+  } finally {
+    loading.install = false
   }
 }
 </script>

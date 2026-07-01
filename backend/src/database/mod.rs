@@ -1,4 +1,4 @@
-use sqlx::sqlite::SqlitePool;
+use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 use std::path::Path;
 
 /// 数据库封装
@@ -16,7 +16,10 @@ impl Database {
         }
 
         let url = format!("sqlite:{}?mode=rwc", db_path);
-        let pool = SqlitePool::connect(&url).await?;
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect(&url)
+            .await?;
 
         let db = Self { pool };
         db.init_tables().await?;

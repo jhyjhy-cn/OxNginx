@@ -14,6 +14,7 @@ cd backend
 cargo run              # 开发运行
 cargo build --release  # 生产构建
 cargo test             # 运行测试
+cargo test <name>      # 运行单个测试
 ```
 
 ### 前端
@@ -22,6 +23,13 @@ cd frontend
 pnpm install           # 安装依赖
 pnpm run dev           # 开发服务器
 pnpm run build         # 生产构建
+pnpm run preview       # 预览构建结果
+```
+
+### 部署脚本
+```bash
+./scripts/build.ps1    # Windows 一键构建（前端+后端）
+./scripts/deploy.sh    # Linux 部署脚本
 ```
 
 ## 技术栈

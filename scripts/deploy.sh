@@ -124,7 +124,7 @@ Group=$SERVICE_USER
 WorkingDirectory=$INSTALL_DIR
 ExecStart=$INSTALL_DIR/$APP_NAME
 Environment=RUST_LOG=info
-Environment=OXNGINX_CONFIG=$CONFIG_DIR/config.toml
+Environment=CONFIG_PATH=$CONFIG_DIR/config.toml
 Restart=always
 RestartSec=5
 StandardOutput=append:$LOG_DIR/access.log

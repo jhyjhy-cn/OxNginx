@@ -38,23 +38,90 @@ New-Item -ItemType Directory -Force -Path "$OutputDir/bin" | Out-Null
 New-Item -ItemType Directory -Force -Path "$OutputDir/static" | Out-Null
 New-Item -ItemType Directory -Force -Path "$OutputDir/scripts" | Out-Null
 
-# 检查并复制后端二进制
-Write-Info "复制后端文件..."
+# 检查并构建后端二进制
+Write-Info "检查后端二进制..."
 $BackendBin = Join-Path $RootDir "backend\target\x86_64-unknown-linux-gnu\release\ox-nginx"
+
 if (-not (Test-Path $BackendBin)) {
-    Write-Error "后端二进制文件不存在: $BackendBin"
-    Write-Warn "请先运行: cd backend && cargo zigbuild --release --target x86_64-unknown-linux-gnu"
-    exit 1
+    Write-Warn "后端二进制文件不存在，开始构建..."
+
+    # 检测 zig 是否安装
+    $ZigInstalled = $false
+    try {
+        $zigVersion = & zig version 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Info "检测到 Zig $($zigVersion.Trim())"
+            $ZigInstalled = $true
+        }
+    } catch {
+        $ZigInstalled = $false
+    }
+
+    # 检测 cargo-zigbuild 是否安装
+    $CargoZigbuildInstalled = $false
+    try {
+        $null = & cargo zigbuild --help 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Info "检测到 cargo-zigbuild"
+            $CargoZigbuildInstalled = $true
+        }
+    } catch {
+        $CargoZigbuildInstalled = $false
+    }
+
+    Push-Location (Join-Path $RootDir "backend")
+    if ($ZigInstalled -and $CargoZigbuildInstalled) {
+        Write-Info "使用 zigbuild 交叉编译到 Linux x86_64..."
+
+        # 检查是否缺少 Linux 目标
+        $needTarget = $false
+        try {
+            $null = & rustup target list --installed 2>&1 | Select-String "x86_64-unknown-linux-gnu"
+            if ($LASTEXITCODE -ne 0) {
+                $needTarget = $true
+            }
+        } catch {
+            $needTarget = $true
+        }
+
+        if ($needTarget) {
+            Write-Info "安装 Linux 交叉编译目标..."
+            & rustup target add x86_64-unknown-linux-gnu 2>&1 | ForEach-Object { Write-Host "   $_" }
+        }
+
+        & cargo zigbuild --release --target x86_64-unknown-linux-gnu 2>&1 | ForEach-Object { Write-Host "   $_" }
+    } elseif ($ZigInstalled) {
+        Write-Warn "Zig 已安装但缺少 cargo-zigbuild 插件"
+        Write-Host "请运行: cargo install cargo-zigbuild" -ForegroundColor Cyan
+        Pop-Location
+        exit 0
+    } else {
+        Write-Warn "未检测到 Zig，无法交叉编译"
+        Write-Host "请安装 Zig: https://ziglang.org/download/" -ForegroundColor Cyan
+        Write-Host "然后安装: cargo install cargo-zigbuild" -ForegroundColor Cyan
+        Pop-Location
+        exit 0
+    }
+    Pop-Location
+
+    if (-not (Test-Path $BackendBin)) {
+        Write-Error "后端构建失败，请手动运行: cd backend && cargo zigbuild --release --target x86_64-unknown-linux-gnu"
+        exit 1
+    }
+} else {
+    Write-Info "后端二进制已存在，跳过构建"
 }
+
 Copy-Item $BackendBin "$OutputDir\bin\ox-nginx"
 
 # 检查并复制前端静态文件
-Write-Info "复制前端文件..."
+Write-Info "检查前端静态文件..."
 $StaticDir = Join-Path $RootDir "backend\static"
 if (-not (Test-Path $StaticDir)) {
-    Write-Error "前端静态文件不存在: $StaticDir"
-    Write-Warn "请先运行: cd frontend && pnpm run build"
-    exit 1
+    Write-Warn "前端静态文件不存在，开始构建..."
+    Push-Location (Join-Path $RootDir "frontend")
+    & pnpm run build 2>&1 | ForEach-Object { Write-Host "   $_" }
+    Pop-Location
 }
 Copy-Item -Recurse "$StaticDir\*" "$OutputDir\static\"
 

@@ -13,7 +13,6 @@ mod util;
 
 use axum::{
     middleware::from_fn_with_state,
-    response::IntoResponse,
     routing::{delete, get, post, put},
     Router,
 };
@@ -25,6 +24,11 @@ use crate::config::AppConfig;
 use crate::database::Database;
 use std::sync::{Arc, Mutex};
 use sysinfo::{System, Pid};
+
+/// ponytail: minimal system info for memory efficiency
+fn create_system() -> System {
+    System::new()
+}
 
 /// 应用共享状态
 pub struct AppState {
@@ -80,7 +84,7 @@ async fn main() -> anyhow::Result<()> {
     let state = AppState {
         db,
         config: Arc::new(Mutex::new(config.clone())),
-        sys: Arc::new(Mutex::new(System::new_all())),
+        sys: Arc::new(Mutex::new(create_system())),
         pid: Pid::from_u32(std::process::id()),
     };
 
@@ -156,14 +160,7 @@ async fn main() -> anyhow::Result<()> {
         .layer(from_fn_with_state(state.clone(), middleware::auth_middleware));
 
     // 静态文件服务（前端）
-    let static_service = ServeDir::new("static")
-        .not_found_service(ServeDir::new("static").fallback(get(|| async {
-            // 返回 index.html 支持 SPA 路由
-            match tokio::fs::read_to_string("static/index.html").await {
-                Ok(content) => axum::response::Html(content).into_response(),
-                Err(_) => (axum::http::StatusCode::NOT_FOUND, "Not Found").into_response(),
-            }
-        })));
+    let static_service = ServeDir::new("static").not_found_service(ServeDir::new("static"));
 
     // 构建路由
     let app = public_routes
