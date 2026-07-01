@@ -13,10 +13,12 @@ mod util;
 
 use axum::{
     middleware::from_fn_with_state,
+    response::IntoResponse,
     routing::{delete, get, post, put},
     Router,
 };
 use tower_http::cors::CorsLayer;
+use tower_http::services::ServeDir;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::config::AppConfig;
@@ -153,10 +155,21 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/settings", put(api::settings_api::update_settings))
         .layer(from_fn_with_state(state.clone(), middleware::auth_middleware));
 
+    // 静态文件服务（前端）
+    let static_service = ServeDir::new("static")
+        .not_found_service(ServeDir::new("static").fallback(get(|| async {
+            // 返回 index.html 支持 SPA 路由
+            match tokio::fs::read_to_string("static/index.html").await {
+                Ok(content) => axum::response::Html(content).into_response(),
+                Err(_) => (axum::http::StatusCode::NOT_FOUND, "Not Found").into_response(),
+            }
+        })));
+
     // 构建路由
     let app = public_routes
         .merge(protected_routes)
         .layer(CorsLayer::permissive())
+        .fallback_service(static_service)
         .with_state(state);
 
     // 启动服务
