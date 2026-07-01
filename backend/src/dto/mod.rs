@@ -59,6 +59,19 @@ fn default_listen() -> String {
     "80".into()
 }
 
+/// 删除站点请求
+#[derive(Debug, Deserialize)]
+pub struct DeleteSiteRequest {
+    #[serde(default = "default_true")]
+    pub delete_record: bool,
+    #[serde(default)]
+    pub delete_files: bool,
+}
+
+fn default_true() -> bool {
+    true
+}
+
 /// 更新站点请求
 #[derive(Debug, Deserialize)]
 pub struct UpdateSiteRequest {

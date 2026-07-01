@@ -47,6 +47,8 @@ pub fn generate_site_config(site: &Site) -> String {
         config.push_str("        proxy_set_header Connection \"upgrade\";\n");
         config.push_str("    }\n");
     } else if let Some(root_path) = &site.root_path {
+        // 统一使用正斜杠，避免 Windows 反斜杠导致 nginx 解析失败
+        let root_path = root_path.replace('\\', "/");
         config.push_str(&format!("\n    root {};\n", root_path));
         config.push_str("    index index.html index.htm;\n");
         config.push_str("\n    location / {\n");
@@ -98,7 +100,11 @@ pub async fn write_site_config(
     site_name: &str,
     config: &str,
 ) -> anyhow::Result<()> {
+    tracing::info!("write_site_config: sites_enabled={}, site_name={}", sites_enabled, site_name);
+    // 确保 sites-enabled 目录存在
+    tokio::fs::create_dir_all(sites_enabled).await?;
     let config_path = format!("{}/{}.conf", sites_enabled, site_name);
+    tracing::info!("write_site_config: config_path={}", config_path);
     tokio::fs::write(&config_path, config).await?;
     Ok(())
 }
@@ -109,6 +115,54 @@ pub async fn remove_site_config(sites_enabled: &str, site_name: &str) -> anyhow:
     if tokio::fs::metadata(&config_path).await.is_ok() {
         tokio::fs::remove_file(&config_path).await?;
     }
+    Ok(())
+}
+
+/// 确保 nginx.conf 中包含 sites-enabled 目录的 include 指令
+pub async fn ensure_sites_enabled_include(nginx_config: &str, sites_enabled: &str) -> anyhow::Result<()> {
+    let content = tokio::fs::read_to_string(nginx_config).await?;
+    // 检查是否已包含 sites-enabled 的 include
+    if content.contains("sites-enabled") {
+        return Ok(());
+    }
+    // 在 http 块的最后一个 } 前插入 include 指令
+    // 使用正斜杠路径
+    let sites_path = sites_enabled.replace('\\', "/");
+    let include_line = format!("\n    include {}/*.conf;\n", sites_path);
+    // 找到最后一个 } (http块的结束大括号)
+    if let Some(pos) = content.rfind('}') {
+        let mut new_content = content[..pos].to_string();
+        new_content.push_str(&include_line);
+        new_content.push_str("}\n");
+        tokio::fs::write(nginx_config, new_content).await?;
+    }
+    Ok(())
+}
+
+/// 创建默认 index.html
+pub async fn create_default_index(root_path: &str) -> anyhow::Result<()> {
+    tokio::fs::create_dir_all(root_path).await?;
+    let index_path = format!("{}/index.html", root_path);
+    let content = r#"<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>站点创建成功</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
+        .card { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); text-align: center; }
+        h1 { color: #67c23a; margin-bottom: 10px; }
+        p { color: #909399; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🎉 恭喜, 站点创建成功！</h1>
+        <p>这是默认 index.html，本页面由系统自动生成</p>
+    </div>
+</body>
+</html>"#;
+    tokio::fs::write(&index_path, content).await?;
     Ok(())
 }
 

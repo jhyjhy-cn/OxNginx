@@ -99,6 +99,23 @@
         <el-button type="primary" :loading="submitting" @click="submitForm">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 删除确认对话框 -->
+    <el-dialog v-model="deleteDialogVisible" title="删除站点" width="420px">
+      <div style="margin-bottom: 16px;">
+        <p>确定要删除站点 <strong>{{ deleteTarget?.name }}</strong> 吗？</p>
+      </div>
+      <el-checkbox v-model="deleteOptions.deleteRecord">
+        删除站点记录（从数据库中移除）
+      </el-checkbox>
+      <el-checkbox v-model="deleteOptions.deleteFiles" style="margin-top: 12px;">
+        删除站点文件目录（{{ deleteTarget?.root_path || '无' }}）
+      </el-checkbox>
+      <template #footer>
+        <el-button @click="deleteDialogVisible = false">取消</el-button>
+        <el-button type="danger" @click="confirmDelete">确认删除</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -241,18 +258,34 @@ async function toggleSite(site: Site) {
   }
 }
 
-async function deleteSite(site: Site) {
+const deleteDialogVisible = ref(false)
+const deleteTarget = ref<Site | null>(null)
+const deleteOptions = reactive({
+  deleteRecord: true,
+  deleteFiles: false,
+})
+
+function deleteSite(site: Site) {
+  deleteTarget.value = site
+  deleteOptions.deleteRecord = true
+  deleteOptions.deleteFiles = false
+  deleteDialogVisible.value = true
+}
+
+async function confirmDelete() {
+  if (!deleteTarget.value) return
   try {
-    await ElMessageBox.confirm('确定要删除该站点吗？', '提示', {
-      type: 'warning',
+    await api.delete(`/api/sites/${deleteTarget.value.id}`, {
+      data: {
+        delete_record: deleteOptions.deleteRecord,
+        delete_files: deleteOptions.deleteFiles,
+      },
     })
-    await api.delete(`/api/sites/${site.id}`)
     ElMessage.success('删除成功')
+    deleteDialogVisible.value = false
     fetchSites()
   } catch (error: any) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || '删除失败')
-    }
+    ElMessage.error(error.response?.data?.message || '删除失败')
   }
 }
 
