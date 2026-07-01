@@ -45,63 +45,53 @@
     </el-card>
 
     <!-- 统计卡片 -->
-    <el-row :gutter="20" class="stats-row">
-      <el-col :span="4" :xs="12" :sm="8" :md="4">
-        <el-card class="stat-card" shadow="hover">
-          <div class="stat-icon" style="background: #409eff22; color: #409eff">
-            <el-icon :size="24"><Monitor /></el-icon>
-          </div>
-          <div class="stat-info">
-            <div class="stat-value">{{ stats.site_count }}</div>
-            <div class="stat-label">站点数</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="4" :xs="12" :sm="8" :md="4">
-        <el-card class="stat-card" shadow="hover">
-          <div class="stat-icon" style="background: #67c23a22; color: #67c23a">
-            <el-icon :size="24"><Lock /></el-icon>
-          </div>
-          <div class="stat-info">
-            <div class="stat-value">{{ stats.cert_count }}</div>
-            <div class="stat-label">SSL证书</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="4" :xs="12" :sm="8" :md="4">
-        <el-card class="stat-card" shadow="hover">
-          <div class="stat-icon" style="background: #e6a23c22; color: #e6a23c">
-            <el-icon :size="24"><Cpu /></el-icon>
-          </div>
-          <div class="stat-info">
-            <div class="stat-value">{{ stats.cpu_usage.toFixed(1) }}%</div>
-            <div class="stat-label">CPU使用率</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="4" :xs="12" :sm="8" :md="4">
-        <el-card class="stat-card" shadow="hover">
-          <div class="stat-icon" style="background: #f56c6c22; color: #f56c6c">
-            <el-icon :size="24"><Coin /></el-icon>
-          </div>
-          <div class="stat-info">
-            <div class="stat-value">{{ formatMemory(stats.memory_usage) }} / {{ formatMemory(stats.memory_total) }}</div>
-            <div class="stat-label">系统内存</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="4" :xs="12" :sm="8" :md="4">
-        <el-card class="stat-card" shadow="hover">
-          <div class="stat-icon" style="background: #90939922; color: #909399">
-            <el-icon :size="24"><Box /></el-icon>
-          </div>
-          <div class="stat-info">
-            <div class="stat-value">{{ formatMemory(stats.app_memory) }}</div>
-            <div class="stat-label">面板内存</div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+    <div class="stats-grid">
+      <el-card class="stat-card" shadow="hover">
+        <div class="stat-icon" style="background: #409eff22; color: #409eff">
+          <el-icon :size="24"><Monitor /></el-icon>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value">{{ stats.site_count }}</div>
+          <div class="stat-label">站点数</div>
+        </div>
+      </el-card>
+      <el-card class="stat-card" shadow="hover">
+        <div class="stat-icon" style="background: #67c23a22; color: #67c23a">
+          <el-icon :size="24"><Lock /></el-icon>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value">{{ stats.cert_count }}</div>
+          <div class="stat-label">SSL证书</div>
+        </div>
+      </el-card>
+      <el-card class="stat-card" shadow="hover">
+        <div class="stat-icon" style="background: #e6a23c22; color: #e6a23c">
+          <el-icon :size="24"><Cpu /></el-icon>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value">{{ stats.cpu_usage.toFixed(1) }}%</div>
+          <div class="stat-label">CPU使用率</div>
+        </div>
+      </el-card>
+      <el-card class="stat-card" shadow="hover">
+        <div class="stat-icon" style="background: #f56c6c22; color: #f56c6c">
+          <el-icon :size="24"><Coin /></el-icon>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value">{{ stats.memory_usage.toFixed(1) }}%</div>
+          <div class="stat-label">系统内存</div>
+        </div>
+      </el-card>
+      <el-card class="stat-card" shadow="hover">
+        <div class="stat-icon" style="background: #90939922; color: #909399">
+          <el-icon :size="24"><Box /></el-icon>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value">{{ stats.app_memory }} MB</div>
+          <div class="stat-label">面板内存</div>
+        </div>
+      </el-card>
+    </div>
 
     <!-- 快捷操作 -->
     <el-card class="quick-card">
@@ -156,7 +146,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   SuccessFilled,
@@ -214,20 +204,26 @@ const loading = reactive({
   restart: false,
 })
 
+let refreshTimer: ReturnType<typeof setInterval> | null = null
+
 onMounted(() => {
   fetchNginxStatus()
   fetchDashboard()
   fetchSystemInfo()
+  // 每 10 秒轮询更新状态
+  refreshTimer = setInterval(() => {
+    fetchNginxStatus()
+    fetchDashboard()
+  }, 10000)
 })
 
-function formatMemory(kb: number): string {
-  if (kb >= 1048576) {
-    return (kb / 1048576).toFixed(1) + ' GB'
-  } else if (kb >= 1024) {
-    return (kb / 1024).toFixed(0) + ' MB'
+onUnmounted(() => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = null
   }
-  return kb + ' KB'
-}
+})
+
 
 async function fetchNginxStatus() {
   try {
@@ -355,8 +351,17 @@ async function testConfig() {
 </script>
 
 <style scoped>
+.dashboard {
+  padding: 20px;
+  background: #f5f7fa;
+  min-height: 100vh;
+}
+
 .status-card {
   margin-bottom: 20px;
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
 .status-content {
@@ -372,103 +377,278 @@ async function testConfig() {
 }
 
 .status-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.3s ease;
 }
 
 .status-icon.running {
-  background: #67c23a22;
+  background: linear-gradient(135deg, #67c23a22 0%, #67c23a11 100%);
   color: #67c23a;
+  box-shadow: 0 4px 12px rgba(103, 194, 58, 0.2);
 }
 
 .status-icon.stopped {
-  background: #f56c6c22;
+  background: linear-gradient(135deg, #f56c6c22 0%, #f56c6c11 100%);
   color: #f56c6c;
+  box-shadow: 0 4px 12px rgba(245, 108, 108, 0.2);
 }
 
 .status-info h2 {
-  margin: 0 0 4px 0;
-  font-size: 18px;
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #303133;
 }
 
 .status-meta {
   display: flex;
-  gap: 16px;
+  gap: 20px;
   color: #909399;
-  font-size: 13px;
+  font-size: 14px;
+}
+
+.status-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .status-actions {
   display: flex;
-  gap: 8px;
+  gap: 12px;
 }
 
-.stats-row {
+.status-actions .el-button {
+  border-radius: 8px;
+  font-weight: 500;
+  padding: 10px 20px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
   margin-bottom: 20px;
 }
 
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .stat-card {
-  margin-bottom: 12px;
+  border-radius: 12px;
+  border: none;
+  transition: all 0.3s ease;
+  cursor: default;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 .stat-card :deep(.el-card__body) {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px;
+  gap: 16px;
+  padding: 20px;
 }
 
 .stat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .stat-value {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 700;
+  color: #303133;
+  line-height: 1.2;
+  margin-bottom: 4px;
 }
 
 .stat-label {
-  font-size: 12px;
+  font-size: 13px;
   color: #909399;
 }
 
 .quick-card {
   margin-bottom: 20px;
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.quick-card :deep(.el-card__header) {
+  padding: 16px 20px;
+  border-bottom: 1px solid #ebeef5;
+  font-weight: 600;
+  color: #303133;
 }
 
 .quick-btn {
   width: 100%;
-  height: 80px;
+  height: 90px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   font-size: 14px;
+  font-weight: 500;
+  border-radius: 12px;
+  border: 1px solid #e4e7ed;
+  background: #fff;
+  transition: all 0.3s ease;
+  color: #606266;
+}
+
+.quick-btn:hover {
+  border-color: #409eff;
+  color: #409eff;
+  background: #ecf5ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
+}
+
+.quick-btn .el-icon {
+  transition: transform 0.3s ease;
+}
+
+.quick-btn:hover .el-icon {
+  transform: scale(1.1);
 }
 
 .system-card {
   margin-bottom: 20px;
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
+.system-card :deep(.el-card__header) {
+  padding: 16px 20px;
+  border-bottom: 1px solid #ebeef5;
+  font-weight: 600;
+  color: #303133;
+}
+
+.system-card :deep(.el-descriptions) {
+  border-radius: 8px;
+}
+
+.system-card :deep(.el-descriptions__label) {
+  font-weight: 500;
+  color: #606266;
+  background: #fafafa;
+}
+
+.system-card :deep(.el-descriptions__content) {
+  color: #303133;
+}
+
+/* 响应式设计 */
 @media (max-width: 768px) {
+  .dashboard {
+    padding: 12px;
+  }
+
   .status-content {
     flex-direction: column;
-    gap: 16px;
+    gap: 20px;
+    align-items: flex-start;
   }
 
   .status-actions {
+    width: 100%;
     flex-wrap: wrap;
-    justify-content: center;
+  }
+
+  .status-actions .el-button {
+    flex: 1;
+    min-width: calc(50% - 6px);
+  }
+
+  .stat-card :deep(.el-card__body) {
+    padding: 16px;
+  }
+
+  .stat-value {
+    font-size: 16px;
+  }
+
+  .quick-btn {
+    height: 72px;
   }
 }
+
+@media (max-width: 480px) {
+  .status-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .status-info h2 {
+    font-size: 16px;
+  }
+
+  .status-meta {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.status-card,
+.stat-card,
+.quick-card,
+.system-card {
+  animation: fadeIn 0.4s ease-out;
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.05s; }
+.stat-card:nth-child(2) { animation-delay: 0.1s; }
+.stat-card:nth-child(3) { animation-delay: 0.15s; }
+.stat-card:nth-child(4) { animation-delay: 0.2s; }
+.stat-card:nth-child(5) { animation-delay: 0.25s; }
 </style>
