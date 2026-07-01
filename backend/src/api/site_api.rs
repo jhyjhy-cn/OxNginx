@@ -324,24 +324,51 @@ pub async fn deploy_ssl(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Json<serde_json::Value> {
-    // 获取站点信息
     let site = match site_service::get_site(&state, id).await {
         Ok(Some(s)) => s,
         Ok(None) => return Json(json!(ApiResponse::<()>::error("站点不存在"))),
         Err(e) => return Json(json!(ApiResponse::<()>::error(format!("获取站点失败: {}", e)))),
     };
 
+    let config = state.get_config();
+
+    // 停止nginx（释放80端口给standalone模式）
+    let _ = crate::nginx::stop_nginx(&config.nginx.bin).await;
+
     // 申请证书
     let cert = match crate::service::cert_service::apply_cert(&state, &site.server_name).await {
         Ok(c) => c,
-        Err(e) => return Json(json!(ApiResponse::<()>::error(format!("证书申请失败: {}", e)))),
+        Err(e) => {
+            let _ = crate::nginx::start_nginx(&config.nginx.bin).await;
+            return Json(json!(ApiResponse::<()>::error(format!("证书申请失败: {}", e))));
+        }
     };
 
-    // 先取出要用的字段，避免 move 后再借用
+    // 重启nginx
+    let _ = crate::nginx::start_nginx(&config.nginx.bin).await;
+
     let cert_domain = cert.domain.clone();
-    let cert_path = cert.cert_path.clone();
-    let key_path = cert.key_path.clone();
+    let cert_src = cert.cert_path.clone().unwrap_or_default();
+    let key_src = cert.key_path.clone().unwrap_or_default();
     let expire_time = cert.expire_time.clone();
+
+    // 将证书复制到nginx可读的位置
+    let ssl_dir = format!("/etc/nginx/ssl/{}", cert_domain);
+    let final_cert = format!("{}/fullchain.cer", ssl_dir);
+    let final_key = format!("{}/private.key", ssl_dir);
+    let copy = format!(
+        "sudo mkdir -p {} && sudo cp {} {} && sudo cp {} {} && sudo chmod 644 {} && sudo chmod 640 {}",
+        ssl_dir, cert_src, final_cert, key_src, final_key, final_cert, final_key
+    );
+    let copied = tokio::process::Command::new("sh")
+        .args(["-c", &copy])
+        .output()
+        .await
+        .map(|o| o.status.success())
+        .unwrap_or(false);
+
+    let cert_path = if copied { final_cert } else { cert_src };
+    let key_path = if copied { final_key } else { key_src };
 
     // 更新站点SSL配置
     let update_req = crate::dto::UpdateSiteRequest {
@@ -349,8 +376,8 @@ pub async fn deploy_ssl(
         server_name: None,
         listen: None,
         ssl: Some(true),
-        certificate_path: cert_path.clone(),
-        key_path: key_path.clone(),
+        certificate_path: Some(cert_path.to_string()),
+        key_path: Some(key_path.to_string()),
         proxy_pass: None,
         root_path: None,
         status: None,
@@ -388,6 +415,8 @@ pub async fn deploy_ssl(
         "expire_time": expire_time,
     }))))
 }
+
+
 
 /// 批量删除站点
 pub async fn batch_delete(

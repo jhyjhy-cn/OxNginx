@@ -5,23 +5,22 @@ use crate::model::{Site, Upstream, UpstreamServer};
 pub fn generate_site_config(site: &Site) -> String {
     let mut config = String::new();
 
-    // server块开始
-    config.push_str("server {\n");
-
-    // listen
     if site.ssl == 1 {
-        config.push_str(&format!("    listen {} ssl;\n", site.listen));
-        config.push_str("    listen [::]:443 ssl;\n");
-    } else {
+        // ========== 80 端口：HTTP 强制跳转到 HTTPS ==========
+        config.push_str("server {\n");
         config.push_str(&format!("    listen {};\n", site.listen));
         config.push_str(&format!("    listen [::]:{};\n", site.listen));
-    }
+        config.push_str(&format!("    server_name {};\n", site.server_name));
+        config.push_str(&format!(
+            "    return 301 https://$server_name$request_uri;\n"
+        ));
+        config.push_str("}\n\n");
 
-    // server_name
-    config.push_str(&format!("    server_name {};\n", site.server_name));
-
-    // SSL配置
-    if site.ssl == 1 {
+        // ========== 443 端口：SSL 终止 ==========
+        config.push_str("server {\n");
+        config.push_str("    listen 443 ssl;\n");
+        config.push_str("    listen [::]:443 ssl;\n");
+        config.push_str(&format!("    server_name {};\n", site.server_name));
         if let Some(cert_path) = &site.certificate_path {
             config.push_str(&format!("    ssl_certificate {};\n", cert_path));
         }
@@ -30,36 +29,59 @@ pub fn generate_site_config(site: &Site) -> String {
         }
         config.push_str("    ssl_protocols TLSv1.2 TLSv1.3;\n");
         config.push_str("    ssl_ciphers HIGH:!aNULL:!MD5;\n");
+        if let Some(proxy_pass) = &site.proxy_pass {
+            config.push_str("\n    location / {\n");
+            config.push_str(&format!("        proxy_pass {};\n", proxy_pass));
+            config.push_str("        proxy_set_header Host $host;\n");
+            config.push_str("        proxy_set_header X-Real-IP $remote_addr;\n");
+            config.push_str("        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n");
+            config.push_str("        proxy_set_header X-Forwarded-Proto $scheme;\n");
+            config.push_str("        proxy_http_version 1.1;\n");
+            config.push_str("        proxy_set_header Upgrade $http_upgrade;\n");
+            config.push_str("        proxy_set_header Connection \"upgrade\";\n");
+            config.push_str("    }\n");
+        } else if let Some(root_path) = &site.root_path {
+            let root_path = root_path.replace('\\', "/");
+            config.push_str(&format!("\n    root {};\n", root_path));
+            config.push_str("    index index.html index.htm;\n");
+            config.push_str("\n    location = /index.html {\n");
+            config.push_str("        expires -1;\n");
+            config.push_str("    }\n");
+            config.push_str("\n    location / {\n");
+            config.push_str("        try_files $uri $uri/ =404;\n");
+            config.push_str("    }\n");
+        }
+        config.push_str("}\n");
+    } else {
+        // 非 SSL：普通 HTTP server
+        config.push_str("server {\n");
+        config.push_str(&format!("    listen {};\n", site.listen));
+        config.push_str(&format!("    listen [::]:{};\n", site.listen));
+        config.push_str(&format!("    server_name {};\n", site.server_name));
+        if let Some(proxy_pass) = &site.proxy_pass {
+            config.push_str("\n    location / {\n");
+            config.push_str(&format!("        proxy_pass {};\n", proxy_pass));
+            config.push_str("        proxy_set_header Host $host;\n");
+            config.push_str("        proxy_set_header X-Real-IP $remote_addr;\n");
+            config.push_str("        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n");
+            config.push_str("        proxy_set_header X-Forwarded-Proto $scheme;\n");
+            config.push_str("        proxy_http_version 1.1;\n");
+            config.push_str("        proxy_set_header Upgrade $http_upgrade;\n");
+            config.push_str("        proxy_set_header Connection \"upgrade\";\n");
+            config.push_str("    }\n");
+        } else if let Some(root_path) = &site.root_path {
+            let root_path = root_path.replace('\\', "/");
+            config.push_str(&format!("\n    root {};\n", root_path));
+            config.push_str("    index index.html index.htm;\n");
+            config.push_str("\n    location = /index.html {\n");
+            config.push_str("        expires -1;\n");
+            config.push_str("    }\n");
+            config.push_str("\n    location / {\n");
+            config.push_str("        try_files $uri $uri/ =404;\n");
+            config.push_str("    }\n");
+        }
+        config.push_str("}\n");
     }
-
-    // 反向代理或静态文件
-    if let Some(proxy_pass) = &site.proxy_pass {
-        config.push_str("\n    location / {\n");
-        config.push_str(&format!("        proxy_pass {};\n", proxy_pass));
-        config.push_str("        proxy_set_header Host $host;\n");
-        config.push_str("        proxy_set_header X-Real-IP $remote_addr;\n");
-        config.push_str("        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n");
-        config.push_str("        proxy_set_header X-Forwarded-Proto $scheme;\n");
-
-        // WebSocket支持
-        config.push_str("        proxy_http_version 1.1;\n");
-        config.push_str("        proxy_set_header Upgrade $http_upgrade;\n");
-        config.push_str("        proxy_set_header Connection \"upgrade\";\n");
-        config.push_str("    }\n");
-    } else if let Some(root_path) = &site.root_path {
-        // 统一使用正斜杠，避免 Windows 反斜杠导致 nginx 解析失败
-        let root_path = root_path.replace('\\', "/");
-        config.push_str(&format!("\n    root {};\n", root_path));
-        config.push_str("    index index.html index.htm;\n");
-        config.push_str("\n    location = /index.html {\n");
-        config.push_str("        expires -1;\n");
-        config.push_str("    }\n");
-        config.push_str("\n    location / {\n");
-        config.push_str("        try_files $uri $uri/ =404;\n");
-        config.push_str("    }\n");
-    }
-
-    config.push_str("}\n");
 
     config
 }
@@ -445,18 +467,14 @@ pub async fn start_nginx(nginx_bin: &str) -> anyhow::Result<bool> {
 pub async fn stop_nginx(nginx_bin: &str) -> anyhow::Result<bool> {
     use tokio::process::Command;
 
-    #[cfg(target_os = "linux")]
-    {
-        tracing::info!("停止 Nginx (systemctl)");
+    if cfg!(target_os = "linux") {
+        tracing::info!("停止 Nginx (killall)");
         let output = Command::new("sh")
-            .args(["-c", "sudo systemctl stop nginx"])
+            .args(["-c", "sudo killall nginx"])
             .output()
             .await?;
         Ok(output.status.success())
-    }
-
-    #[cfg(target_os = "windows")]
-    {
+    } else {
         let nginx_dir = get_nginx_dir(nginx_bin)
             .ok_or_else(|| anyhow::anyhow!("无法获取 nginx 安装目录"))?;
         tracing::info!("停止 Nginx: bin={}", nginx_bin);
