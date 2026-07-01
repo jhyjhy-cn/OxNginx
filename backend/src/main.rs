@@ -17,7 +17,7 @@ use axum::{
     Router,
 };
 use tower_http::cors::CorsLayer;
-use tower_http::services::ServeDir;
+use tower_http::services::{ServeDir, ServeFile};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::config::AppConfig;
@@ -160,7 +160,9 @@ async fn main() -> anyhow::Result<()> {
         .layer(from_fn_with_state(state.clone(), middleware::auth_middleware));
 
     // 静态文件服务（前端）
-    let static_service = ServeDir::new("static").not_found_service(ServeDir::new("static"));
+    // SPA 路由：所有未匹配的路径都返回 index.html，由 Vue Router 处理前端路由
+    let static_service = ServeDir::new("static")
+        .not_found_service(ServeFile::new("static/index.html"));
 
     // 构建路由
     let app = public_routes

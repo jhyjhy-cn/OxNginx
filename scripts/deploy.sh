@@ -64,12 +64,10 @@ else
     error "后端二进制文件不存在，请检查 tar 包完整性"
 fi
 
-# 查找前端静态文件
-STATIC_DIR=""
-if [ -d "$PROJECT_DIR/static" ] && [ -f "$PROJECT_DIR/static/index.html" ]; then
-    STATIC_DIR="$PROJECT_DIR/static"
-elif [ -d "$PROJECT_DIR/backend/static" ]; then
-    STATIC_DIR="$PROJECT_DIR/backend/static"
+# 查找前端静态文件（static/ 目录下有 index.html 和 assets/）
+STATIC_ROOT=""
+if [ -f "$PROJECT_DIR/static/index.html" ] && [ -d "$PROJECT_DIR/static/assets" ]; then
+    STATIC_ROOT="$PROJECT_DIR/static"
 else
     error "前端静态文件不存在，请检查 tar 包完整性"
 fi
@@ -77,7 +75,8 @@ fi
 # 复制文件
 cp "$BINARY_PATH" "$INSTALL_DIR/"
 chmod +x "$INSTALL_DIR/$APP_NAME"
-cp -r "$STATIC_DIR" "$INSTALL_DIR/static"
+# static/ 整个目录（包含 index.html 和 assets/）复制到安装目录
+cp -r "$STATIC_ROOT" "$INSTALL_DIR/static"
 
 # ============ 创建配置文件 ============
 if [ ! -f "$CONFIG_DIR/config.toml" ]; then
