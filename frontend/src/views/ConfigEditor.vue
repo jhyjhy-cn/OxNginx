@@ -94,7 +94,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import * as monaco from 'monaco-editor'
+import { monaco } from '@/utils/monaco-env'
 import api from '@/api'
 
 interface ConfigFile {

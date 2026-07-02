@@ -80,14 +80,14 @@ const router = createRouter({
 })
 
 // 路由守卫
-router.beforeEach((to, _from, next) => {
+router.beforeEach((to) => {
   const authStore = useAuthStore()
 
+  // ponytail: vue-router 5 推荐返回值代替 next(callback)，消除 deprecation 警告
   if (to.path !== '/login' && !authStore.isAuthenticated) {
-    next('/login')
-  } else {
-    next()
+    return { path: '/login' }
   }
+  return true
 })
 
 export default router
