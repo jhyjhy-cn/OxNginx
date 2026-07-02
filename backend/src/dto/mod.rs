@@ -40,6 +40,13 @@ pub struct LoginResponse {
     pub username: String,
 }
 
+/// 修改密码请求
+#[derive(Debug, Deserialize)]
+pub struct ChangePasswordRequest {
+    pub old_password: String,
+    pub new_password: String,
+}
+
 /// 创建站点请求
 #[derive(Debug, Deserialize)]
 pub struct CreateSiteRequest {

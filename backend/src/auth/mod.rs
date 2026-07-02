@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use rand::rngs::OsRng;
 
 /// JWT Claims
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String, // 用户名
     pub exp: usize,  // 过期时间
