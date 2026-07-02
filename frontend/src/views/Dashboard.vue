@@ -366,7 +366,7 @@ async function installNginx() {
   loading.install = true
   try {
     ElMessage.info('正在安装 Nginx，请稍候...')
-    const response = await api.post('/api/nginx/install')
+    const response = await api.post('/api/nginx/install', null, { timeout: 300000 })
     if (response.data.code === 0) {
       ElMessage.success('Nginx 安装成功')
       await delay(1000)

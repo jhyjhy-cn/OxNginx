@@ -93,17 +93,17 @@
         </el-form-item>
         <template v-if="form.ssl">
           <el-form-item label="证书路径">
-            <el-input v-model="form.certificate_path" placeholder="/etc/nginx/ssl/cert.pem" />
+            <el-input v-model="form.certificate_path" placeholder="/opt/oxnginx/ssl/fullchain.cer" />
           </el-form-item>
           <el-form-item label="密钥路径">
-            <el-input v-model="form.key_path" placeholder="/etc/nginx/ssl/key.pem" />
+            <el-input v-model="form.key_path" placeholder="/opt/oxnginx/ssl/private.key" />
           </el-form-item>
         </template>
         <el-form-item label="反向代理">
           <el-input v-model="form.proxy_pass" placeholder="http://127.0.0.1:8080" />
         </el-form-item>
         <el-form-item label="根目录">
-          <el-input v-model="form.root_path" placeholder="/var/www/html" />
+          <el-input v-model="form.root_path" placeholder="/opt/oxnginx/wwwroot" />
         </el-form-item>
       </el-form>
       <template #footer>

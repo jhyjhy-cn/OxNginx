@@ -7,9 +7,10 @@ use crate::AppState;
 
 /// 获取Access日志
 pub async fn access_log(
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
 ) -> Json<serde_json::Value> {
-    let log_path = "/var/log/nginx/access.log";
+    let config = state.get_config();
+    let log_path = &config.nginx.log_access;
     match read_log_tail(log_path, 100).await {
         Ok(lines) => Json(json!(ApiResponse::success(LogResponse { lines }))),
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("读取日志失败: {}", e)))),
@@ -18,9 +19,10 @@ pub async fn access_log(
 
 /// 获取Error日志
 pub async fn error_log(
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
 ) -> Json<serde_json::Value> {
-    let log_path = "/var/log/nginx/error.log";
+    let config = state.get_config();
+    let log_path = &config.nginx.log_error;
     match read_log_tail(log_path, 100).await {
         Ok(lines) => Json(json!(ApiResponse::success(LogResponse { lines }))),
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("读取日志失败: {}", e)))),

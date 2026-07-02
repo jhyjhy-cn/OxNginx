@@ -85,7 +85,7 @@ pub async fn create_site(
     // 如果未指定根目录，以站点名称自动创建
     if req.root_path.is_none() || req.root_path.as_deref() == Some("") {
         let auto_root = if cfg!(target_os = "linux") {
-            format!("/var/www/html/{}", req.name)
+            format!("{}/{}", config.nginx.default_root, req.name)
         } else {
             let nginx_dir = std::path::Path::new(&config.nginx.bin)
                 .parent()
@@ -200,18 +200,8 @@ pub async fn delete_site(
     if req.delete_files {
         if let Some(ref root_path) = site.root_path {
             if !root_path.is_empty() {
-                #[cfg(target_os = "linux")]
-                {
-                    let cmd = format!("sudo rm -rf '{}'", root_path);
-                    let _ = tokio::process::Command::new("sh")
-                        .args(["-c", &cmd])
-                        .output()
-                        .await;
-                }
-                #[cfg(target_os = "windows")]
-                {
-                    let _ = tokio::fs::remove_dir_all(root_path).await;
-                }
+                // root 用户直接删除，无需 sudo
+                let _ = tokio::fs::remove_dir_all(root_path).await;
             }
         }
     }
@@ -352,20 +342,25 @@ pub async fn deploy_ssl(
     let key_src = cert.key_path.clone().unwrap_or_default();
     let expire_time = cert.expire_time.clone();
 
-    // 将证书复制到nginx可读的位置
-    let ssl_dir = format!("/etc/nginx/ssl/{}", cert_domain);
+    // 将证书复制到 nginx 可读的位置
+    let ssl_dir = format!("{}/{}", config.nginx.ssl_dir, cert_domain);
     let final_cert = format!("{}/fullchain.cer", ssl_dir);
     let final_key = format!("{}/private.key", ssl_dir);
-    let copy = format!(
-        "sudo mkdir -p {} && sudo cp {} {} && sudo cp {} {} && sudo chmod 644 {} && sudo chmod 640 {}",
-        ssl_dir, cert_src, final_cert, key_src, final_key, final_cert, final_key
-    );
-    let copied = tokio::process::Command::new("sh")
-        .args(["-c", &copy])
-        .output()
-        .await
-        .map(|o| o.status.success())
-        .unwrap_or(false);
+
+    // root 用户直接操作，无需 sudo
+    let _ = tokio::fs::create_dir_all(&ssl_dir).await;
+    let copied = tokio::fs::copy(&cert_src, &final_cert).await.is_ok()
+        && tokio::fs::copy(&key_src, &final_key).await.is_ok();
+
+    // 设置权限
+    if copied {
+        #[cfg(target_os = "linux")]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let _ = std::fs::set_permissions(&final_cert, std::fs::Permissions::from_mode(0o644));
+            let _ = std::fs::set_permissions(&final_key, std::fs::Permissions::from_mode(0o640));
+        }
+    }
 
     let cert_path = if copied { final_cert } else { cert_src };
     let key_path = if copied { final_key } else { key_src };

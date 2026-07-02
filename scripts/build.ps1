@@ -37,6 +37,14 @@ New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
 New-Item -ItemType Directory -Force -Path "$OutputDir/bin" | Out-Null
 New-Item -ItemType Directory -Force -Path "$OutputDir/static" | Out-Null
 New-Item -ItemType Directory -Force -Path "$OutputDir/scripts" | Out-Null
+New-Item -ItemType Directory -Force -Path "$OutputDir/libs" | Out-Null
+
+# 复制 libs 目录（nginx 源码包等）
+$LibsDir = Join-Path $RootDir "libs"
+if (Test-Path $LibsDir) {
+    Write-Info "复制 libs..."
+    Copy-Item -Recurse "$LibsDir\*" "$OutputDir\libs\"
+}
 
 # 构建前端静态文件（先构建前端，失败则无需编译后端）
 Write-Info "构建前端..."

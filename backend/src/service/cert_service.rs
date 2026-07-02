@@ -5,13 +5,7 @@ use std::process::Command;
 
 /// 从证书文件读取过期时间
 pub async fn get_cert_expire_info(cert_path: &str) -> Option<NaiveDateTime> {
-    #[cfg(target_os = "linux")]
-    let output = Command::new("sudo")
-        .arg("openssl")
-        .args(["x509", "-in", cert_path, "-noout", "-enddate"])
-        .output()
-        .ok()?;
-    #[cfg(target_os = "windows")]
+    // root 用户可直接调用 openssl
     let output = Command::new("openssl")
         .args(["x509", "-in", cert_path, "-noout", "-enddate"])
         .output()
@@ -47,14 +41,7 @@ pub async fn apply_cert(
     let config = state.get_config();
     let acme_bin = &config.acme.bin;
 
-    // 调用acme.sh申请证书（Linux需要sudo提权才能绑定80端口）
-    #[cfg(target_os = "linux")]
-    let output = Command::new("sudo")
-        .arg(acme_bin)
-        .args(["--issue", "-d", domain, "--standalone", "--force"])
-        .output()
-        .await?;
-    #[cfg(target_os = "windows")]
+    // 调用acme.sh申请证书（root 用户直接调用）
     let output = Command::new(acme_bin)
         .args(["--issue", "-d", domain, "--standalone", "--force"])
         .output()
@@ -66,7 +53,7 @@ pub async fn apply_cert(
     }
 
     // 获取证书路径（acme.sh 默认将 cert 保存在 _ecc 子目录）
-    let cert_dir = format!("/root/.acme.sh/{}_ecc", domain);
+    let cert_dir = format!("{}/{}_ecc", config.acme.home, domain);
     let cert_path = format!("{}/fullchain.cer", cert_dir);
     let key_path = format!("{}/{}.key", cert_dir, domain);
 
@@ -123,13 +110,6 @@ pub async fn renew_cert(state: &AppState, id: i64) -> anyhow::Result<bool> {
     };
 
     let config = state.get_config();
-    #[cfg(target_os = "linux")]
-    let output = Command::new("sudo")
-        .arg(&config.acme.bin)
-        .args(["--renew", "-d", &cert.domain, "--force"])
-        .output()
-        .await?;
-    #[cfg(target_os = "windows")]
     let output = Command::new(&config.acme.bin)
         .args(["--renew", "-d", &cert.domain, "--force"])
         .output()

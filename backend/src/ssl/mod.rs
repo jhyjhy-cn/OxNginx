@@ -5,6 +5,7 @@ use tokio::process::Command;
 pub async fn install_cert(
     acme_bin: &str,
     domain: &str,
+    ssl_dir: &str,
 ) -> anyhow::Result<bool> {
     let output = Command::new(acme_bin)
         .args([
@@ -12,9 +13,9 @@ pub async fn install_cert(
             "-d",
             domain,
             "--key-file",
-            &format!("/etc/nginx/ssl/{}.key", domain),
+            &format!("{}/{}.key", ssl_dir, domain),
             "--fullchain-file",
-            &format!("/etc/nginx/ssl/{}.pem", domain),
+            &format!("{}/{}.pem", ssl_dir, domain),
             "--reloadcmd",
             "systemctl reload nginx",
         ])

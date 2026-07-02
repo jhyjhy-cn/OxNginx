@@ -114,7 +114,7 @@ pub async fn install(
             .map(|p| PathBuf::from(p).join("nginx").to_string_lossy().to_string())
             .unwrap_or_else(|_| "C:\\nginx".to_string())
     } else {
-        "/opt/nginx".to_string()
+        "/opt/oxnginx/server/nginx".to_string()
     };
 
     tracing::info!("Nginx 安装目录: {}", install_dir);

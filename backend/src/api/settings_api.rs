@@ -25,11 +25,16 @@ pub struct NginxSettings {
     pub bin: String,
     pub config: String,
     pub sites_enabled: String,
+    pub ssl_dir: String,
+    pub default_root: String,
+    pub log_access: String,
+    pub log_error: String,
 }
 
 #[derive(Debug, serde::Serialize)]
 pub struct AcmeSettings {
     pub bin: String,
+    pub home: String,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -48,7 +53,12 @@ pub struct UpdateSettingsRequest {
     pub nginx_bin: Option<String>,
     pub nginx_config: Option<String>,
     pub nginx_sites_enabled: Option<String>,
+    pub nginx_ssl_dir: Option<String>,
+    pub nginx_default_root: Option<String>,
+    pub nginx_log_access: Option<String>,
+    pub nginx_log_error: Option<String>,
     pub acme_bin: Option<String>,
+    pub acme_home: Option<String>,
 }
 
 /// 获取系统设置
@@ -69,9 +79,14 @@ pub async fn get_settings(
             bin: config.nginx.bin.clone(),
             config: config.nginx.config.clone(),
             sites_enabled: config.nginx.sites_enabled.clone(),
+            ssl_dir: config.nginx.ssl_dir.clone(),
+            default_root: config.nginx.default_root.clone(),
+            log_access: config.nginx.log_access.clone(),
+            log_error: config.nginx.log_error.clone(),
         },
         acme: AcmeSettings {
             bin: config.acme.bin.clone(),
+            home: config.acme.home.clone(),
         },
         system: SystemInfo {
             os: std::env::consts::OS.to_string(),
@@ -132,6 +147,46 @@ pub async fn update_settings(
         if let Some(acme) = config.get_mut("acme") {
             if let Some(table) = acme.as_table_mut() {
                 table.insert("bin".to_string(), toml::Value::String(acme_bin.clone()));
+            }
+        }
+    }
+
+    if let Some(ssl_dir) = &req.nginx_ssl_dir {
+        if let Some(nginx) = config.get_mut("nginx") {
+            if let Some(table) = nginx.as_table_mut() {
+                table.insert("ssl_dir".to_string(), toml::Value::String(ssl_dir.clone()));
+            }
+        }
+    }
+
+    if let Some(default_root) = &req.nginx_default_root {
+        if let Some(nginx) = config.get_mut("nginx") {
+            if let Some(table) = nginx.as_table_mut() {
+                table.insert("default_root".to_string(), toml::Value::String(default_root.clone()));
+            }
+        }
+    }
+
+    if let Some(log_access) = &req.nginx_log_access {
+        if let Some(nginx) = config.get_mut("nginx") {
+            if let Some(table) = nginx.as_table_mut() {
+                table.insert("log_access".to_string(), toml::Value::String(log_access.clone()));
+            }
+        }
+    }
+
+    if let Some(log_error) = &req.nginx_log_error {
+        if let Some(nginx) = config.get_mut("nginx") {
+            if let Some(table) = nginx.as_table_mut() {
+                table.insert("log_error".to_string(), toml::Value::String(log_error.clone()));
+            }
+        }
+    }
+
+    if let Some(acme_home) = &req.acme_home {
+        if let Some(acme) = config.get_mut("acme") {
+            if let Some(table) = acme.as_table_mut() {
+                table.insert("home".to_string(), toml::Value::String(acme_home.clone()));
             }
         }
     }

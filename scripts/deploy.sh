@@ -6,11 +6,14 @@ set -e
 
 # ============ 配置区域 ============
 APP_NAME="ox-nginx"
-INSTALL_DIR="/opt/ox-nginx"
-CONFIG_DIR="/opt/ox-nginx/configs"
-DATA_DIR="/opt/ox-nginx/datas"
-LOG_DIR="/opt/ox-nginx/logs"
-SERVICE_USER="ox-nginx"
+BASE_DIR="/opt/oxnginx"
+INSTALL_DIR="$BASE_DIR/server/panel"
+CONFIG_DIR="$INSTALL_DIR/configs"
+DATA_DIR="$INSTALL_DIR/datas"
+LOG_DIR="$BASE_DIR/wwwlogs"
+WWWROOT_DIR="$BASE_DIR/wwwroot"
+SSL_DIR="$BASE_DIR/ssl"
+BACKUP_DIR="$BASE_DIR/backup"
 
 # ============ 颜色输出 ============
 RED='\033[0;31m'
@@ -27,26 +30,16 @@ if [ "$EUID" -ne 0 ]; then
     error "请使用 root 权限运行此脚本: sudo bash deploy.sh"
 fi
 
-# ============ 安装依赖 ============
-info "安装系统依赖..."
-# 不再需要 nginx，Rust 后端直接托管前端
+# ============ 创建目录结构 ============
+info "创建目录结构..."
 
-# ============ 创建用户和目录 ============
-info "创建系统用户和目录..."
-
-# 创建用户（如果不存在）
-if ! id "$SERVICE_USER" &>/dev/null; then
-    useradd -r -s /bin/false -d "$INSTALL_DIR" "$SERVICE_USER" 2>/dev/null || true
-fi
-
-# 加入 adm 组（读取 nginx 日志需要）
-usermod -aG adm "$SERVICE_USER" 2>/dev/null || true
-
-# 创建目录结构
 mkdir -p "$INSTALL_DIR"
 mkdir -p "$CONFIG_DIR"
 mkdir -p "$DATA_DIR"
 mkdir -p "$LOG_DIR"
+mkdir -p "$WWWROOT_DIR"
+mkdir -p "$SSL_DIR"
+mkdir -p "$BACKUP_DIR"
 
 # ============ 复制文件 ============
 info "部署应用文件..."
@@ -81,6 +74,13 @@ chmod +x "$INSTALL_DIR/$APP_NAME"
 # static/ 整个目录（包含 index.html 和 assets/）复制到安装目录
 cp -r "$STATIC_ROOT" "$INSTALL_DIR/static"
 
+# 复制 nginx 源码包（用于一键安装）
+if [ -d "$PROJECT_DIR/libs" ]; then
+    mkdir -p "$BASE_DIR/server/nginx-src"
+    cp -r "$PROJECT_DIR/libs/"* "$BASE_DIR/server/nginx-src/"
+    info "nginx 源码包已就绪"
+fi
+
 # ============ 创建配置文件 ============
 if [ ! -f "$CONFIG_DIR/config.toml" ]; then
     info "生成配置文件..."
@@ -97,9 +97,14 @@ path = "$DATA_DIR/data.db"
 bin = "/usr/sbin/nginx"
 config = "/etc/nginx/nginx.conf"
 sites_enabled = "/etc/nginx/conf.d"
+ssl_dir = "$SSL_DIR"
+default_root = "$WWWROOT_DIR"
+log_access = "$LOG_DIR/access.log"
+log_error = "$LOG_DIR/error.log"
 
 [acme]
 bin = "/root/.acme.sh/acme.sh"
+home = "/root/.acme.sh"
 
 [auth]
 jwt_secret = "$JWT_SECRET"
@@ -113,12 +118,6 @@ fi
 # ============ 创建 systemd 服务 ============
 info "创建系统服务..."
 
-# 允许 ox-nginx 用户无密码执行 Nginx 安装（apt-get/yum/dnf）
-cat > /etc/sudoers.d/$APP_NAME << EOF
-$APP_NAME ALL=(ALL) NOPASSWD: /usr/sbin/nginx *, /usr/bin/apt-get install *, /usr/bin/yum install *, /usr/bin/dnf install *, /usr/bin/systemctl start nginx, /usr/bin/systemctl stop nginx, /usr/bin/systemctl restart nginx, /usr/bin/systemctl reload nginx, /usr/bin/systemctl enable nginx, /usr/bin/mkdir *, /usr/bin/mv *, /usr/bin/rm *, /usr/bin/killall *, /root/.acme.sh/acme.sh *, /bin/cp *, /usr/bin/cp *, /bin/chmod *, /usr/bin/chmod *, /bin/ls *, /usr/bin/ls *
-EOF
-chmod 440 /etc/sudoers.d/$APP_NAME
-
 cat > /etc/systemd/system/$APP_NAME.service << EOF
 [Unit]
 Description=OxNginx - Nginx 可视化管理面板
@@ -127,8 +126,8 @@ Wants=nginx.service
 
 [Service]
 Type=simple
-User=$SERVICE_USER
-Group=$SERVICE_USER
+User=root
+Group=root
 WorkingDirectory=$INSTALL_DIR
 ExecStart=$INSTALL_DIR/$APP_NAME
 Environment=RUST_LOG=info
@@ -154,6 +153,7 @@ cat > /usr/local/bin/on << 'ONSCRIPT'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
+RED='\033[0;31m'
 NC='\033[0m'
 
 show_menu() {
@@ -216,7 +216,7 @@ show_logs() {
 
 show_info() {
     IP=$(hostname -I | awk '{print $1}')
-    CONFIG_FILE="/opt/ox-nginx/configs/config.toml"
+    CONFIG_FILE="/opt/oxnginx/server/panel/configs/config.toml"
     JWT_SECRET="未知"
     if [ -f "$CONFIG_FILE" ]; then
         JWT_SECRET=$(grep 'jwt_secret' "$CONFIG_FILE" | cut -d'"' -f2)
@@ -228,10 +228,12 @@ show_info() {
     echo -e "${CYAN}╠══════════════════════════════════════╣${NC}"
     echo -e "${CYAN}║${NC} 版本:     v1.0.0                     ${CYAN}║${NC}"
     echo -e "${CYAN}║${NC} 访问地址: http://${IP}:9000          ${CYAN}║${NC}"
-    echo -e "${CYAN}║${NC} 配置目录: /opt/ox-nginx/configs      ${CYAN}║${NC}"
-    echo -e "${CYAN}║${NC} 数据目录: /opt/ox-nginx/datas        ${CYAN}║${NC}"
-    echo -e "${CYAN}║${NC} 日志目录: /opt/ox-nginx/logs         ${CYAN}║${NC}"
-    echo -e "${CYAN}║${NC} 前端目录: /opt/ox-nginx/static       ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC} 程序目录: /opt/oxnginx/server/panel  ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC} 配置目录: /opt/oxnginx/server/panel/configs ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC} 网站目录: /opt/oxnginx/wwwroot       ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC} 日志目录: /opt/oxnginx/wwwlogs       ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC} 证书目录: /opt/oxnginx/ssl           ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC} 备份目录: /opt/oxnginx/backup        ${CYAN}║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════╝${NC}"
     echo ""
     read -p "按 Enter 返回菜单..."
@@ -243,7 +245,7 @@ reset_password() {
     read -p "确定要重置密码吗？(y/N): " confirm
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
         # 删除数据库，重启服务后会自动重新初始化
-        rm -f /opt/ox-nginx/datas/data.db
+        rm -f /opt/oxnginx/server/panel/datas/data.db
         systemctl restart ox-nginx
         echo -e "${GREEN}✅ 密码已重置，请重新访问面板进行初始化设置${NC}"
     else
@@ -259,6 +261,8 @@ uninstall() {
     echo -e "${RED}   这将删除：${NC}"
     echo -e "${RED}   - 所有程序文件${NC}"
     echo -e "${RED}   - 所有配置和数据${NC}"
+    echo -e "${RED}   - 所有网站文件${NC}"
+    echo -e "${RED}   - 所有 SSL 证书${NC}"
     echo -e "${RED}   - systemd 服务${NC}"
     echo -e "${RED}   - 管理命令 on${NC}"
     echo ""
@@ -275,12 +279,9 @@ uninstall() {
     systemctl disable ox-nginx 2>/dev/null || true
 
     echo -e "${YELLOW}正在删除文件...${NC}"
-    rm -rf /opt/ox-nginx
+    rm -rf /opt/oxnginx
     rm -f /etc/systemd/system/ox-nginx.service
     rm -f /usr/local/bin/on
-
-    echo -e "${YELLOW}正在删除用户...${NC}"
-    userdel ox-nginx 2>/dev/null || true
 
     systemctl daemon-reload
 
@@ -311,11 +312,6 @@ done
 ONSCRIPT
 
 chmod +x /usr/local/bin/on
-
-# ============ 设置权限 ============
-info "设置文件权限..."
-
-chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
 
 # ============ 启动服务 ============
 info "启动服务..."
