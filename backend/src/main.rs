@@ -116,6 +116,7 @@ fn main() -> anyhow::Result<()> {
             .route("/api/certificate/apply", post(api::auth_api::apply_certificate))
             .route("/api/certificate/renew", post(api::auth_api::renew_certificate))
             .route("/api/change-password", post(api::auth_api::change_password))
+            .route("/api/change-username", post(api::auth_api::change_username))
             .route("/api/nginx/test", post(api::nginx_api::test_config))
             .route("/api/nginx/reload", post(api::nginx_api::reload))
             .route("/api/nginx/status", get(api::nginx_api::status))

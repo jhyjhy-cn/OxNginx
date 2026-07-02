@@ -47,6 +47,13 @@ pub struct ChangePasswordRequest {
     pub new_password: String,
 }
 
+/// 修改账号请求
+#[derive(Debug, Deserialize)]
+pub struct ChangeUsernameRequest {
+    pub password: String,
+    pub new_username: String,
+}
+
 /// 创建站点请求
 #[derive(Debug, Deserialize)]
 pub struct CreateSiteRequest {

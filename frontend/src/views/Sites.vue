@@ -26,40 +26,47 @@
 
       <el-table :data="sites" style="width: 100%" v-loading="loading" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" />
-        <el-table-column prop="name" label="名称" width="150" />
-        <el-table-column prop="server_name" label="域名" min-width="200" />
-        <el-table-column prop="listen" label="端口" width="80" />
-        <el-table-column prop="ssl" label="SSL状态" width="160">
+        <el-table-column prop="name" label="网站名" width="150">
           <template #default="{ row }">
-            <template v-if="row.ssl">
-              <el-tag type="success" size="small">已部署</el-tag>
-              <span v-if="row.cert_expire_days" style="margin-left:6px;font-size:12px;color:#909399">
-                剩余{{ row.cert_expire_days }}天
-              </span>
-            </template>
+            <el-button type="primary" link @click="editSite(row)">{{ row.name }}</el-button>
+          </template>
+        </el-table-column>
+        <el-table-column prop="listen" label="端口" width="80" />
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <el-switch
+              :model-value="row.status === 'enabled'"
+              inline-prompt
+              active-text="启"
+              inactive-text="停"
+              @change="(val: boolean) => toggleSite(row, val)"
+            />
+          </template>
+        </el-table-column>
+        <el-table-column label="根目录" min-width="200" show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ row.root_path || row.proxy_pass || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="SSL证书" width="140">
+          <template #default="{ row }">
+            <el-tag v-if="row.ssl === 1 && row.cert_expire_days != null" :type="row.cert_expire_days > 30 ? 'success' : row.cert_expire_days > 7 ? 'warning' : 'danger'" size="small">
+              剩余 {{ row.cert_expire_days }} 天
+            </el-tag>
+            <el-tag v-else-if="row.ssl === 1" type="success" size="small">已部署</el-tag>
             <el-tag v-else type="info" size="small">未部署</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="proxy_pass" label="反向代理" min-width="150" />
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="created_at" label="创建时间" width="170">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'enabled' ? 'success' : 'danger'" size="small">
-              {{ row.status === 'enabled' ? '启用' : '禁用' }}
-            </el-tag>
+            {{ row.created_at ? new Date(row.created_at).toLocaleString() : '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="280" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button v-if="!row.ssl" size="small" type="warning" @click="deploySSL(row)">SSL部署</el-button>
-            <el-button size="small" @click="editSite(row)">编辑</el-button>
-            <el-button
-              size="small"
-              :type="row.status === 'enabled' ? 'warning' : 'success'"
-              @click="toggleSite(row)"
-            >
-              {{ row.status === 'enabled' ? '禁用' : '启用' }}
-            </el-button>
-            <el-button size="small" type="danger" @click="deleteSite(row)">删除</el-button>
+            <el-button type="primary" link @click="editSite(row)">编辑</el-button>
+            <el-button type="primary" link @click="deploySSL(row)" :loading="row._sslLoading">SSL部署</el-button>
+            <el-button type="danger" link @click="deleteSite(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -68,7 +75,7 @@
     <!-- 添加/编辑对话框 -->
     <el-dialog
       v-model="dialogVisible"
-      :title="isEdit ? '编辑站点' : '添加站点'"
+      :title="isEdit ? `站点修改[${editSiteName}] - 添加时间[${editCreatedAt}]` : '添加站点'"
       width="600px"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
@@ -141,6 +148,7 @@ interface Site {
   proxy_pass: string | null
   root_path: string | null
   status: string
+  created_at?: string
   expire_time?: string
   cert_expire_days?: number
 }
@@ -152,6 +160,8 @@ const dialogVisible = ref(false)
 const isEdit = ref(false)
 const submitting = ref(false)
 const editId = ref<number | null>(null)
+const editSiteName = ref('')
+const editCreatedAt = ref('')
 const formRef = ref<FormInstance>()
 
 const form = reactive({
@@ -205,6 +215,8 @@ function showAddDialog() {
 function editSite(site: Site) {
   isEdit.value = true
   editId.value = site.id
+  editSiteName.value = site.name
+  editCreatedAt.value = site.created_at ? new Date(site.created_at).toLocaleString() : '-'
   form.name = site.name
   form.server_name = site.server_name
   form.listen = site.listen
@@ -261,11 +273,13 @@ async function submitForm() {
   }
 }
 
-async function toggleSite(site: Site) {
-  const newStatus = site.status === 'enabled' ? 'disabled' : 'enabled'
+async function toggleSite(site: Site, enable?: boolean) {
+  const newStatus = enable !== undefined
+    ? (enable ? 'enabled' : 'disabled')
+    : (site.status === 'enabled' ? 'disabled' : 'enabled')
   try {
     await api.put(`/api/sites/${site.id}`, { status: newStatus })
-    ElMessage.success('操作成功')
+    ElMessage.success(newStatus === 'enabled' ? '已启用' : '已停用')
     fetchSites()
   } catch (error: any) {
     ElMessage.error(error.response?.data?.message || '操作失败')

@@ -2,7 +2,7 @@ use axum::{extract::State, http::header, Json};
 use serde_json::json;
 
 use crate::auth;
-use crate::dto::{ApiResponse, ChangePasswordRequest, LoginRequest, LoginResponse};
+use crate::dto::{ApiResponse, ChangePasswordRequest, ChangeUsernameRequest, LoginRequest, LoginResponse};
 use crate::AppState;
 
 /// 用户登录
@@ -107,6 +107,86 @@ pub async fn change_password(
     {
         Ok(_) => Json(json!(ApiResponse::success("密码修改成功"))),
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("修改密码失败: {}", e)))),
+    }
+}
+
+/// 修改账号（需要认证）
+pub async fn change_username(
+    State(state): State<AppState>,
+    headers: header::HeaderMap,
+    Json(req): Json<ChangeUsernameRequest>,
+) -> Json<serde_json::Value> {
+    // 从 Authorization 头提取并验证 token
+    let token = match headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "))
+    {
+        Some(t) => t,
+        None => return Json(json!(ApiResponse::<()>::error("未登录"))),
+    };
+
+    let config = state.get_config();
+    let claims = match auth::verify_token(token, &config.auth.jwt_secret) {
+        Ok(c) => c,
+        Err(_) => return Json(json!(ApiResponse::<()>::error("登录已过期"))),
+    };
+
+    // 查询当前用户
+    let user = sqlx::query_as::<_, crate::model::User>(
+        "SELECT * FROM users WHERE username = ?",
+    )
+    .bind(&claims.sub)
+    .fetch_optional(state.db.pool())
+    .await;
+
+    let user = match user {
+        Ok(Some(u)) => u,
+        Ok(None) => return Json(json!(ApiResponse::<()>::error("用户不存在"))),
+        Err(e) => return Json(json!(ApiResponse::<()>::error(format!("数据库错误: {}", e)))),
+    };
+
+    // 验证密码
+    match auth::verify_password(&req.password, &user.password) {
+        Ok(true) => {}
+        _ => return Json(json!(ApiResponse::<()>::error("密码错误"))),
+    }
+
+    // 检查新用户名是否已存在
+    let exists: bool = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM users WHERE username = ?")
+        .bind(&req.new_username)
+        .fetch_one(state.db.pool())
+        .await
+        .map(|c| c > 0)
+        .unwrap_or(false);
+
+    if exists {
+        return Json(json!(ApiResponse::<()>::error("用户名已存在")));
+    }
+
+    // 更新用户名
+    match sqlx::query("UPDATE users SET username = ? WHERE username = ?")
+        .bind(&req.new_username)
+        .bind(&claims.sub)
+        .execute(state.db.pool())
+        .await
+    {
+        Ok(_) => {
+            // 生成新 token（含新用户名）
+            let token = auth::generate_token(
+                &req.new_username,
+                &config.auth.jwt_secret,
+                config.auth.jwt_expires_hours,
+            );
+            match token {
+                Ok(token) => Json(json!(ApiResponse::success(LoginResponse {
+                    token,
+                    username: req.new_username,
+                }))),
+                Err(e) => Json(json!(ApiResponse::<()>::error(format!("生成token失败: {}", e)))),
+            }
+        }
+        Err(e) => Json(json!(ApiResponse::<()>::error(format!("修改账号失败: {}", e)))),
     }
 }
 

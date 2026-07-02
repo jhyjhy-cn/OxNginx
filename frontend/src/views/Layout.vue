@@ -81,6 +81,7 @@
             </span>
             <template #dropdown>
               <el-dropdown-menu>
+                <el-dropdown-item command="change-username">修改账号</el-dropdown-item>
                 <el-dropdown-item command="change-password">修改密码</el-dropdown-item>
                 <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
@@ -114,6 +115,25 @@
       <el-button type="primary" :loading="pwdLoading" @click="submitChangePassword">确认修改</el-button>
     </template>
   </el-dialog>
+
+  <!-- 修改账号弹窗 -->
+  <el-dialog v-model="userDialogVisible" title="修改账号" width="400px" destroy-on-close>
+    <el-form ref="userFormRef" :model="userForm" :rules="userRules" label-width="80px">
+      <el-form-item label="当前账号">
+        <el-input :model-value="authStore.username" disabled />
+      </el-form-item>
+      <el-form-item label="密码" prop="password">
+        <el-input v-model="userForm.password" type="password" show-password placeholder="请输入密码验证身份" />
+      </el-form-item>
+      <el-form-item label="新账号" prop="newUsername">
+        <el-input v-model="userForm.newUsername" placeholder="请输入新用户名" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="userDialogVisible = false">取消</el-button>
+      <el-button type="primary" :loading="userLoading" @click="submitChangeUsername">确认修改</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
@@ -134,6 +154,8 @@ function handleCommand(command: string) {
     router.push('/login')
   } else if (command === 'change-password') {
     openPwdDialog()
+  } else if (command === 'change-username') {
+    openUserDialog()
   }
 }
 
@@ -196,6 +218,51 @@ async function submitChangePassword() {
     ElMessage.error(err.response?.data?.message || '修改密码失败')
   } finally {
     pwdLoading.value = false
+  }
+}
+
+// ===== 修改账号 =====
+const userDialogVisible = ref(false)
+const userLoading = ref(false)
+const userFormRef = ref<FormInstance>()
+const userForm = reactive({
+  password: '',
+  newUsername: '',
+})
+
+const userRules: FormRules = {
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+  newUsername: [{ required: true, message: '请输入新用户名', trigger: 'blur' }],
+}
+
+function openUserDialog() {
+  userForm.password = ''
+  userForm.newUsername = ''
+  userDialogVisible.value = true
+}
+
+async function submitChangeUsername() {
+  const valid = await userFormRef.value?.validate().catch(() => false)
+  if (!valid) return
+
+  userLoading.value = true
+  try {
+    const res = await api.post('/api/change-username', {
+      password: userForm.password,
+      new_username: userForm.newUsername,
+    })
+    if (res.data.code === 0) {
+      // 更新本地 token 和用户名
+      authStore.updateUser(res.data.data.token, res.data.data.username)
+      ElMessage.success('账号修改成功')
+      userDialogVisible.value = false
+    } else {
+      ElMessage.error(res.data.message)
+    }
+  } catch (err: any) {
+    ElMessage.error(err.response?.data?.message || '修改账号失败')
+  } finally {
+    userLoading.value = false
   }
 }
 </script>
