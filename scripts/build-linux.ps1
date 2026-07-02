@@ -1,11 +1,11 @@
-﻿# OxNginx 打包脚本 (Windows PowerShell)
-# 使用方法: .\scripts\build.ps1 [-Version "1.0.0"]
-
-param(
-    [string]$Version = "1.0.0"
-)
+﻿# OxNginx Linux 打包脚本
+# 使用方法: .\scripts\build-linux.ps1
 
 $ErrorActionPreference = "Stop"
+
+# 版本号从项目根目录 VERSION 文件读取
+$RootDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
+$Version = (Get-Content (Join-Path $RootDir "VERSION") -Raw).Trim()
 
 # 颜色输出
 function Write-Info { param($msg) Write-Host "[✓] $msg" -ForegroundColor Green }
@@ -16,8 +16,7 @@ Write-Host ""
 Write-Host "🚀 OxNginx 打包开始 (v$Version)" -ForegroundColor Cyan
 Write-Host ""
 
-# 项目根目录
-$RootDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
+# 项目根目录（已在顶部定义 $RootDir）
 $BuildDir = Join-Path $RootDir "build"
 $OutputName = "ox-nginx-v$Version-linux-x86_64"
 $OutputDir = Join-Path $BuildDir $OutputName
