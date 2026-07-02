@@ -10,7 +10,8 @@ identifier = "cn.jhyjhy.oxnginx"
 beforePackagingCommand = "cargo build --release"
 outDir = "../build"
 resources = [
-  { src = "../libs/nginx-1.30.3.zip", target = "libs/nginx/nginx-1.30.3.zip" },
+  { src = "../libs/nginx/windows/nginx-1.30.3.zip", target = "libs/nginx/nginx-1.30.3.zip" },
+  { src = "../libs/nssm.exe", target = "nssm.exe" },
   { src = "static", target = "static" }
 ]
 

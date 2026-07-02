@@ -572,7 +572,7 @@ pub async fn install_nginx(install_dir: &str) -> anyhow::Result<NginxInstallResu
         // 检查预编译包是否存在
         if !std::path::Path::new(src_tar).exists() {
             return Err(anyhow::anyhow!(
-                "nginx 预编译包不存在: {}，请确保部署时包含了 libs/nginx-1.30.3-linux-x86_64.tar.gz",
+                "nginx 预编译包不存在: {}，请确保部署时包含了 libs/nginx/linux/nginx-1.30.3-linux-x86_64.tar.gz",
                 src_tar
             ));
         }

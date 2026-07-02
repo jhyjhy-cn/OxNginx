@@ -21,8 +21,8 @@ Thumbs.db
 
 # Build
 release/
-*.exe
 *.dll
 *.so
 *.dylib
+*.pdb
 build/
