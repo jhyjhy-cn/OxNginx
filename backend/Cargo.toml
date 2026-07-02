@@ -16,6 +16,8 @@ resources = [
 
 [package.metadata.packager.nsis]
 installMode = "both"
+# 默认简体中文安装界面
+languages = ["SimpChinese"]
 
 [profile.release]
 # LTO (Link Time Optimization): 跨 crate 链接时优化，减小二进制体积
