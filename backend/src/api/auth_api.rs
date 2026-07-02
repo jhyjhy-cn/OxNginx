@@ -51,6 +51,20 @@ pub async fn login(
     }
 }
 
+/// 检查是否需要初始化（公开接口，无需认证）
+pub async fn setup_status(
+    State(state): State<AppState>,
+) -> Json<serde_json::Value> {
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users")
+        .fetch_one(state.db.pool())
+        .await
+        .unwrap_or(0);
+
+    Json(json!(ApiResponse::success(serde_json::json!({
+        "need_setup": count == 0
+    }))))
+}
+
 /// 初始化设置（创建管理员账户）
 pub async fn setup(
     State(state): State<AppState>,

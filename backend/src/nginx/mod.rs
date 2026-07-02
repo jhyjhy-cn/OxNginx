@@ -148,13 +148,13 @@ pub async fn write_site_config(
     site_name: &str,
     config: &str,
 ) -> anyhow::Result<()> {
-    use tokio::process::Command;
-
     let config_path = format!("{}/{}.conf", sites_enabled, site_name);
     tracing::info!("write_site_config: config_path={}", config_path);
 
     #[cfg(target_os = "linux")]
     {
+        use tokio::process::Command;
+
         let tmp = "/tmp/.ox_nginx_conf_tmp";
         tokio::fs::write(tmp, config).await?;
         let cmd = format!("sudo mkdir -p '{}' && sudo mv '{}' '{}'", sites_enabled, tmp, config_path);
@@ -176,12 +176,12 @@ pub async fn write_site_config(
 
 /// 删除站点配置文件
 pub async fn remove_site_config(sites_enabled: &str, site_name: &str) -> anyhow::Result<()> {
-    use tokio::process::Command;
-
     let config_path = format!("{}/{}.conf", sites_enabled, site_name);
 
     #[cfg(target_os = "linux")]
     {
+        use tokio::process::Command;
+
         let cmd = format!("sudo rm -f '{}'", config_path);
         let _ = Command::new("sh").arg("-c").arg(&cmd).output().await;
     }
@@ -198,10 +198,10 @@ pub async fn remove_site_config(sites_enabled: &str, site_name: &str) -> anyhow:
 
 /// 确保 nginx.conf 中包含 sites-enabled 目录的 include 指令
 pub async fn ensure_sites_enabled_include(nginx_config: &str, sites_enabled: &str) -> anyhow::Result<()> {
-    use tokio::process::Command;
-
     #[cfg(target_os = "linux")]
     {
+        use tokio::process::Command;
+
         let tmp = "/tmp/.ox_nginx_nginx_conf_tmp";
         // 读取原文件
         let output = Command::new("sh")
@@ -245,8 +245,6 @@ pub async fn ensure_sites_enabled_include(nginx_config: &str, sites_enabled: &st
 
 /// 创建默认 index.html
 pub async fn create_default_index(root_path: &str) -> anyhow::Result<()> {
-    use tokio::process::Command;
-
     let content = r#"<!DOCTYPE html>
 <html>
 <head>
@@ -269,6 +267,7 @@ pub async fn create_default_index(root_path: &str) -> anyhow::Result<()> {
 
     #[cfg(target_os = "linux")]
     {
+        use tokio::process::Command;
         let tmp = "/tmp/.ox_nginx_index_tmp";
         tokio::fs::write(tmp, content).await?;
         let cmd = format!("sudo mkdir -p '{}' && sudo mv '{}' '{}/index.html'", root_path, tmp, root_path);

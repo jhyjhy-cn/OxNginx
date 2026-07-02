@@ -96,7 +96,8 @@ fn main() -> anyhow::Result<()> {
         // 公开路由（无需认证）
         let public_routes = Router::new()
             .route("/api/login", post(api::auth_api::login))
-            .route("/api/setup", post(api::auth_api::setup));
+            .route("/api/setup", post(api::auth_api::setup))
+            .route("/api/setup/status", get(api::auth_api::setup_status));
 
         // 需要认证的路由
         let protected_routes = Router::new()
@@ -175,7 +176,7 @@ fn main() -> anyhow::Result<()> {
         axum::serve(listener, app).await?;
 
         Ok::<(), anyhow::Error>(())
-    });
+    })?;
 
     Ok(())
 }

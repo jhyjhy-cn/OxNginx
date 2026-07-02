@@ -90,12 +90,13 @@ onMounted(() => {
 
 async function checkSetup() {
   try {
-    const response = await api.get('/api/dashboard')
-    if (response.data.code !== 0) {
+    const response = await api.get('/api/setup/status')
+    if (response.data.code === 0 && response.data.data?.need_setup) {
       needSetup.value = true
     }
   } catch {
-    needSetup.value = true
+    // 接口异常时不显示初始化按钮，避免误判
+    needSetup.value = false
   }
 }
 

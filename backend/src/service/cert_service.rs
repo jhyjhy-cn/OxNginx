@@ -1,6 +1,6 @@
 use crate::model::Certificate;
 use crate::AppState;
-use chrono::{NaiveDateTime, Utc};
+use chrono::NaiveDateTime;
 use std::process::Command;
 
 /// 从证书文件读取过期时间
@@ -16,11 +16,6 @@ pub async fn get_cert_expire_info(cert_path: &str) -> Option<NaiveDateTime> {
         .args(["x509", "-in", cert_path, "-noout", "-enddate"])
         .output()
         .ok()?;
-    if !output.status.success() {
-        return None;
-    }
-    let output_str = String::from_utf8_lossy(&output.stdout);
-
     if !output.status.success() {
         return None;
     }
