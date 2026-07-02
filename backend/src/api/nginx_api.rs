@@ -52,7 +52,7 @@ pub async fn start(
     State(state): State<AppState>,
 ) -> Json<serde_json::Value> {
     let config = state.get_config();
-    match crate::nginx::start_nginx(&config.nginx.bin).await {
+    match crate::nginx::start_nginx(&config.nginx.bin, &config.nginx.config).await {
         Ok(true) => Json(json!(ApiResponse::success(NginxTestResult {
             success: true,
             message: "Nginx启动成功".into(),
@@ -91,7 +91,7 @@ pub async fn restart(
         ))));
     }
 
-    match crate::nginx::restart_nginx(&config.nginx.bin).await {
+    match crate::nginx::restart_nginx(&config.nginx.bin, &config.nginx.config).await {
         Ok(true) => Json(json!(ApiResponse::success(NginxTestResult {
             success: true,
             message: "Nginx重启成功".into(),
@@ -105,16 +105,13 @@ pub async fn restart(
 pub async fn install(
     State(state): State<AppState>,
 ) -> Json<serde_json::Value> {
-    use std::env::consts::OS;
-    use std::path::PathBuf;
-
-    // 确定安装目录
-    let install_dir = if OS == "windows" {
-        std::env::var("USERPROFILE")
-            .map(|p| PathBuf::from(p).join("nginx").to_string_lossy().to_string())
-            .unwrap_or_else(|_| "C:\\nginx".to_string())
-    } else {
-        "/opt/oxnginx/server/nginx".to_string()
+    // 确定安装目录：exe_dir/server/nginx
+    let install_dir = {
+        let exe_dir = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|d| d.to_path_buf()))
+            .unwrap_or_else(|| std::path::PathBuf::from("."));
+        exe_dir.join("server").join("nginx").to_string_lossy().to_string()
     };
 
     tracing::info!("Nginx 安装目录: {}", install_dir);

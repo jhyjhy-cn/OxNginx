@@ -431,23 +431,42 @@ pub async fn get_nginx_status(nginx_bin: &str) -> NginxStatus {
 }
 
 /// 启动 Nginx
-pub async fn start_nginx(nginx_bin: &str) -> anyhow::Result<bool> {
+pub async fn start_nginx(nginx_bin: &str, config_path: &str) -> anyhow::Result<bool> {
     use tokio::process::Command;
+
+    // 先检查是否已在运行
+    let status = get_nginx_status(nginx_bin).await;
+    tracing::info!("启动前状态: running={}, pid={:?}, not_installed={}", status.running, status.pid, status.not_installed);
+    if status.running {
+        tracing::info!("Nginx 已在运行 (PID {:?})，跳过启动", status.pid);
+        return Ok(true);
+    }
 
     let nginx_dir = get_nginx_dir(nginx_bin)
         .ok_or_else(|| anyhow::anyhow!("无法获取 nginx 安装目录"))?;
-    tracing::info!("启动 Nginx: bin={}", nginx_bin);
-    let output = Command::new(nginx_bin)
+    tracing::info!("启动 Nginx: bin={}, conf={}", nginx_bin, config_path);
+
+    // spawn 不等待进程结束（nginx 在 Windows 上以前台模式运行）
+    let child = Command::new(nginx_bin)
         .current_dir(&nginx_dir)
-        .output()
-        .await?;
-    // nginx 启动后主进程退出，master 进程后台运行
-    // 退出码 0 表示启动成功
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(anyhow::anyhow!("启动 Nginx 失败: {}", stderr));
+        .args(["-c", config_path])
+        .spawn();
+
+    match child {
+        Ok(_) => {
+            // 等一小段时间确认进程启动成功
+            tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+            let status = get_nginx_status(nginx_bin).await;
+            if status.running {
+                tracing::info!("Nginx 启动成功 (PID {:?})", status.pid);
+                Ok(true)
+            } else {
+                // nginx 可能启动后立即退出（配置错误等）
+                Err(anyhow::anyhow!("Nginx 启动后未检测到进程，请检查配置"))
+            }
+        }
+        Err(e) => Err(anyhow::anyhow!("启动 Nginx 失败: {}", e)),
     }
-    Ok(true)
 }
 
 /// 停止 Nginx
@@ -481,10 +500,10 @@ pub async fn reload_nginx(nginx_bin: &str) -> anyhow::Result<bool> {
 }
 
 /// 重启 Nginx
-pub async fn restart_nginx(nginx_bin: &str) -> anyhow::Result<bool> {
+pub async fn restart_nginx(nginx_bin: &str, config_path: &str) -> anyhow::Result<bool> {
     stop_nginx(nginx_bin).await?;
     tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-    start_nginx(nginx_bin).await
+    start_nginx(nginx_bin, config_path).await
 }
 
 /// 一键安装 Nginx（Windows/Linux）

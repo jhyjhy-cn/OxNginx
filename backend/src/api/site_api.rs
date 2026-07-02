@@ -84,14 +84,7 @@ pub async fn create_site(
 
     // 如果未指定根目录，以站点名称自动创建
     if req.root_path.is_none() || req.root_path.as_deref() == Some("") {
-        let auto_root = if cfg!(target_os = "linux") {
-            format!("{}/{}", config.nginx.default_root, req.name)
-        } else {
-            let nginx_dir = std::path::Path::new(&config.nginx.bin)
-                .parent()
-                .unwrap_or(std::path::Path::new("."));
-            nginx_dir.join("html").join(&req.name).to_string_lossy().to_string()
-        };
+        let auto_root = format!("{}/{}", config.nginx.default_root, req.name);
         req.root_path = Some(auto_root);
     }
 
@@ -329,13 +322,13 @@ pub async fn deploy_ssl(
     let cert = match crate::service::cert_service::apply_cert(&state, &site.server_name).await {
         Ok(c) => c,
         Err(e) => {
-            let _ = crate::nginx::start_nginx(&config.nginx.bin).await;
+            let _ = crate::nginx::start_nginx(&config.nginx.bin, &config.nginx.config).await;
             return Json(json!(ApiResponse::<()>::error(format!("证书申请失败: {}", e))));
         }
     };
 
     // 重启nginx
-    let _ = crate::nginx::start_nginx(&config.nginx.bin).await;
+    let _ = crate::nginx::start_nginx(&config.nginx.bin, &config.nginx.config).await;
 
     let cert_domain = cert.domain.clone();
     let cert_src = cert.cert_path.clone().unwrap_or_default();
