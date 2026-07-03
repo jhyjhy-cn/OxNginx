@@ -73,7 +73,7 @@
     </el-card>
 
     <!-- 添加/编辑对话框 -->
-    <el-dialog
+    <OnDialog
       v-model="dialogVisible"
       :title="isEdit ? `站点修改[${editSiteName}] - 添加时间[${editCreatedAt}]` : '添加站点'"
       width="600px"
@@ -110,10 +110,10 @@
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="submitForm">确定</el-button>
       </template>
-    </el-dialog>
+    </OnDialog>
 
     <!-- 删除确认对话框 -->
-    <el-dialog v-model="deleteDialogVisible" title="删除站点" width="420px">
+    <OnDialog v-model="deleteDialogVisible" title="删除站点" width="420px" :maximizable="false">
       <div style="margin-bottom: 16px;">
         <p>确定要删除站点 <strong>{{ deleteTarget?.name }}</strong> 吗？</p>
       </div>
@@ -127,7 +127,7 @@
         <el-button @click="deleteDialogVisible = false">取消</el-button>
         <el-button type="danger" @click="confirmDelete">确认删除</el-button>
       </template>
-    </el-dialog>
+    </OnDialog>
   </div>
 </template>
 
@@ -136,6 +136,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import api from '@/api'
+import OnDialog from '@/components/OnDialog.vue'
 
 interface Site {
   id: number
