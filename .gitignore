@@ -26,3 +26,4 @@ release/
 *.dylib
 *.pdb
 build/
+wwwlogs/

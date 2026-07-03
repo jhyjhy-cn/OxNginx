@@ -1,8 +1,11 @@
 [server]
+# 服务器端口 默认：9000
 port = 9000
+# 服务器主机 默认：0.0.0.0
 host = "0.0.0.0"
 
 [database]
+# 数据库路径 默认：./data.db
 path = "./data.db"
 
 [nginx]
@@ -14,5 +17,13 @@ sites_enabled = "C:/Users/Hongyu/nginx/nginx-1.30.3/conf/sites-enabled"
 bin = "/root/.acme.sh/acme.sh"
 
 [auth]
+# JWT 密钥
 jwt_secret = "change-this-to-a-random-secret-key"
+# JWT 过期时间 默认：24小时
 jwt_expires_hours = 24
+
+[log]
+# 日志级别：trace / debug / info / warn / error
+level = "debug"
+# 单个日志文件最大大小（MB），超过后自动轮转为 panel-时间.log
+max_size_mb = 10

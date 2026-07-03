@@ -32,7 +32,8 @@ pub fn first_run_setup(exe_dir: &Path) -> anyhow::Result<()> {
         base.join("configs"),
         base.join("datas"),
         base_root.join("wwwroot"),
-        base_root.join("wwwlogs"),
+        base_root.join("wwwlogs").join("nginx"),
+        base_root.join("wwwlogs").join("panel"),
         base_root.join("ssl"),
         base_root.join("backup"),
         base_root.join("server").join("nginx"),
@@ -79,10 +80,10 @@ pub fn first_run_setup(exe_dir: &Path) -> anyhow::Result<()> {
     let sites_enabled = nginx_target.join("conf").join("sites-enabled");
     std::fs::create_dir_all(&sites_enabled)?;
 
-    let wwwlogs = base_root.join("wwwlogs").to_string_lossy().replace('\\', "/");
+    let nginx_logs = base_root.join("wwwlogs").join("nginx").to_string_lossy().replace('\\', "/");
     let se_path = sites_enabled.to_string_lossy().replace('\\', "/");
     std::fs::write(&nginx_conf, format!(
-        "worker_processes 2;\nerror_log {wwwlogs}/error.log warn;\nevents {{ worker_connections 1024; }}\nhttp {{\n    include mime.types;\n    default_type application/octet-stream;\n    access_log {wwwlogs}/access.log;\n    sendfile on;\n    keepalive_timeout 65;\n    include {se_path}/*.conf;\n}}\n"
+        "worker_processes 2;\nerror_log {nginx_logs}/error.log warn;\nevents {{ worker_connections 1024; }}\nhttp {{\n    include mime.types;\n    default_type application/octet-stream;\n    access_log {nginx_logs}/access.log;\n    sendfile on;\n    keepalive_timeout 65;\n    include {se_path}/*.conf;\n}}\n"
     ))?;
 
     // 生成 config.toml
@@ -118,8 +119,8 @@ config = "{conf}"
 sites_enabled = "{se}"
 ssl_dir = "{ssl}"
 default_root = "{root}"
-log_access = "{logs}/access.log"
-log_error = "{logs}/error.log"
+log_access = "{logs}/nginx/access.log"
+log_error = "{logs}/nginx/error.log"
 
 [acme]
 bin = ""
@@ -128,6 +129,10 @@ home = ""
 [auth]
 jwt_secret = "{jwt}"
 jwt_expires_hours = 24
+
+[log]
+level = "debug"
+max_size_mb = 10
 "#,
         db = db_path.to_string_lossy().replace('\\', "/"),
         bin = nginx_bin.to_string_lossy().replace('\\', "/"),
@@ -135,7 +140,7 @@ jwt_expires_hours = 24
         se = sites_enabled.to_string_lossy().replace('\\', "/"),
         ssl = ssl_dir,
         root = wwwroot,
-        logs = wwwlogs,
+        logs = base_root.join("wwwlogs").to_string_lossy().replace('\\', "/"),
         jwt = jwt_secret,
     ))?;
 
@@ -155,7 +160,7 @@ jwt_expires_hours = 24
             let _ = std::process::Command::new(&nssm).args(["set", svc_name, "Start", "SERVICE_AUTO_START"]).output();
             let env = format!("CONFIG_PATH={}", config_path);
             let _ = std::process::Command::new(&nssm).args(["set", svc_name, "AppEnvironmentExtra", &env, "RUST_LOG=info"]).output();
-            let log = base_root.join("wwwlogs").join("panel.log").to_string_lossy().to_string();
+            let log = base_root.join("wwwlogs").join("panel").join("nssm.log").to_string_lossy().to_string();
             let _ = std::process::Command::new(&nssm).args(["set", svc_name, "AppStdout", &log]).output();
             let _ = std::process::Command::new(&nssm).args(["set", svc_name, "AppStderr", &log]).output();
             let _ = std::process::Command::new(&nssm).args(["set", svc_name, "AppRotateFiles", "1"]).output();
@@ -235,8 +240,8 @@ config = "{conf}"
 sites_enabled = "{se}"
 ssl_dir = "{base}/ssl"
 default_root = "{base}/wwwroot"
-log_access = "{base}/wwwlogs/access.log"
-log_error = "{base}/wwwlogs/error.log"
+log_access = "{base}/wwwlogs/nginx/access.log"
+log_error = "{base}/wwwlogs/nginx/error.log"
 
 [acme]
 bin = ""
@@ -245,6 +250,10 @@ home = ""
 [auth]
 jwt_secret = "{jwt}"
 jwt_expires_hours = 24
+
+[log]
+level = "debug"
+max_size_mb = 10
 "#,
         db = db_path.to_string_lossy().replace('\\', "/"),
         bin = nginx_bin,
@@ -254,7 +263,7 @@ jwt_expires_hours = 24
         jwt = jwt_secret,
     ))?;
 
-    for dir in &["datas", "wwwroot", "wwwlogs", "ssl", "backup"] {
+    for dir in &["datas", "wwwroot", "wwwlogs/nginx", "wwwlogs/panel", "ssl", "backup"] {
         let _ = std::fs::create_dir_all(exe_dir.join(dir));
     }
 

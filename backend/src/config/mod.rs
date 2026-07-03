@@ -8,6 +8,8 @@ pub struct AppConfig {
     pub nginx: NginxConfig,
     pub acme: AcmeConfig,
     pub auth: AuthConfig,
+    #[serde(default)]
+    pub log: LogConfig,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -64,16 +66,16 @@ fn default_root() -> String {
 
 fn default_log_access() -> String {
     #[cfg(target_os = "linux")]
-    { "/opt/oxnginx/wwwlogs/access.log".to_string() }
+    { "/opt/oxnginx/wwwlogs/nginx/access.log".to_string() }
     #[cfg(target_os = "windows")]
-    { "logs/access.log".to_string() }
+    { "logs/nginx/access.log".to_string() }
 }
 
 fn default_log_error() -> String {
     #[cfg(target_os = "linux")]
-    { "/opt/oxnginx/wwwlogs/error.log".to_string() }
+    { "/opt/oxnginx/wwwlogs/nginx/error.log".to_string() }
     #[cfg(target_os = "windows")]
-    { "logs/error.log".to_string() }
+    { "logs/nginx/error.log".to_string() }
 }
 
 fn default_acme_home() -> String {
@@ -84,6 +86,33 @@ fn default_acme_home() -> String {
 pub struct AuthConfig {
     pub jwt_secret: String,
     pub jwt_expires_hours: u64,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct LogConfig {
+    /// 日志级别：trace / debug / info / warn / error
+    #[serde(default = "default_log_level")]
+    pub level: String,
+    /// 单个日志文件最大大小（MB），超过后自动轮转
+    #[serde(default = "default_log_max_size")]
+    pub max_size_mb: u64,
+}
+
+impl Default for LogConfig {
+    fn default() -> Self {
+        LogConfig {
+            level: default_log_level(),
+            max_size_mb: default_log_max_size(),
+        }
+    }
+}
+
+fn default_log_level() -> String {
+    "debug".to_string()
+}
+
+fn default_log_max_size() -> u64 {
+    10
 }
 
 impl AppConfig {

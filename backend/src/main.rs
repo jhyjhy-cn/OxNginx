@@ -58,19 +58,18 @@ fn main() -> anyhow::Result<()> {
         .enable_all()
         .build()?;
 
-    // 初始化日志（格式：时间 级别 文件:行号 消息）
-    startup::logging::init();
-
-    // 加载配置（首次运行若无配置则自动生成默认配置）
+    // 先加载配置（首次运行若无配置则自动生成默认配置）
     let config_path = std::env::var("CONFIG_PATH")
         .unwrap_or_else(|_| exe_dir.join("configs").join("config.toml").to_string_lossy().to_string());
     if !std::path::Path::new(&config_path).exists() {
-        tracing::info!("配置文件不存在，生成默认配置: {}", config_path);
         startup::setup::generate_default_config(&config_path, &exe_dir)?;
     }
-    // 确保 AppConfig::load() 读取同一个文件
     unsafe { std::env::set_var("CONFIG_PATH", &config_path); }
     let config = AppConfig::load()?;
+
+    // 初始化日志（控制台 + 文件双输出，大小轮转写入 wwwlogs/panel/）
+    let log_dir = exe_dir.parent().and_then(|p| p.parent()).unwrap_or(&exe_dir).join("wwwlogs").join("panel");
+    startup::logging::init(&log_dir, &config.log.level, config.log.max_size_mb);
     tracing::info!("配置加载完成");
 
     rt.block_on(async {
