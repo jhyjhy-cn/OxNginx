@@ -5,16 +5,20 @@ port = 9000
 host = "0.0.0.0"
 
 [database]
-# 数据库路径 默认：./data.db
-path = "./data.db"
+# 数据库路径
+path = ""
 
 [nginx]
-bin = "C:/Users/Hongyu/nginx/nginx-1.30.3/nginx.exe"
-config = "C:/Users/Hongyu/nginx/nginx-1.30.3/conf/nginx.conf"
-sites_enabled = "C:/Users/Hongyu/nginx/nginx-1.30.3/conf/sites-enabled"
+# nginx 二进制文件路径
+bin = ""
+# nginx 配置文件路径
+config = ""
+# nginx 站点启用目录路径
+sites_enabled = ""
 
 [acme]
-bin = "/root/.acme.sh/acme.sh"
+# acme.sh 二进制文件路径
+bin = ""
 
 [auth]
 # JWT 密钥
