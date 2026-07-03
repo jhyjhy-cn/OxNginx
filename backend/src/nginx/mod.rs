@@ -307,13 +307,13 @@ pub async fn get_nginx_status(nginx_bin: &str) -> NginxStatus {
     use tokio::process::Command;
     use std::env::consts::OS;
 
-    tracing::debug!("[NginxStatus] 检测 nginx: bin={}, os={}", nginx_bin, OS);
+    // tracing::debug!("[NginxStatus] 检测 nginx: bin={}, os={}", nginx_bin, OS);
 
     // 先检测 nginx 是否可执行
     let version_check = Command::new(nginx_bin).arg("-v").output().await;
     let not_installed = version_check.is_err();
 
-    tracing::debug!("[NginxStatus] not_installed={}, version_check_err={}", not_installed, version_check.is_err());
+    // tracing::debug!("[NginxStatus] not_installed={}, version_check_err={}", not_installed, version_check.is_err());
 
     if not_installed {
         return NginxStatus {
