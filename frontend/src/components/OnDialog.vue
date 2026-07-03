@@ -6,6 +6,7 @@
     :show-close="false"
     :top="maximized ? '0' : '15vh'"
     :class="['on-dialog', { 'on-dialog--maximized': maximized }]"
+    :style="{ '--el-dialog-padding-primary': '0' }"
     @close="handleClose"
   >
     <!-- 自定义标题栏 -->
@@ -69,24 +70,34 @@ const emit = defineEmits<{
 
 // ========== 最大化 ==========
 const maximized = ref(false)
-const savedPos = ref({ left: '', top: '' })
+const savedStyles = ref('')
 
 function toggleMaximize() {
+  const el = dialogRef.value
+  if (!el) return
+
   if (!maximized.value) {
-    const el = dialogRef.value
-    if (el) {
-      savedPos.value = { left: el.style.left || '', top: el.style.top || '' }
-    }
+    // 保存当前 inline 样式（拖拽产生的 position/left/top 等）
+    savedStyles.value = el.style.cssText
+    // 一次性设置全屏样式，inline !important 胜过一切 CSS 选择器
+    el.style.cssText = `
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      max-height: 100vh !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border-radius: 0 !important;
+      transform: none !important;
+      display: flex !important;
+      flex-direction: column !important;
+    `
     maximized.value = true
   } else {
+    // 恢复拖拽前的 inline 样式
+    el.style.cssText = savedStyles.value
     maximized.value = false
-    nextTick(() => {
-      const el = dialogRef.value
-      if (el && savedPos.value.left) {
-        el.style.left = savedPos.value.left
-        el.style.top = savedPos.value.top
-      }
-    })
   }
 }
 
@@ -183,12 +194,11 @@ watch(() => props.modelValue, (val) => {
 <style scoped>
 /* 覆盖 el-dialog 默认样式 */
 .on-dialog :deep(.el-dialog) {
-  border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.25);
 }
 
-/* 清除 header 外层 padding，让标题栏背景填满 */
+/* 清除 header 外层 padding/margin，标题栏背景铺满 */
 .on-dialog :deep(.el-dialog__header) {
   padding: 0 !important;
   margin: 0 !important;
@@ -198,24 +208,18 @@ watch(() => props.modelValue, (val) => {
   display: none;
 }
 
+/* 内容区左右下 padding，标题栏通过 margin-bottom 保持间距 */
 .on-dialog :deep(.el-dialog__body) {
-  padding: 20px;
+  padding: 16px !important;
+  padding-top: 0 !important;
 }
 
 .on-dialog :deep(.el-dialog__footer) {
-  padding: 12px 20px;
+  padding: 16px !important;
   border-top: 1px solid var(--el-border-color-lighter);
 }
 
-/* 最大化 */
-.on-dialog--maximized :deep(.el-dialog) {
-  border-radius: 0;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  max-height: 100vh;
-}
-
+/* 最大化时 body 撑满剩余空间 */
 .on-dialog--maximized :deep(.el-dialog__body) {
   flex: 1;
   overflow: auto;
@@ -228,10 +232,13 @@ watch(() => props.modelValue, (val) => {
   justify-content: space-between;
   height: 44px;
   padding: 0 12px 0 20px;
+  margin-bottom: 16px;
   background: linear-gradient(135deg, #001529 0%, #002140 100%);
   color: #ffffff;
   cursor: move;
   user-select: none;
+  border-top-left-radius: var(--el-dialog-border-radius);
+  border-top-right-radius: var(--el-dialog-border-radius);
 }
 
 .on-dialog__title {
@@ -273,5 +280,33 @@ watch(() => props.modelValue, (val) => {
 .on-dialog__btn--close:hover {
   background: #e74c3c;
   color: #ffffff;
+}
+</style>
+
+<!-- 全局覆盖：el-dialog 内部元素不受 scoped 穿透限制 -->
+<style>
+.on-dialog.el-dialog {
+  --el-dialog-border-radius: 16px;
+}
+
+.on-dialog .el-dialog__header {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.on-dialog .el-dialog__headerbtn {
+  display: none;
+}
+
+.on-dialog--maximized .on-dialog__header {
+  border-radius: 0;
+}
+
+.on-dialog .el-dialog__body {
+  padding: 0 16px 16px 16px !important;
+}
+
+.on-dialog .el-dialog__footer {
+  padding: 16px !important;
 }
 </style>
