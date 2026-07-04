@@ -1,6 +1,6 @@
 <template>
   <el-container class="layout-container" direction="vertical">
-    <div class="top-header">
+    <div class="top-header" :style="{ background: sidebarBg, '--menu-active-bg': menuActiveBg }">
       <div class="header-left">
         <div class="logo">
           <el-icon :size="20" color="#fff"><Promotion /></el-icon>
@@ -9,9 +9,9 @@
         <el-menu
           :default-active="route.path"
           mode="horizontal"
-          background-color="#001529"
-          text-color="hsla(0,0%,100%,.65)"
-          active-text-color="#fff"
+          :background-color="sidebarBg"
+          :text-color="menuTextColor"
+          :active-text-color="menuActiveTextColor"
           router
           :ellipsis="false"
           class="top-menu"
@@ -78,9 +78,11 @@
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import TopBarRight from './components/TopBarRight.vue'
+import { useSidebarTheme } from '@/composables/useSidebarTheme'
 
 const route = useRoute()
 const { t } = useI18n()
+const { sidebarBg, menuTextColor, menuActiveTextColor, menuActiveBg } = useSidebarTheme()
 
 defineEmits<{
   openThemeDrawer: []
@@ -98,7 +100,6 @@ defineEmits<{
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #001529;
   padding-right: 16px;
   flex-shrink: 0;
 }
@@ -148,5 +149,11 @@ defineEmits<{
   background: var(--el-bg-color-page);
   overflow-y: auto;
   padding: 16px;
+}
+:deep(.top-menu .el-menu-item.is-active) {
+  background-color: var(--menu-active-bg) !important;
+}
+:deep(.top-menu .el-sub-menu .el-menu-item.is-active) {
+  background-color: var(--menu-active-bg) !important;
 }
 </style>

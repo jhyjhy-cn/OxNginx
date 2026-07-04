@@ -1,11 +1,11 @@
 <template>
   <el-container class="layout-container">
-    <el-aside width="220px" class="sidebar">
-      <div class="logo">
+    <el-aside width="220px" class="sidebar" :style="{ backgroundColor: sidebarBg, '--menu-active-bg': menuActiveBg }">
+      <div class="logo" :style="{ borderBottomColor: borderColor }">
         <el-icon :size="20" color="#fff"><Promotion /></el-icon>
         <span>OxNginx</span>
       </div>
-      <el-menu :default-active="route.path" background-color="#001529" text-color="hsla(0,0%,100%,.65)" active-text-color="#fff" router>
+      <el-menu :default-active="route.path" :background-color="sidebarBg" :text-color="menuTextColor" :active-text-color="menuActiveTextColor" router>
         <el-menu-item index="/dashboard">
           <el-icon><Odometer /></el-icon>
           <span>{{ t('menu.dashboard') }}</span>
@@ -71,9 +71,11 @@
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import TopBarRight from './components/TopBarRight.vue'
+import { useSidebarTheme } from '@/composables/useSidebarTheme'
 
 const route = useRoute()
 const { t } = useI18n()
+const { sidebarBg, menuTextColor, menuActiveTextColor, menuActiveBg, borderColor } = useSidebarTheme()
 
 defineEmits<{
   openThemeDrawer: []
@@ -88,7 +90,6 @@ defineEmits<{
   overflow: hidden;
 }
 .sidebar {
-  background-color: #001529;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -105,6 +106,10 @@ defineEmits<{
   font-size: 18px;
   font-weight: 600;
   border-bottom: 1px solid hsla(0,0%,100%,.1);
+}
+:deep(.el-menu-item.is-active) {
+  background-color: var(--menu-active-bg) !important;
+  border-radius: 0;
 }
 .right-container {
   flex-direction: column;

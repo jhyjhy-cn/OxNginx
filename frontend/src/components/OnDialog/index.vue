@@ -14,6 +14,7 @@
     <template #header>
       <div
         class="on-dialog__header"
+        :style="headerStyle"
         @mousedown="onDragStart"
         @dblclick="toggleMaximize"
       >
@@ -48,8 +49,45 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, computed } from 'vue'
 import { FullScreen, CopyDocument, Close } from '@element-plus/icons-vue'
+import { useSettingsStore } from '@/stores/settings'
+
+const settingsStore = useSettingsStore()
+
+/** 根据主题色生成标题栏渐变样式 */
+const headerStyle = computed(() => {
+  const hsl = hexToHsl(settingsStore.themeColor)
+  // 起点：提亮 + 稍降饱和度（光泽感）
+  const start = `hsl(${hsl.h}, ${Math.min(hsl.s + 5, 100)}%, ${Math.min(hsl.l + 8, 55)}%)`
+  // 中间：原始主题色
+  const mid = `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`
+  // 终点：压暗 + 稍增饱和度（深邃感）
+  const end = `hsl(${(hsl.h + 8) % 360}, ${Math.min(hsl.s + 10, 100)}%, ${Math.max(hsl.l - 18, 12)}%)`
+  return {
+    background: `linear-gradient(135deg, ${start} 0%, ${mid} 50%, ${end} 100%)`,
+  }
+})
+
+function hexToHsl(hex: string): { h: number; s: number; l: number } {
+  hex = hex.replace('#', '')
+  const r = parseInt(hex.substring(0, 2), 16) / 255
+  const g = parseInt(hex.substring(2, 4), 16) / 255
+  const b = parseInt(hex.substring(4, 6), 16) / 255
+  const max = Math.max(r, g, b), min = Math.min(r, g, b)
+  let h = 0, s = 0
+  const l = (max + min) / 2
+  if (max !== min) {
+    const d = max - min
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break
+      case g: h = ((b - r) / d + 2) / 6; break
+      case b: h = ((r - g) / d + 4) / 6; break
+    }
+  }
+  return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) }
+}
 
 const props = withDefaults(defineProps<{
   modelValue: boolean
@@ -230,21 +268,45 @@ watch(() => props.modelValue, (val) => {
 
 /* ========== 自定义标题栏 ========== */
 .on-dialog__header {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: 44px;
   padding: 0 12px 0 20px;
   margin-bottom: 16px;
-  background: linear-gradient(135deg, #001529 0%, #002140 100%);
   color: #ffffff;
   cursor: move;
   user-select: none;
   border-top-left-radius: var(--el-dialog-border-radius);
   border-top-right-radius: var(--el-dialog-border-radius);
+  overflow: hidden;
+}
+
+/* 顶部高光条 —— 玻璃质感 */
+.on-dialog__header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 30%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0.35) 70%, transparent 100%);
+}
+
+/* 底部亮线 —— 层次感 */
+.on-dialog__header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.15) 80%, transparent 100%);
 }
 
 .on-dialog__title {
+  position: relative;
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.3px;
@@ -252,6 +314,7 @@ watch(() => props.modelValue, (val) => {
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .on-dialog__actions {
@@ -259,6 +322,7 @@ watch(() => props.modelValue, (val) => {
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+  position: relative;
 }
 
 .on-dialog__btn {
@@ -269,19 +333,25 @@ watch(() => props.modelValue, (val) => {
   height: 28px;
   border: none;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
   transition: all 0.2s;
+  backdrop-filter: blur(4px);
 }
 
 .on-dialog__btn:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.22);
   color: #ffffff;
+  transform: scale(1.05);
+}
+
+.on-dialog__btn:active {
+  transform: scale(0.95);
 }
 
 .on-dialog__btn--close:hover {
-  background: #e74c3c;
+  background: rgba(231, 76, 60, 0.85);
   color: #ffffff;
 }
 </style>

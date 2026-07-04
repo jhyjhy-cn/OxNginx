@@ -1,16 +1,16 @@
 <template>
   <el-container class="layout-container">
-    <el-aside :width="isCollapsed ? '64px' : '220px'" class="sidebar">
-      <div class="logo" :class="{ collapsed: isCollapsed }">
+    <el-aside :width="isCollapsed ? '64px' : '220px'" class="sidebar" :style="{ backgroundColor: sidebarBg, '--menu-active-bg': menuActiveBg }">
+      <div class="logo" :class="{ collapsed: isCollapsed }" :style="{ borderBottomColor: borderColor }">
         <el-icon :size="20" color="#fff"><Promotion /></el-icon>
         <span v-show="!isCollapsed">OxNginx</span>
       </div>
       <el-menu
         :default-active="route.path"
         :collapse="isCollapsed"
-        background-color="#001529"
-        text-color="hsla(0,0%,100%,.65)"
-        active-text-color="#fff"
+        :background-color="sidebarBg"
+        :text-color="menuTextColor"
+        :active-text-color="menuActiveTextColor"
         router
         :collapse-transition="false"
       >
@@ -84,10 +84,12 @@ import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import TopBarRight from './components/TopBarRight.vue'
+import { useSidebarTheme } from '@/composables/useSidebarTheme'
 
 const route = useRoute()
 const { t } = useI18n()
 const isCollapsed = ref(false)
+const { sidebarBg, menuTextColor, menuActiveTextColor, menuActiveBg, borderColor } = useSidebarTheme()
 
 defineEmits<{
   openThemeDrawer: []
@@ -102,7 +104,6 @@ defineEmits<{
   overflow: hidden;
 }
 .sidebar {
-  background-color: #001529;
   overflow-y: auto;
   overflow-x: hidden;
   transition: width .3s;
@@ -139,7 +140,7 @@ defineEmits<{
   justify-content: center;
   cursor: pointer;
   border-top: 1px solid hsla(0,0%,100%,.1);
-  background: #001529;
+  background: inherit;
 }
 .collapse-btn:hover {
   background: hsla(0,0%,100%,.05);
@@ -173,5 +174,11 @@ defineEmits<{
 :deep(.el-menu--collapse .el-sub-menu__title span),
 :deep(.el-menu--collapse .el-sub-menu__title .el-sub-menu__icon-arrow) {
   display: none;
+}
+:deep(.el-menu-item.is-active) {
+  background-color: var(--menu-active-bg) !important;
+}
+:deep(.el-sub-menu .el-menu-item.is-active) {
+  background-color: var(--menu-active-bg) !important;
 }
 </style>
