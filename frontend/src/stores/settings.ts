@@ -11,6 +11,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const layoutMode = ref<LayoutMode>('sidebar-double')
   const showTabs = ref(true)
   const showTabIcons = ref(true)
+  const sidebarCollapsed = ref(false)
 
   function setLocale(val: 'zh-CN' | 'en-US') {
     locale.value = val
@@ -56,6 +57,10 @@ export const useSettingsStore = defineStore('settings', () => {
     layoutMode.value = mode
   }
 
+  function toggleSidebar() {
+    sidebarCollapsed.value = !sidebarCollapsed.value
+  }
+
   /** 初始化：从持久化 state 恢复到 DOM */
   function initTheme() {
     applyThemeColor(themeColor.value)
@@ -69,10 +74,12 @@ export const useSettingsStore = defineStore('settings', () => {
     layoutMode,
     showTabs,
     showTabIcons,
+    sidebarCollapsed,
     setLocale,
     setThemeColor,
     toggleDarkMode,
     setLayoutMode,
+    toggleSidebar,
     initTheme,
   }
 }, {

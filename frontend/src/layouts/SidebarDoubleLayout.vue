@@ -1,24 +1,46 @@
 <template>
-  <el-container class="layout-container">
-    <el-aside width="220px" class="sidebar" :style="{ backgroundColor: sidebarBg, '--menu-active-bg': menuActiveBg }">
-      <div class="logo" :style="{ borderBottomColor: borderColor }">
-        <el-icon :size="20" color="#fff"><Promotion /></el-icon>
-        <span>OxNginx</span>
+  <div class="layout" :class="{ 'sidebar-collapsed': settingsStore.sidebarCollapsed }">
+    <!-- 左侧菜单栏 -->
+    <aside class="sidebar" :style="sidebarStyle">
+      <div class="logo" :class="{ collapsed: settingsStore.sidebarCollapsed }">
+        <div class="logo-icon">⚡</div>
+        <span v-if="!settingsStore.sidebarCollapsed" class="logo-text">OxNginx</span>
       </div>
-      <el-menu :default-active="route.path" :background-color="sidebarBg" :text-color="menuTextColor" :active-text-color="menuActiveTextColor" router>
-        <el-menu-item v-for="item in flatMenuItems" :key="item.path" :index="item.path">
-          <el-icon><component :is="item.icon" /></el-icon>
-          <span>{{ t(item.title) }}</span>
-        </el-menu-item>
-      </el-menu>
-    </el-aside>
+      <div class="menu-scroll">
+        <ul class="menu-list">
+          <li
+            v-for="item in flatMenuItems"
+            :key="item.path"
+            class="menu-item"
+            :class="{ active: route.path === item.path || (item.path !== '/dashboard' && item.path !== '/settings' && route.path.startsWith(item.path)) }"
+            @click="router.push(item.path)"
+          >
+            <el-icon :size="18"><component :is="item.icon" /></el-icon>
+            <span v-if="!settingsStore.sidebarCollapsed" class="menu-text">{{ t(item.title) }}</span>
+          </li>
+        </ul>
+      </div>
 
-    <el-container class="right-container">
-      <el-header class="topbar">
+      <!-- 折叠按钮 -->
+      <div class="collapse-btn" @click="settingsStore.toggleSidebar()">
+        <el-icon :size="16">
+          <DArrowLeft v-if="!settingsStore.sidebarCollapsed" />
+          <DArrowRight v-else />
+        </el-icon>
+      </div>
+    </aside>
+
+    <!-- 右侧内容区 -->
+    <div class="main-area">
+      <header class="topbar" :style="topbarStyle">
         <div class="topbar-left">
           <el-breadcrumb separator="/">
-            <el-breadcrumb-item :to="{ path: '/' }">{{ t('layout.home') }}</el-breadcrumb-item>
-            <el-breadcrumb-item v-if="route.meta.title">{{ t(route.meta.title as string) }}</el-breadcrumb-item>
+            <el-breadcrumb-item v-if="route.path !== '/dashboard'">
+              {{ t('menu.dashboard') }}
+            </el-breadcrumb-item>
+            <el-breadcrumb-item v-for="name in route.matched.map(r => r.meta?.title as string).filter(Boolean)" :key="name">
+              {{ t(name) }}
+            </el-breadcrumb-item>
           </el-breadcrumb>
         </div>
         <TopBarRight
@@ -26,30 +48,52 @@
           @change-username="$emit('changeUsername')"
           @change-password="$emit('changePassword')"
         />
-      </el-header>
+      </header>
 
+      <!-- 标签栏 -->
       <TabBar v-if="settingsStore.showTabs" />
 
-      <el-main class="main-content">
-        <router-view />
-      </el-main>
-    </el-container>
-  </el-container>
+      <main class="content-area">
+        <router-view v-slot="{ Component: ViewComponent }">
+          <Transition name="page-fade" mode="out-in">
+            <component :is="ViewComponent" />
+          </Transition>
+        </router-view>
+      </main>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
+import { computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import TopBarRight from './components/TopBarRight.vue'
-import TabBar from './components/TabBar.vue'
-import { useSidebarTheme } from '@/composables/useSidebarTheme'
 import { useSettingsStore } from '@/stores/settings'
+import { useSidebarTheme } from '@/composables/useSidebarTheme'
 import { flatMenuItems } from '@/config/menu'
+import TopBarRight from '@/layouts/components/TopBarRight.vue'
+import TabBar from '@/layouts/components/TabBar.vue'
 
+const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
 const settingsStore = useSettingsStore()
 const { sidebarBg, menuTextColor, menuActiveTextColor, menuActiveBg, borderColor } = useSidebarTheme()
+
+const collapsedWidth = 64
+const expandedWidth = 200
+const sidebarWidth = computed(() => settingsStore.sidebarCollapsed ? collapsedWidth : expandedWidth)
+
+const sidebarStyle = computed(() => ({
+  width: `${sidebarWidth.value}px`,
+  minWidth: `${sidebarWidth.value}px`,
+  backgroundColor: sidebarBg.value,
+  borderRight: `1px solid ${borderColor.value}`,
+}))
+
+const topbarStyle = computed(() => ({
+  borderBottom: `1px solid ${borderColor.value}`,
+}))
 
 defineEmits<{
   openThemeDrawer: []
@@ -59,56 +103,169 @@ defineEmits<{
 </script>
 
 <style scoped>
-.layout-container {
+.layout {
+  display: flex;
   height: 100vh;
   overflow: hidden;
 }
+
+/* ===== 侧边栏 ===== */
 .sidebar {
-  overflow-y: auto;
-  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  flex-shrink: 0;
+  transition: width 0.28s ease, min-width 0.28s ease;
+  overflow: hidden;
 }
-.sidebar::-webkit-scrollbar {
-  width: 0;
-}
+
 .logo {
-  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  height: 60px;
+  font-size: 20px;
+  font-weight: bold;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   color: #fff;
-  font-size: 18px;
-  font-weight: 600;
-  border-bottom: 1px solid hsla(0,0%,100%,.1);
-}
-:deep(.el-menu-item.is-active) {
-  background-color: var(--menu-active-bg) !important;
-  border-radius: 0;
-}
-.right-container {
-  flex-direction: column;
+  white-space: nowrap;
   overflow: hidden;
 }
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.logo-text {
+  margin-left: 10px;
+}
+
+.sidebar-collapsed .logo-text {
+  display: none;
+}
+
+.menu-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  height: 56px;
+  padding: 0 20px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+  gap: 10px;
+}
+
+.sidebar-collapsed .menu-item {
+  padding: 0;
+  justify-content: center;
+}
+
+.menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.menu-item.active {
+  background-color: v-bind(menuActiveBg);
+}
+
+.menu-item .el-icon {
+  color: v-bind(menuTextColor);
+  flex-shrink: 0;
+}
+
+.menu-item.active .el-icon {
+  color: v-bind(menuActiveTextColor);
+}
+
+.menu-text {
+  color: v-bind(menuTextColor);
+  font-size: 14px;
+}
+
+.menu-item.active .menu-text {
+  color: v-bind(menuActiveTextColor);
+}
+
+/* 折叠按钮 */
+.collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  cursor: pointer;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: v-bind(menuTextColor);
+  transition: background-color 0.2s;
+}
+
+.collapse-btn:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ===== 右侧主区域 ===== */
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
 .topbar {
-  height: 50px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--el-border-color-lighter);
-  background: var(--el-bg-color);
-  padding: 0 16px;
+  height: 50px;
+  padding: 0 20px;
+  background: #fff;
+  flex-shrink: 0;
 }
+
 .topbar-left {
   display: flex;
   align-items: center;
-}
-.main-content {
-  background: var(--el-bg-color-page);
-  overflow-y: auto;
-  padding: 16px;
+  gap: 16px;
 }
 
-:deep(.el-menu) {
-  border-right: none;
+:root.dark .topbar {
+  background: #1d1e1f;
+}
+
+.content-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+/* ===== 页面过渡动画 ===== */
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.page-fade-enter-from,
+.page-fade-leave-to {
+  opacity: 0;
 }
 </style>

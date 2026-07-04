@@ -1,13 +1,13 @@
 <template>
   <el-container class="layout-container">
-    <el-aside :width="isCollapsed ? '64px' : '220px'" class="sidebar" :style="{ backgroundColor: sidebarBg, '--menu-active-bg': menuActiveBg }">
-      <div class="logo" :class="{ collapsed: isCollapsed }" :style="{ borderBottomColor: borderColor }">
+    <el-aside :width="settingsStore.sidebarCollapsed ? '64px' : '220px'" class="sidebar" :style="{ backgroundColor: sidebarBg, '--menu-active-bg': menuActiveBg }">
+      <div class="logo" :class="{ collapsed: settingsStore.sidebarCollapsed }" :style="{ borderBottomColor: borderColor }">
         <el-icon :size="20" color="#fff"><Promotion /></el-icon>
-        <span v-show="!isCollapsed">OxNginx</span>
+        <span v-show="!settingsStore.sidebarCollapsed">OxNginx</span>
       </div>
       <el-menu
         :default-active="route.path"
-        :collapse="isCollapsed"
+        :collapse="settingsStore.sidebarCollapsed"
         :background-color="sidebarBg"
         :text-color="menuTextColor"
         :active-text-color="menuActiveTextColor"
@@ -36,9 +36,9 @@
         </el-menu-item>
       </el-menu>
 
-      <div class="collapse-btn" @click="isCollapsed = !isCollapsed">
+      <div class="collapse-btn" @click="settingsStore.toggleSidebar()">
         <el-icon :size="16" color="hsla(0,0%,100%,.65)">
-          <DArrowLeft v-if="!isCollapsed" />
+          <DArrowLeft v-if="!settingsStore.sidebarCollapsed" />
           <DArrowRight v-else />
         </el-icon>
       </div>
@@ -69,7 +69,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import TopBarRight from './components/TopBarRight.vue'
@@ -80,7 +79,6 @@ import { flatMenuItems, groupedMenuItems } from '@/config/menu'
 
 const route = useRoute()
 const { t } = useI18n()
-const isCollapsed = ref(false)
 const settingsStore = useSettingsStore()
 const { sidebarBg, menuTextColor, menuActiveTextColor, menuActiveBg, borderColor } = useSidebarTheme()
 const settingsItem = flatMenuItems[flatMenuItems.length - 1]
