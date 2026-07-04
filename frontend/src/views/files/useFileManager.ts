@@ -2,6 +2,7 @@ import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '@/api'
+import { useFilesStore } from '@/stores/files'
 
 export interface FileItem {
   name: string
@@ -19,6 +20,7 @@ export interface FileItem {
 
 export function useFileManager() {
   const { t } = useI18n()
+  const filesStore = useFilesStore()
 
   // ===== 核心状态 =====
   const loading = ref(false)
@@ -106,6 +108,7 @@ export function useFileManager() {
 
   // ===== 生命周期 =====
   onMounted(() => {
+    if (filesStore.lastPath) currentPath.value = filesStore.lastPath
     fetchDrives()
     fetchFiles()
     document.addEventListener('click', closeContextMenu)
@@ -129,6 +132,7 @@ export function useFileManager() {
         currentPath.value = data.data.path.replace(/\\\\\?\\/, '').replace(/\\/g, '/')
         currentParent.value = data.data.parent ? data.data.parent.replace(/\\\\\?\\/, '').replace(/\\/g, '/') : null
         currentPage.value = 1
+        filesStore.lastPath = currentPath.value
       } else {
         ElMessage.error(data.message)
       }
