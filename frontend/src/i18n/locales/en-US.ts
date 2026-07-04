@@ -367,4 +367,15 @@ export default {
     oxnginxVersion: 'OxNginx Version',
     saveFailed: 'Save failed',
   },
+
+  theme: {
+    settings: 'Theme Settings',
+    layout: 'Layout',
+    sidebarDouble: 'Sidebar Double',
+    sidebarTree: 'Sidebar Tree',
+    topTree: 'Top Tree',
+    themeColor: 'Theme Color',
+    darkMode: 'Dark Mode',
+    language: 'Language',
+  },
 }

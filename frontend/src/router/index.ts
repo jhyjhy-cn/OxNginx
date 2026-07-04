@@ -11,7 +11,7 @@ const router = createRouter({
     },
     {
       path: '/',
-      component: () => import('@/views/Layout.vue'),
+      component: () => import('@/layouts/MainLayout.vue'),
       redirect: '/dashboard',
       children: [
         {

@@ -383,4 +383,16 @@ export default {
     oxnginxVersion: 'OxNginx版本',
     saveFailed: '保存失败',
   },
+
+  // 主题配置
+  theme: {
+    settings: '主题设置',
+    layout: '布局设置',
+    sidebarDouble: '左侧双栏',
+    sidebarTree: '左侧树形',
+    topTree: '顶部树形',
+    themeColor: '主题色',
+    darkMode: '暗黑模式',
+    language: '多语言',
+  },
 }

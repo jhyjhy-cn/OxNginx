@@ -1,10 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+export type LayoutMode = 'sidebar-double' | 'sidebar-tree' | 'top-tree'
+
 export const useSettingsStore = defineStore('settings', () => {
   const locale = ref<'zh-CN' | 'en-US'>('zh-CN')
   const themeColor = ref('#409EFF')
   const darkMode = ref(false)
+  const layoutMode = ref<LayoutMode>('sidebar-double')
 
   function setLocale(val: 'zh-CN' | 'en-US') {
     locale.value = val
@@ -45,6 +48,11 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
 
+  /** 设置布局模式 */
+  function setLayoutMode(mode: LayoutMode) {
+    layoutMode.value = mode
+  }
+
   /** 初始化：从持久化 state 恢复到 DOM */
   function initTheme() {
     applyThemeColor(themeColor.value)
@@ -55,9 +63,11 @@ export const useSettingsStore = defineStore('settings', () => {
     locale,
     themeColor,
     darkMode,
+    layoutMode,
     setLocale,
     setThemeColor,
     toggleDarkMode,
+    setLayoutMode,
     initTheme,
   }
 }, {
