@@ -14,38 +14,25 @@
         router
         :collapse-transition="false"
       >
-        <el-menu-item index="/dashboard">
-          <el-icon><Odometer /></el-icon>
-          <template #title>{{ t('menu.dashboard') }}</template>
+        <!-- 仪表盘 -->
+        <el-menu-item :index="flatMenuItems[0].path">
+          <el-icon><component :is="flatMenuItems[0].icon" /></el-icon>
+          <template #title>{{ t(flatMenuItems[0].title) }}</template>
         </el-menu-item>
-        <el-sub-menu index="site-group">
+        <!-- 分组菜单 -->
+        <el-sub-menu v-for="group in groupedMenuItems" :key="group.index" :index="group.index">
           <template #title>
-            <el-icon><Grid /></el-icon>
-            <span>{{ t('menu.sites') }}</span>
+            <el-icon><component :is="group.icon" /></el-icon>
+            <span>{{ t(group.title) }}</span>
           </template>
-          <el-menu-item index="/sites">{{ t('menu.sites') }}</el-menu-item>
-          <el-menu-item index="/upstreams">{{ t('menu.upstreams') }}</el-menu-item>
-          <el-menu-item index="/templates">{{ t('menu.templates') }}</el-menu-item>
+          <el-menu-item v-for="child in group.children" :key="child.path" :index="child.path">
+            {{ t(child.title) }}
+          </el-menu-item>
         </el-sub-menu>
-        <el-sub-menu index="security-group">
-          <template #title>
-            <el-icon><Lock /></el-icon>
-            <span>{{ t('menu.ssl') }}</span>
-          </template>
-          <el-menu-item index="/ssl">{{ t('menu.ssl') }}</el-menu-item>
-          <el-menu-item index="/access">{{ t('menu.access') }}</el-menu-item>
-        </el-sub-menu>
-        <el-sub-menu index="config-group">
-          <template #title>
-            <el-icon><Edit /></el-icon>
-            <span>{{ t('menu.config') }}</span>
-          </template>
-          <el-menu-item index="/config">{{ t('menu.config') }}</el-menu-item>
-          <el-menu-item index="/logs">{{ t('menu.logs') }}</el-menu-item>
-        </el-sub-menu>
-        <el-menu-item index="/settings">
-          <el-icon><Setting /></el-icon>
-          <template #title>{{ t('menu.settings') }}</template>
+        <!-- 设置 -->
+        <el-menu-item :index="settingsItem.path">
+          <el-icon><component :is="settingsItem.icon" /></el-icon>
+          <template #title>{{ t(settingsItem.title) }}</template>
         </el-menu-item>
       </el-menu>
 
@@ -72,6 +59,8 @@
         />
       </el-header>
 
+      <TabBar v-if="settingsStore.showTabs" />
+
       <el-main class="main-content">
         <router-view />
       </el-main>
@@ -84,12 +73,17 @@ import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import TopBarRight from './components/TopBarRight.vue'
+import TabBar from './components/TabBar.vue'
 import { useSidebarTheme } from '@/composables/useSidebarTheme'
+import { useSettingsStore } from '@/stores/settings'
+import { flatMenuItems, groupedMenuItems } from '@/config/menu'
 
 const route = useRoute()
 const { t } = useI18n()
 const isCollapsed = ref(false)
+const settingsStore = useSettingsStore()
 const { sidebarBg, menuTextColor, menuActiveTextColor, menuActiveBg, borderColor } = useSidebarTheme()
+const settingsItem = flatMenuItems[flatMenuItems.length - 1]
 
 defineEmits<{
   openThemeDrawer: []

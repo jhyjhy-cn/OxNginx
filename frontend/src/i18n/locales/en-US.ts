@@ -377,5 +377,15 @@ export default {
     themeColor: 'Theme Color',
     darkMode: 'Dark Mode',
     language: 'Language',
+    showTabs: 'Tabs',
+    showTabIcons: 'Tab Icons',
+  },
+
+  tabs: {
+    refresh: 'Refresh',
+    close: 'Close Tab',
+    closeLeft: 'Close Left',
+    closeRight: 'Close Right',
+    closeOther: 'Close Others',
   },
 }

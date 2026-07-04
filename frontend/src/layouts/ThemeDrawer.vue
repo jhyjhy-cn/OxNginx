@@ -73,6 +73,18 @@
       </div>
     </div>
 
+    <!-- 标签页 -->
+    <div class="section">
+      <div class="section-row">
+        <span class="section-title no-margin">{{ t('theme.showTabs') }}</span>
+        <el-switch v-model="settingsStore.showTabs" />
+      </div>
+      <div v-if="settingsStore.showTabs" class="section-row" style="margin-top: 10px;">
+        <span class="section-title no-margin">{{ t('theme.showTabIcons') }}</span>
+        <el-switch v-model="settingsStore.showTabIcons" />
+      </div>
+    </div>
+
     <!-- 多语言 -->
     <div class="section">
       <div class="section-title">{{ t('theme.language') }}</div>

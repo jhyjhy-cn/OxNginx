@@ -394,5 +394,16 @@ export default {
     themeColor: '主题色',
     darkMode: '暗黑模式',
     language: '多语言',
+    showTabs: '标签页',
+    showTabIcons: '标签图标',
+  },
+
+  // 标签页
+  tabs: {
+    refresh: '刷新',
+    close: '关闭标签',
+    closeLeft: '关闭左侧',
+    closeRight: '关闭右侧',
+    closeOther: '关闭其他',
   },
 }

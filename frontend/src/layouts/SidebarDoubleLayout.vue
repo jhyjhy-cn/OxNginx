@@ -6,41 +6,9 @@
         <span>OxNginx</span>
       </div>
       <el-menu :default-active="route.path" :background-color="sidebarBg" :text-color="menuTextColor" :active-text-color="menuActiveTextColor" router>
-        <el-menu-item index="/dashboard">
-          <el-icon><Odometer /></el-icon>
-          <span>{{ t('menu.dashboard') }}</span>
-        </el-menu-item>
-        <el-menu-item index="/sites">
-          <el-icon><Grid /></el-icon>
-          <span>{{ t('menu.sites') }}</span>
-        </el-menu-item>
-        <el-menu-item index="/ssl">
-          <el-icon><Lock /></el-icon>
-          <span>{{ t('menu.ssl') }}</span>
-        </el-menu-item>
-        <el-menu-item index="/upstreams">
-          <el-icon><Connection /></el-icon>
-          <span>{{ t('menu.upstreams') }}</span>
-        </el-menu-item>
-        <el-menu-item index="/access">
-          <el-icon><Key /></el-icon>
-          <span>{{ t('menu.access') }}</span>
-        </el-menu-item>
-        <el-menu-item index="/templates">
-          <el-icon><Files /></el-icon>
-          <span>{{ t('menu.templates') }}</span>
-        </el-menu-item>
-        <el-menu-item index="/logs">
-          <el-icon><Document /></el-icon>
-          <span>{{ t('menu.logs') }}</span>
-        </el-menu-item>
-        <el-menu-item index="/config">
-          <el-icon><Edit /></el-icon>
-          <span>{{ t('menu.config') }}</span>
-        </el-menu-item>
-        <el-menu-item index="/settings">
-          <el-icon><Setting /></el-icon>
-          <span>{{ t('menu.settings') }}</span>
+        <el-menu-item v-for="item in flatMenuItems" :key="item.path" :index="item.path">
+          <el-icon><component :is="item.icon" /></el-icon>
+          <span>{{ t(item.title) }}</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -60,6 +28,8 @@
         />
       </el-header>
 
+      <TabBar v-if="settingsStore.showTabs" />
+
       <el-main class="main-content">
         <router-view />
       </el-main>
@@ -71,10 +41,14 @@
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import TopBarRight from './components/TopBarRight.vue'
+import TabBar from './components/TabBar.vue'
 import { useSidebarTheme } from '@/composables/useSidebarTheme'
+import { useSettingsStore } from '@/stores/settings'
+import { flatMenuItems } from '@/config/menu'
 
 const route = useRoute()
 const { t } = useI18n()
+const settingsStore = useSettingsStore()
 const { sidebarBg, menuTextColor, menuActiveTextColor, menuActiveBg, borderColor } = useSidebarTheme()
 
 defineEmits<{

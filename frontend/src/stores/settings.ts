@@ -9,6 +9,8 @@ export const useSettingsStore = defineStore('settings', () => {
   const themeColor = ref('#409EFF')
   const darkMode = ref(false)
   const layoutMode = ref<LayoutMode>('sidebar-double')
+  const showTabs = ref(true)
+  const showTabIcons = ref(true)
 
   function setLocale(val: 'zh-CN' | 'en-US') {
     locale.value = val
@@ -65,6 +67,8 @@ export const useSettingsStore = defineStore('settings', () => {
     themeColor,
     darkMode,
     layoutMode,
+    showTabs,
+    showTabIcons,
     setLocale,
     setThemeColor,
     toggleDarkMode,
