@@ -419,6 +419,7 @@ export default {
     note: '备注',
     back: '返回上级',
     root: '根目录',
+    search: '搜索文件...',
     refresh: '刷新',
     createFile: '新建文件',
     createFolder: '新建文件夹',

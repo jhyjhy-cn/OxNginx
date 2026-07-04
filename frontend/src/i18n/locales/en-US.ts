@@ -400,6 +400,7 @@ export default {
     note: 'Note',
     back: 'Back',
     root: 'Root',
+    search: 'Search files...',
     refresh: 'Refresh',
     createFile: 'New File',
     createFolder: 'New Folder',
