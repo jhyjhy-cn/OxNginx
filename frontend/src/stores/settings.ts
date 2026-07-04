@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { toggleDarkWithAnimation } from '@/utils/theme-transition'
 
 export type LayoutMode = 'sidebar-double' | 'sidebar-tree' | 'top-tree'
 
@@ -18,9 +19,9 @@ export const useSettingsStore = defineStore('settings', () => {
     applyThemeColor(color)
   }
 
-  function toggleDarkMode() {
+  function toggleDarkMode(event?: MouseEvent) {
     darkMode.value = !darkMode.value
-    applyDarkMode(darkMode.value)
+    toggleDarkWithAnimation(darkMode.value, event)
   }
 
   /** 应用主题色到 CSS 变量 */

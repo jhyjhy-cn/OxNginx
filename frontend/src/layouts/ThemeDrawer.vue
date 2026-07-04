@@ -63,7 +63,10 @@
     <div class="section">
       <div class="section-row">
         <span class="section-title no-margin">{{ t('theme.darkMode') }}</span>
-        <el-switch v-model="isDark">
+        <el-switch
+          :model-value="settingsStore.darkMode"
+          @click="settingsStore.toggleDarkMode($event)"
+        >
           <template #active-action><Moon :size="12" /></template>
           <template #inactive-action><Sunny :size="12" /></template>
         </el-switch>
@@ -104,12 +107,6 @@ const layoutOptions: { value: LayoutMode; label: string }[] = [
 ]
 
 const presetColors = ['#409EFF', '#536dfe', '#9c27b0', '#00bfa5', '#ff5722', '#e91e63']
-
-// 暗黑模式 - 使用 computed 双向绑定
-const isDark = computed({
-  get: () => settingsStore.darkMode,
-  set: () => settingsStore.toggleDarkMode(),
-})
 
 // 语言切换
 const currentLang = computed({

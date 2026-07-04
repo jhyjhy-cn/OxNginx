@@ -12,6 +12,7 @@ import App from './App.vue'
 import router from './router'
 import i18n from './i18n'
 import { useSettingsStore } from './stores/settings'
+import OnIconPlugin from './components/OnIcon'
 
 const app = createApp(App)
 
@@ -26,6 +27,7 @@ pinia.use(piniaPluginPersistedstate)
 app.use(pinia)
 app.use(router)
 app.use(ElementPlus)
+app.use(OnIconPlugin)
 app.use(i18n)
 
 // 从持久化 store 恢复主题设置到 DOM

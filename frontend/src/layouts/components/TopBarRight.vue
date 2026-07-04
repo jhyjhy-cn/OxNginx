@@ -1,5 +1,27 @@
 <template>
   <div class="top-bar-right">
+    <!-- 主题色 -->
+    <el-color-picker
+      :model-value="settingsStore.themeColor"
+      @change="handleColorChange"
+      :predefine="presetColors"
+      size="small"
+    />
+    <!-- 语言切换 -->
+    <el-dropdown @command="handleLanguageChange" trigger="click">
+      <OnIcon svgName="translate" :size="18" class="action-icon" />
+      <template #dropdown>
+        <el-dropdown-menu>
+          <el-dropdown-item command="zh-CN" :class="{ active: settingsStore.locale === 'zh-CN' }">中文</el-dropdown-item>
+          <el-dropdown-item command="en-US" :class="{ active: settingsStore.locale === 'en-US' }">English</el-dropdown-item>
+        </el-dropdown-menu>
+      </template>
+    </el-dropdown>
+    <!-- 暗黑模式切换 -->
+    <el-icon class="action-icon" :size="18" @click="settingsStore.toggleDarkMode($event)">
+      <Moon v-if="!settingsStore.darkMode" />
+      <Sunny v-else />
+    </el-icon>
     <!-- 主题设置按钮 -->
     <el-icon class="action-icon" :size="18" @click="$emit('openThemeDrawer')"><Setting /></el-icon>
     <!-- 用户菜单 -->
@@ -23,15 +45,28 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
+import { useSettingsStore } from '@/stores/settings'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const authStore = useAuthStore()
+const settingsStore = useSettingsStore()
+
+const presetColors = ['#409EFF', '#536dfe', '#9c27b0', '#00bfa5', '#ff5722', '#e91e63']
+
+function handleColorChange(color: string | null) {
+  if (color) settingsStore.setThemeColor(color)
+}
 
 const emit = defineEmits<{
   openThemeDrawer: []
   changeUsername: []
   changePassword: []
 }>()
+
+function handleLanguageChange(lang: 'zh-CN' | 'en-US') {
+  settingsStore.setLocale(lang)
+  locale.value = lang
+}
 
 function handleUserCommand(cmd: string) {
   if (cmd === 'logout') {
@@ -56,6 +91,10 @@ function handleUserCommand(cmd: string) {
 }
 .action-icon:hover {
   color: var(--el-color-primary);
+}
+:deep(.el-dropdown-menu__item.active) {
+  color: var(--el-color-primary);
+  font-weight: 600;
 }
 .user-trigger {
   display: flex;
