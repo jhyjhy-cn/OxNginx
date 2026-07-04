@@ -1,10 +1,53 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+
+export interface FileTab {
+  id: string
+  title: string
+  path: string
+}
 
 export const useFilesStore = defineStore('files', () => {
-  const lastPath = ref('')
+  const tabs = ref<FileTab[]>([])
+  const activeTabId = ref('')
+  const lastPath = ref('') // 兼容旧数据
 
-  return { lastPath }
+  const activeTab = computed(() => tabs.value.find(t => t.id === activeTabId.value))
+
+  function addTab(path?: string) {
+    const p = path || lastPath.value || ''
+    const segs = p.replace(/\\/g, '/').split('/').filter(Boolean)
+    const title = segs[segs.length - 1] || '/'
+    const id = crypto.randomUUID()
+    tabs.value.push({ id, title, path: p })
+    activeTabId.value = id
+    return id
+  }
+
+  function closeTab(id: string) {
+    const idx = tabs.value.findIndex(t => t.id === id)
+    if (idx === -1 || tabs.value.length <= 1) return // 至少保留一个
+    tabs.value.splice(idx, 1)
+    if (activeTabId.value === id) {
+      const next = tabs.value[Math.min(idx, tabs.value.length - 1)]
+      activeTabId.value = next.id
+    }
+  }
+
+  function setActiveTab(id: string) {
+    activeTabId.value = id
+  }
+
+  function updateTabPath(id: string, path: string) {
+    const tab = tabs.value.find(t => t.id === id)
+    if (!tab) return
+    tab.path = path
+    const segs = path.replace(/\\/g, '/').split('/').filter(Boolean)
+    tab.title = segs[segs.length - 1] || '/'
+    lastPath.value = path // 兼容
+  }
+
+  return { tabs, activeTabId, activeTab, lastPath, addTab, closeTab, setActiveTab, updateTabPath }
 }, {
   persist: true,
 })

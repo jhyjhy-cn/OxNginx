@@ -18,7 +18,7 @@ export interface FileItem {
   _calcLoading?: boolean
 }
 
-export function useFileManager() {
+export function useFileManager(initialPath?: string, tabId?: string) {
   const { t } = useI18n()
   const filesStore = useFilesStore()
 
@@ -108,7 +108,8 @@ export function useFileManager() {
 
   // ===== 生命周期 =====
   onMounted(() => {
-    if (filesStore.lastPath) currentPath.value = filesStore.lastPath
+    if (initialPath) currentPath.value = initialPath
+    else if (filesStore.lastPath) currentPath.value = filesStore.lastPath
     fetchDrives()
     fetchFiles()
     document.addEventListener('click', closeContextMenu)
@@ -133,6 +134,7 @@ export function useFileManager() {
         currentParent.value = data.data.parent ? data.data.parent.replace(/\\\\\?\\/, '').replace(/\\/g, '/') : null
         currentPage.value = 1
         filesStore.lastPath = currentPath.value
+        if (tabId) filesStore.updateTabPath(tabId, currentPath.value)
       } else {
         ElMessage.error(data.message)
       }
