@@ -3,40 +3,40 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>访问控制</span>
+          <span>{{ $t('access.title') }}</span>
           <el-button type="primary" @click="showAddDialog">
             <el-icon><Plus /></el-icon>
-            添加规则
+            {{ $t('access.addRule') }}
           </el-button>
         </div>
       </template>
 
       <el-table :data="rules" style="width: 100%" v-loading="loading">
-        <el-table-column prop="rule_type" label="规则类型" width="150">
+        <el-table-column prop="rule_type" :label="$t('access.ruleType')" width="150">
           <template #default="{ row }">
             <el-tag :type="ruleTypeColors[row.rule_type]" size="small">
-              {{ ruleTypeLabels[row.rule_type] || row.rule_type }}
+              {{ getRuleTypeLabel(row.rule_type) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="value" label="规则值" min-width="200" />
-        <el-table-column prop="description" label="描述" min-width="150" />
-        <el-table-column prop="site_id" label="适用站点" width="150">
+        <el-table-column prop="value" :label="$t('access.ruleValue')" min-width="200" />
+        <el-table-column prop="description" :label="$t('access.description')" min-width="150" />
+        <el-table-column prop="site_id" :label="$t('access.site')" width="150">
           <template #default="{ row }">
-            {{ row.site_id ? getSiteName(row.site_id) : '全局' }}
+            {{ row.site_id ? getSiteName(row.site_id) : $t('access.global') }}
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" :label="$t('common.status')" width="100">
           <template #default="{ row }">
             <el-tag :type="row.status === 'enabled' ? 'success' : 'danger'" size="small">
-              {{ row.status === 'enabled' ? '启用' : '禁用' }}
+              {{ row.status === 'enabled' ? $t('common.enabled') : $t('common.disabled') }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column :label="$t('common.action')" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="editRule(row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="deleteRule(row)">删除</el-button>
+            <el-button size="small" @click="editRule(row)">{{ $t('common.edit') }}</el-button>
+            <el-button size="small" type="danger" @click="deleteRule(row)">{{ $t('common.delete') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -45,16 +45,16 @@
     <!-- 添加/编辑对话框 -->
     <OnDialog
       v-model="dialogVisible"
-      :title="isEdit ? '编辑规则' : '添加规则'"
+      :title="isEdit ? $t('access.editRule') : $t('access.addRule')"
       width="500px"
     >
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
-        <el-form-item label="规则类型" prop="rule_type">
+      <el-form ref="formRef" :model="form" :rules="validationRules" label-width="100px">
+        <el-form-item :label="$t('access.ruleType')" prop="rule_type">
           <el-select v-model="form.rule_type" style="width: 100%" @change="onRuleTypeChange">
-            <el-option label="IP 白名单" value="ip_allow" />
-            <el-option label="IP 黑名单" value="ip_deny" />
-            <el-option label="Basic Auth" value="basic_auth" />
-            <el-option label="速率限制" value="rate_limit" />
+            <el-option :label="$t('access.ipAllow')" value="ip_allow" />
+            <el-option :label="$t('access.ipDeny')" value="ip_deny" />
+            <el-option :label="$t('access.basicAuth')" value="basic_auth" />
+            <el-option :label="$t('access.rateLimit')" value="rate_limit" />
           </el-select>
         </el-form-item>
 
@@ -66,18 +66,18 @@
             :rows="form.rule_type === 'basic_auth' ? 3 : 1"
           />
           <div class="form-tip" v-if="form.rule_type === 'ip_allow' || form.rule_type === 'ip_deny'">
-            支持单个IP或CIDR格式，例如：192.168.1.100 或 192.168.1.0/24
+            {{ $t('access.ipFormatTip') }}
           </div>
           <div class="form-tip" v-if="form.rule_type === 'basic_auth'">
-            格式：用户名:密码，每行一个
+            {{ $t('access.basicAuthFormatTip') }}
           </div>
           <div class="form-tip" v-if="form.rule_type === 'rate_limit'">
-            格式：请求数/时间，例如：10r/s 或 100r/m
+            {{ $t('access.rateLimitFormatTip') }}
           </div>
         </el-form-item>
 
-        <el-form-item label="适用站点">
-          <el-select v-model="form.site_id" style="width: 100%" clearable placeholder="全局">
+        <el-form-item :label="$t('access.site')">
+          <el-select v-model="form.site_id" style="width: 100%" clearable :placeholder="$t('access.global')">
             <el-option
               v-for="site in sites"
               :key="site.id"
@@ -87,14 +87,14 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="描述">
-          <el-input v-model="form.description" placeholder="可选描述" />
+        <el-form-item :label="$t('access.description')">
+          <el-input v-model="form.description" :placeholder="$t('access.optionalDesc')" />
         </el-form-item>
       </el-form>
 
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitForm">确定</el-button>
+        <el-button @click="dialogVisible = false">{{ $t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitForm">{{ $t('common.confirm') }}</el-button>
       </template>
     </OnDialog>
   </div>
@@ -102,10 +102,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import api from '@/api'
 import OnDialog from '@/components/OnDialog/index.vue'
+
+const { t } = useI18n()
 
 interface AccessRule {
   id: number
@@ -121,11 +124,14 @@ interface Site {
   name: string
 }
 
-const ruleTypeLabels: Record<string, string> = {
-  ip_allow: 'IP白名单',
-  ip_deny: 'IP黑名单',
-  basic_auth: 'Basic Auth',
-  rate_limit: '速率限制',
+function getRuleTypeLabel(type: string): string {
+  const labels: Record<string, string> = {
+    ip_allow: t('access.ipAllow'),
+    ip_deny: t('access.ipDeny'),
+    basic_auth: t('access.basicAuth'),
+    rate_limit: t('access.rateLimit'),
+  }
+  return labels[type] || type
 }
 
 const ruleTypeColors: Record<string, string> = {
@@ -155,13 +161,13 @@ const valueLabel = computed(() => {
   switch (form.rule_type) {
     case 'ip_allow':
     case 'ip_deny':
-      return 'IP地址'
+      return t('access.ipAddress')
     case 'basic_auth':
-      return '用户名:密码'
+      return t('access.userPass')
     case 'rate_limit':
-      return '速率限制'
+      return t('access.rateLimit')
     default:
-      return '规则值'
+      return t('access.ruleValue')
   }
 })
 
@@ -179,6 +185,10 @@ const valuePlaceholder = computed(() => {
   }
 })
 
+const validationRules = {
+  value: [{ required: true, message: () => t('access.enterRuleValue'), trigger: 'blur' }],
+}
+
 onMounted(() => {
   fetchRules()
   fetchSites()
@@ -186,7 +196,7 @@ onMounted(() => {
 
 function getSiteName(siteId: number): string {
   const site = sites.value.find(s => s.id === siteId)
-  return site ? site.name : `站点#${siteId}`
+  return site ? site.name : `#${siteId}`
 }
 
 function onRuleTypeChange() {
@@ -257,16 +267,16 @@ async function submitForm() {
 
     if (isEdit.value && editId.value) {
       await api.put(`/api/access-rules/${editId.value}`, data)
-      ElMessage.success('更新成功')
+      ElMessage.success(t('access.updateSuccess'))
     } else {
       await api.post('/api/access-rules', data)
-      ElMessage.success('创建成功')
+      ElMessage.success(t('access.createSuccess'))
     }
 
     dialogVisible.value = false
     fetchRules()
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '操作失败')
+    ElMessage.error(error.response?.data?.message || t('common.operationFailed'))
   } finally {
     submitting.value = false
   }
@@ -274,15 +284,15 @@ async function submitForm() {
 
 async function deleteRule(rule: AccessRule) {
   try {
-    await ElMessageBox.confirm('确定要删除该规则吗？', '提示', {
+    await ElMessageBox.confirm(t('access.deleteConfirm'), t('common.tip'), {
       type: 'warning',
     })
     await api.delete(`/api/access-rules/${rule.id}`)
-    ElMessage.success('删除成功')
+    ElMessage.success(t('access.deleteSuccess'))
     fetchRules()
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || '删除失败')
+      ElMessage.error(error.response?.data?.message || t('access.deleteFailed'))
     }
   }
 }

@@ -3,15 +3,15 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>Nginx日志</span>
+          <span>{{ $t('logs.title') }}</span>
           <div>
             <el-radio-group v-model="logType" @change="fetchLogs">
-              <el-radio-button label="access">Access日志</el-radio-button>
-              <el-radio-button label="error">Error日志</el-radio-button>
+              <el-radio-button label="access">{{ $t('logs.accessLog') }}</el-radio-button>
+              <el-radio-button label="error">{{ $t('logs.errorLog') }}</el-radio-button>
             </el-radio-group>
             <el-button style="margin-left: 12px" @click="fetchLogs">
               <el-icon><Refresh /></el-icon>
-              刷新
+              {{ $t('common.refresh') }}
             </el-button>
           </div>
         </div>
@@ -19,7 +19,7 @@
 
       <div class="log-content" v-loading="loading">
         <pre v-if="logs.length">{{ logs.join('\n') }}</pre>
-        <el-empty v-else description="暂无日志" />
+        <el-empty v-else :description="$t('logs.noLog')" />
       </div>
     </el-card>
   </div>

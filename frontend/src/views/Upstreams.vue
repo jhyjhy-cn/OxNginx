@@ -3,33 +3,33 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>负载均衡管理</span>
+          <span>{{ $t('upstreams.title') }}</span>
           <el-button type="primary" @click="showAddDialog">
             <el-icon><Plus /></el-icon>
-            添加上游服务器
+            {{ $t('upstreams.addUpstream') }}
           </el-button>
         </div>
       </template>
 
       <el-table :data="upstreams" style="width: 100%" v-loading="loading">
-        <el-table-column prop="name" label="名称" width="200" />
-        <el-table-column prop="method" label="负载策略" width="150">
+        <el-table-column prop="name" :label="$t('upstreams.name')" width="200" />
+        <el-table-column prop="method" :label="$t('upstreams.method')" width="150">
           <template #default="{ row }">
-            <el-tag size="small">{{ methodLabels[row.method] || row.method }}</el-tag>
+            <el-tag size="small">{{ getMethodLabel(row.method) }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="keepalive" label="Keepalive" width="100" />
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" :label="$t('common.status')" width="100">
           <template #default="{ row }">
             <el-tag :type="row.status === 'enabled' ? 'success' : 'danger'" size="small">
-              {{ row.status === 'enabled' ? '启用' : '禁用' }}
+              {{ row.status === 'enabled' ? $t('common.enabled') : $t('common.disabled') }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column :label="$t('common.action')" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="editUpstream(row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="deleteUpstream(row)">删除</el-button>
+            <el-button size="small" @click="editUpstream(row)">{{ $t('common.edit') }}</el-button>
+            <el-button size="small" type="danger" @click="deleteUpstream(row)">{{ $t('common.delete') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -38,18 +38,18 @@
     <!-- 添加/编辑对话框 -->
     <OnDialog
       v-model="dialogVisible"
-      :title="isEdit ? '编辑上游服务器' : '添加上游服务器'"
+      :title="isEdit ? $t('upstreams.editUpstream') : $t('upstreams.addUpstream')"
       width="700px"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
-        <el-form-item label="名称" prop="name">
-          <el-input v-model="form.name" placeholder="例如: backend" :disabled="isEdit" />
+        <el-form-item :label="$t('upstreams.name')" prop="name">
+          <el-input v-model="form.name" :placeholder="$t('upstreams.namePlaceholder')" :disabled="isEdit" />
         </el-form-item>
-        <el-form-item label="负载策略" prop="method">
+        <el-form-item :label="$t('upstreams.method')" prop="method">
           <el-select v-model="form.method" style="width: 100%">
-            <el-option label="轮询 (Round Robin)" value="round_robin" />
+            <el-option :label="$t('upstreams.roundRobin')" value="round_robin" />
             <el-option label="IP Hash" value="ip_hash" />
-            <el-option label="最少连接 (Least Conn)" value="least_conn" />
+            <el-option :label="$t('upstreams.leastConn')" value="least_conn" />
             <el-option label="URL Hash" value="hash" />
           </el-select>
         </el-form-item>
@@ -57,32 +57,32 @@
           <el-input-number v-model="form.keepalive" :min="0" :max="1024" />
         </el-form-item>
 
-        <el-divider>服务器节点</el-divider>
+        <el-divider>{{ $t('upstreams.serverNodes') }}</el-divider>
 
         <div v-for="(server, index) in form.servers" :key="index" class="server-item">
           <el-row :gutter="12">
             <el-col :span="8">
-              <el-form-item :label="'地址 ' + (index + 1)" :prop="'servers.' + index + '.address'" :rules="{ required: true, message: '请输入地址', trigger: 'blur' }">
+              <el-form-item :label="$t('upstreams.address') + ' ' + (index + 1)" :prop="'servers.' + index + '.address'" :rules="{ required: true, message: () => t('upstreams.enterAddress'), trigger: 'blur' }">
                 <el-input v-model="server.address" placeholder="127.0.0.1:8080" />
               </el-form-item>
             </el-col>
             <el-col :span="4">
-              <el-form-item label="权重">
+              <el-form-item :label="$t('upstreams.weight')">
                 <el-input-number v-model="server.weight" :min="1" :max="100" size="small" />
               </el-form-item>
             </el-col>
             <el-col :span="4">
-              <el-form-item label="最大失败">
+              <el-form-item :label="$t('upstreams.maxFails')">
                 <el-input-number v-model="server.max_fails" :min="1" :max="10" size="small" />
               </el-form-item>
             </el-col>
             <el-col :span="4">
-              <el-form-item label="失败超时">
+              <el-form-item :label="$t('upstreams.failTimeout')">
                 <el-input v-model="server.fail_timeout" size="small" />
               </el-form-item>
             </el-col>
             <el-col :span="2">
-              <el-form-item label="备份">
+              <el-form-item :label="$t('upstreams.backup')">
                 <el-switch v-model="server.backup" size="small" />
               </el-form-item>
             </el-col>
@@ -97,14 +97,14 @@
         <el-form-item>
           <el-button type="primary" plain @click="addServer">
             <el-icon><Plus /></el-icon>
-            添加服务器
+            {{ $t('upstreams.addServer') }}
           </el-button>
         </el-form-item>
       </el-form>
 
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitForm">确定</el-button>
+        <el-button @click="dialogVisible = false">{{ $t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitForm">{{ $t('common.confirm') }}</el-button>
       </template>
     </OnDialog>
   </div>
@@ -112,10 +112,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import api from '@/api'
 import OnDialog from '@/components/OnDialog/index.vue'
+
+const { t } = useI18n()
 
 interface Upstream {
   id: number
@@ -133,11 +136,14 @@ interface UpstreamServer {
   backup: boolean
 }
 
-const methodLabels: Record<string, string> = {
-  round_robin: '轮询',
-  ip_hash: 'IP Hash',
-  least_conn: '最少连接',
-  hash: 'URL Hash',
+function getMethodLabel(method: string): string {
+  const labels: Record<string, string> = {
+    round_robin: t('upstreams.roundRobin'),
+    ip_hash: 'IP Hash',
+    least_conn: t('upstreams.leastConn'),
+    hash: 'URL Hash',
+  }
+  return labels[method] || method
 }
 
 const upstreams = ref<Upstream[]>([])
@@ -164,8 +170,8 @@ const form = reactive({
 })
 
 const rules = {
-  name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
-  method: [{ required: true, message: '请选择负载策略', trigger: 'change' }],
+  name: [{ required: true, message: () => t('upstreams.enterName'), trigger: 'blur' }],
+  method: [{ required: true, message: () => t('upstreams.selectMethod'), trigger: 'change' }],
 }
 
 onMounted(() => {
@@ -265,16 +271,16 @@ async function submitForm() {
 
     if (isEdit.value && editId.value) {
       await api.put(`/api/upstreams/${editId.value}`, data)
-      ElMessage.success('更新成功')
+      ElMessage.success(t('upstreams.updateSuccess'))
     } else {
       await api.post('/api/upstreams', data)
-      ElMessage.success('创建成功')
+      ElMessage.success(t('upstreams.createSuccess'))
     }
 
     dialogVisible.value = false
     fetchUpstreams()
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '操作失败')
+    ElMessage.error(error.response?.data?.message || t('upstreams.operationFailed'))
   } finally {
     submitting.value = false
   }
@@ -282,15 +288,15 @@ async function submitForm() {
 
 async function deleteUpstream(upstream: Upstream) {
   try {
-    await ElMessageBox.confirm(`确定要删除上游服务器 ${upstream.name} 吗？`, '提示', {
+    await ElMessageBox.confirm(t('upstreams.deleteConfirm', { name: upstream.name }), t('common.tip'), {
       type: 'warning',
     })
     await api.delete(`/api/upstreams/${upstream.id}`)
-    ElMessage.success('删除成功')
+    ElMessage.success(t('upstreams.deleteSuccess'))
     fetchUpstreams()
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || '删除失败')
+      ElMessage.error(error.response?.data?.message || t('upstreams.deleteFailed'))
     }
   }
 }

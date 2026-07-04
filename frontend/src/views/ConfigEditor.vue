@@ -6,7 +6,7 @@
         <el-card>
           <template #header>
             <div class="card-header">
-              <span>配置文件</span>
+              <span>{{ $t('config.configFiles') }}</span>
               <el-button size="small" @click="refreshFiles">
                 <el-icon><Refresh /></el-icon>
               </el-button>
@@ -25,7 +25,7 @@
 
             <el-divider />
 
-            <div class="file-group-title">站点配置</div>
+            <div class="file-group-title">{{ $t('config.siteConfigs') }}</div>
             <div
               v-for="file in configFiles"
               :key="file.name"
@@ -40,7 +40,7 @@
                 size="small"
                 class="file-status"
               >
-                {{ file.enabled ? '启用' : '禁用' }}
+                {{ file.enabled ? $t('common.enabled') : $t('common.disabled') }}
               </el-tag>
             </div>
           </div>
@@ -52,17 +52,17 @@
         <el-card>
           <template #header>
             <div class="card-header">
-              <span>{{ currentFileName }}</span>
+              <span>{{ currentFileKey ? $t(currentFileKey) : currentFileName }}</span>
               <div class="editor-actions">
                 <el-button
                   v-if="currentFile && currentFile !== 'main'"
                   size="small"
                   @click="toggleConfig"
                 >
-                  {{ currentFileEnabled ? '禁用' : '启用' }}
+                  {{ currentFileEnabled ? $t('common.disabled') : $t('common.enabled') }}
                 </el-button>
                 <el-button type="primary" size="small" @click="saveConfig" :loading="saving">
-                  保存
+                  {{ $t('config.save') }}
                 </el-button>
                 <el-button
                   v-if="currentFile && currentFile !== 'main'"
@@ -70,7 +70,7 @@
                   size="small"
                   @click="deleteConfig"
                 >
-                  删除
+                  {{ $t('config.delete') }}
                 </el-button>
               </div>
             </div>
@@ -82,7 +82,7 @@
 
           <div class="editor-footer" v-if="currentFile">
             <el-text type="info" size="small">
-              修改后点击保存，配置将自动测试。如果测试失败，将自动回滚到上一个版本。
+              {{ $t('config.autoTestTip') }}
             </el-text>
           </div>
         </el-card>
@@ -94,8 +94,11 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import { monaco } from '@/utils/monaco-env'
 import api from '@/api'
+
+const { t } = useI18n()
 
 interface ConfigFile {
   name: string
@@ -114,7 +117,9 @@ const editorRef = ref<HTMLElement>()
 
 let editor: monaco.editor.IStandaloneCodeEditor | null = null
 
-const currentFileName = ref('选择一个配置文件')
+// 用于标记当前文件名是否为 i18n key
+const currentFileKey = ref<string>('config.selectFile')
+const currentFileName = ref('')
 
 onMounted(() => {
   refreshFiles()
@@ -161,6 +166,7 @@ async function loadMainConfig() {
   loading.value = true
   currentFile.value = 'main'
   currentFileName.value = 'nginx.conf'
+  currentFileKey.value = '' // nginx.conf 不需要翻译
   currentFileEnabled.value = true
 
   try {
@@ -170,7 +176,7 @@ async function loadMainConfig() {
       monaco.editor.setModelLanguage(editor.getModel()!, 'nginx')
     }
   } catch (error) {
-    ElMessage.error('读取配置文件失败')
+    ElMessage.error(t('config.readFailed'))
   } finally {
     loading.value = false
   }
@@ -180,6 +186,7 @@ async function loadSiteConfig(name: string) {
   loading.value = true
   currentFile.value = name
   currentFileName.value = name
+  currentFileKey.value = '' // 实际文件名不需要翻译
   currentFileEnabled.value = configFiles.value.find(f => f.name === name)?.enabled || false
 
   try {
@@ -189,7 +196,7 @@ async function loadSiteConfig(name: string) {
       monaco.editor.setModelLanguage(editor.getModel()!, 'nginx')
     }
   } catch (error) {
-    ElMessage.error('读取配置文件失败')
+    ElMessage.error(t('config.readFailed'))
   } finally {
     loading.value = false
   }
@@ -210,12 +217,12 @@ async function saveConfig() {
     }
 
     if (response.data.code === 0) {
-      ElMessage.success('配置保存成功')
+      ElMessage.success(t('config.configSaved'))
     } else {
-      ElMessage.error(response.data.message || '保存失败')
+      ElMessage.error(response.data.message || t('config.saveFailed'))
     }
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '保存失败')
+    ElMessage.error(error.response?.data?.message || t('config.saveFailed'))
   } finally {
     saving.value = false
   }
@@ -231,10 +238,10 @@ async function toggleConfig() {
       currentFileEnabled.value = !currentFileEnabled.value
       refreshFiles()
     } else {
-      ElMessage.error(response.data.message || '操作失败')
+      ElMessage.error(response.data.message || t('config.operationFailed'))
     }
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '操作失败')
+    ElMessage.error(error.response?.data?.message || t('config.operationFailed'))
   }
 }
 
@@ -242,25 +249,28 @@ async function deleteConfig() {
   if (!currentFile.value || currentFile.value === 'main') return
 
   try {
-    await ElMessageBox.confirm(`确定要删除配置文件 ${currentFile.value} 吗？`, '提示', {
-      type: 'warning',
-    })
+    await ElMessageBox.confirm(
+      t('config.deleteConfirm', { name: currentFile.value }),
+      t('common.tip'),
+      { type: 'warning' }
+    )
 
     const response = await api.delete(`/api/config/file/${currentFile.value}`)
     if (response.data.code === 0) {
-      ElMessage.success('配置文件已删除')
+      ElMessage.success(t('config.fileDeleted'))
       currentFile.value = ''
-      currentFileName.value = '选择一个配置文件'
+      currentFileKey.value = 'config.selectFile'
+      currentFileName.value = ''
       if (editor) {
         editor.setValue('')
       }
       refreshFiles()
     } else {
-      ElMessage.error(response.data.message || '删除失败')
+      ElMessage.error(response.data.message || t('config.deleteFailed'))
     }
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || '删除失败')
+      ElMessage.error(error.response?.data?.message || t('config.deleteFailed'))
     }
   }
 }

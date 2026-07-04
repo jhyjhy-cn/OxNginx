@@ -2,12 +2,16 @@
 import './utils/monaco-env'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
+import 'element-plus/theme-chalk/dark/css-vars.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 import App from './App.vue'
 import router from './router'
+import i18n from './i18n'
+import { useSettingsStore } from './stores/settings'
 
 const app = createApp(App)
 
@@ -16,8 +20,16 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
 
-app.use(createPinia())
+const pinia = createPinia()
+pinia.use(piniaPluginPersistedstate)
+
+app.use(pinia)
 app.use(router)
 app.use(ElementPlus)
+app.use(i18n)
+
+// 从持久化 store 恢复主题设置到 DOM
+const settingsStore = useSettingsStore()
+settingsStore.initTheme()
 
 app.mount('#app')

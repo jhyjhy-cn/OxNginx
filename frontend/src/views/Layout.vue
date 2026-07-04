@@ -16,47 +16,47 @@
       >
         <el-menu-item index="/dashboard">
           <el-icon><Odometer /></el-icon>
-          <span>仪表盘</span>
+          <span>{{ $t('menu.dashboard') }}</span>
         </el-menu-item>
 
         <el-menu-item index="/sites">
           <el-icon><Grid /></el-icon>
-          <span>站点管理</span>
+          <span>{{ $t('menu.sites') }}</span>
         </el-menu-item>
 
         <el-menu-item index="/ssl">
           <el-icon><Lock /></el-icon>
-          <span>SSL证书</span>
+          <span>{{ $t('menu.ssl') }}</span>
         </el-menu-item>
 
         <el-menu-item index="/upstreams">
           <el-icon><Connection /></el-icon>
-          <span>负载均衡</span>
+          <span>{{ $t('menu.upstreams') }}</span>
         </el-menu-item>
 
         <el-menu-item index="/access">
           <el-icon><Key /></el-icon>
-          <span>访问控制</span>
+          <span>{{ $t('menu.access') }}</span>
         </el-menu-item>
 
         <el-menu-item index="/templates">
           <el-icon><Files /></el-icon>
-          <span>配置模板</span>
+          <span>{{ $t('menu.templates') }}</span>
         </el-menu-item>
 
         <el-menu-item index="/logs">
           <el-icon><Document /></el-icon>
-          <span>日志</span>
+          <span>{{ $t('menu.logs') }}</span>
         </el-menu-item>
 
         <el-menu-item index="/config">
           <el-icon><Edit /></el-icon>
-          <span>配置编辑</span>
+          <span>{{ $t('menu.config') }}</span>
         </el-menu-item>
 
         <el-menu-item index="/settings">
           <el-icon><Setting /></el-icon>
-          <span>设置</span>
+          <span>{{ $t('menu.settings') }}</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -67,12 +67,45 @@
       <el-header class="header">
         <div class="header-left">
           <el-breadcrumb separator="/">
-            <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-            <el-breadcrumb-item>{{ route.meta.title }}</el-breadcrumb-item>
+            <el-breadcrumb-item :to="{ path: '/' }">{{ $t('layout.home') }}</el-breadcrumb-item>
+            <el-breadcrumb-item>{{ route.meta.title ? $t(route.meta.title as string) : '' }}</el-breadcrumb-item>
           </el-breadcrumb>
         </div>
 
         <div class="header-right">
+          <!-- 语言切换 -->
+          <el-dropdown @command="handleLocaleChange" trigger="click">
+            <span class="lang-switch">
+              {{ settingsStore.locale === 'zh-CN' ? '中' : 'EN' }}
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="zh-CN" :class="{ active: settingsStore.locale === 'zh-CN' }">中文</el-dropdown-item>
+                <el-dropdown-item command="en-US" :class="{ active: settingsStore.locale === 'en-US' }">English</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+
+          <!-- 主题色切换 -->
+          <el-popover placement="bottom" :width="320" trigger="click">
+            <template #reference>
+              <el-icon :size="18" class="header-action"><Brush /></el-icon>
+            </template>
+            <el-color-picker-panel
+              :model-value="settingsStore.themeColor"
+              :predefine="themeColors"
+              color-format="hex"
+              @change="handleThemeChange"
+            />
+          </el-popover>
+
+          <!-- 暗黑模式切换 -->
+          <el-icon :size="18" class="header-action" @click="handleDarkToggle">
+            <Moon v-if="!settingsStore.darkMode" />
+            <Sunny v-else />
+          </el-icon>
+
+          <!-- 用户菜单 -->
           <el-dropdown @command="handleCommand">
             <span class="user-info">
               <el-icon><User /></el-icon>
@@ -81,9 +114,9 @@
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="change-username">修改账号</el-dropdown-item>
-                <el-dropdown-item command="change-password">修改密码</el-dropdown-item>
-                <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
+                <el-dropdown-item command="change-username">{{ $t('layout.changeUsername') }}</el-dropdown-item>
+                <el-dropdown-item command="change-password">{{ $t('layout.changePassword') }}</el-dropdown-item>
+                <el-dropdown-item divided command="logout">{{ $t('layout.logout') }}</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -98,48 +131,50 @@
   </el-container>
 
   <!-- 修改密码弹窗 -->
-  <OnDialog v-model="pwdDialogVisible" title="修改密码" width="400px" :maximizable="false" :destroy-on-close="true">
+  <OnDialog v-model="pwdDialogVisible" :title="$t('layout.changePassword')" width="400px" :maximizable="false" :destroy-on-close="true">
     <el-form ref="pwdFormRef" :model="pwdForm" :rules="pwdRules" label-width="80px">
-      <el-form-item label="旧密码" prop="oldPassword">
-        <el-input v-model="pwdForm.oldPassword" type="password" show-password placeholder="请输入旧密码" />
+      <el-form-item :label="$t('layout.oldPassword')" prop="oldPassword">
+        <el-input v-model="pwdForm.oldPassword" type="password" show-password :placeholder="$t('layout.enterOldPassword')" />
       </el-form-item>
-      <el-form-item label="新密码" prop="newPassword">
-        <el-input v-model="pwdForm.newPassword" type="password" show-password placeholder="请输入新密码" />
+      <el-form-item :label="$t('layout.newPassword')" prop="newPassword">
+        <el-input v-model="pwdForm.newPassword" type="password" show-password :placeholder="$t('layout.enterNewPassword')" />
       </el-form-item>
-      <el-form-item label="确认密码" prop="confirmPassword">
-        <el-input v-model="pwdForm.confirmPassword" type="password" show-password placeholder="请再次输入新密码" />
+      <el-form-item :label="$t('layout.confirmPassword')" prop="confirmPassword">
+        <el-input v-model="pwdForm.confirmPassword" type="password" show-password :placeholder="$t('layout.enterConfirmPassword')" />
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="pwdDialogVisible = false">取消</el-button>
-      <el-button type="primary" :loading="pwdLoading" @click="submitChangePassword">确认修改</el-button>
+      <el-button @click="pwdDialogVisible = false">{{ $t('common.cancel') }}</el-button>
+      <el-button type="primary" :loading="pwdLoading" @click="submitChangePassword">{{ $t('layout.confirmChange') }}</el-button>
     </template>
   </OnDialog>
 
   <!-- 修改账号弹窗 -->
-  <OnDialog v-model="userDialogVisible" title="修改账号" width="400px" :maximizable="false" :destroy-on-close="true">
+  <OnDialog v-model="userDialogVisible" :title="$t('layout.changeUsername')" width="400px" :maximizable="false" :destroy-on-close="true">
     <el-form ref="userFormRef" :model="userForm" :rules="userRules" label-width="80px">
-      <el-form-item label="当前账号">
+      <el-form-item :label="$t('layout.currentUsername')">
         <el-input :model-value="authStore.username" disabled />
       </el-form-item>
-      <el-form-item label="密码" prop="password">
-        <el-input v-model="userForm.password" type="password" show-password placeholder="请输入密码验证身份" />
+      <el-form-item :label="$t('layout.password')" prop="password">
+        <el-input v-model="userForm.password" type="password" show-password :placeholder="$t('layout.enterPassword')" />
       </el-form-item>
-      <el-form-item label="新账号" prop="newUsername">
-        <el-input v-model="userForm.newUsername" placeholder="请输入新用户名" />
+      <el-form-item :label="$t('layout.newUsername')" prop="newUsername">
+        <el-input v-model="userForm.newUsername" :placeholder="$t('layout.enterNewUsername')" />
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="userDialogVisible = false">取消</el-button>
-      <el-button type="primary" :loading="userLoading" @click="submitChangeUsername">确认修改</el-button>
+      <el-button @click="userDialogVisible = false">{{ $t('common.cancel') }}</el-button>
+      <el-button type="primary" :loading="userLoading" @click="submitChangeUsername">{{ $t('layout.confirmChange') }}</el-button>
     </template>
   </OnDialog>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
+import { useSettingsStore } from '@/stores/settings'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import api from '@/api'
@@ -148,6 +183,27 @@ import OnDialog from '@/components/OnDialog/index.vue'
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const settingsStore = useSettingsStore()
+const { locale } = useI18n()
+
+// 同步 i18n locale 与持久化 store
+locale.value = settingsStore.locale
+watch(() => settingsStore.locale, (val) => { locale.value = val })
+
+// 主题色预设
+const themeColors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#9B59B6', '#00BCD4']
+
+function handleLocaleChange(lang: string) {
+  settingsStore.setLocale(lang as 'zh-CN' | 'en-US')
+}
+
+function handleThemeChange(color: string) {
+  settingsStore.setThemeColor(color)
+}
+
+function handleDarkToggle() {
+  settingsStore.toggleDarkMode()
+}
 
 function handleCommand(command: string) {
   if (command === 'logout') {
@@ -253,7 +309,6 @@ async function submitChangeUsername() {
       new_username: userForm.newUsername,
     })
     if (res.data.code === 0) {
-      // 更新本地 token 和用户名
       authStore.updateUser(res.data.data.token, res.data.data.username)
       ElMessage.success('账号修改成功')
       userDialogVisible.value = false
@@ -296,8 +351,8 @@ async function submitChangeUsername() {
 }
 
 .header {
-  background: white;
-  border-bottom: 1px solid #e8e8e8;
+  background: var(--el-bg-color);
+  border-bottom: 1px solid var(--el-border-color-lighter);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -312,13 +367,47 @@ async function submitChangeUsername() {
 .header-right {
   display: flex;
   align-items: center;
+  gap: 16px;
+}
+
+.header-action {
+  cursor: pointer;
+  color: var(--el-text-color-regular);
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.header-action:hover {
+  color: var(--el-color-primary);
+}
+
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--el-text-color-regular);
+  background: var(--el-fill-color-light);
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.lang-switch:hover {
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
 }
 
 .user-info {
   display: flex;
   align-items: center;
   cursor: pointer;
-  color: #333;
+  color: var(--el-text-color-primary);
 }
 
 .user-info .el-icon {
@@ -326,7 +415,17 @@ async function submitChangeUsername() {
 }
 
 .main {
-  background: #f0f2f5;
+  background: var(--el-bg-color-page);
   padding: 20px;
+}
+
+/* 暗黑模式适配 */
+:global(html.dark) .lang-switch:hover {
+  color: var(--el-color-primary);
+  background: rgba(var(--el-color-primary-rgb), 0.15);
+}
+
+:global(html.dark) .main {
+  background: #0a0a0a;
 }
 </style>

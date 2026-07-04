@@ -3,29 +3,29 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>系统设置</span>
+          <span>{{ $t('settings.title') }}</span>
           <el-button type="primary" @click="saveSettings" :loading="saving">
-            保存设置
+            {{ $t('settings.saveSettings') }}
           </el-button>
         </div>
       </template>
 
       <el-form label-width="140px">
-        <el-divider>Nginx 配置</el-divider>
+        <el-divider>{{ $t('settings.nginxConfig') }}</el-divider>
 
-        <el-form-item label="Nginx 路径">
+        <el-form-item :label="$t('settings.nginxPath')">
           <el-input v-model="settings.nginx.bin" placeholder="/usr/sbin/nginx" />
         </el-form-item>
-        <el-form-item label="主配置文件">
+        <el-form-item :label="$t('settings.mainConfig')">
           <el-input v-model="settings.nginx.config" placeholder="/etc/nginx/nginx.conf" />
         </el-form-item>
-        <el-form-item label="站点配置目录">
+        <el-form-item :label="$t('settings.sitesDir')">
           <el-input v-model="settings.nginx.sites_enabled" placeholder="/etc/nginx/sites-enabled" />
         </el-form-item>
 
-        <el-divider>ACME 配置</el-divider>
+        <el-divider>{{ $t('settings.acmeConfig') }}</el-divider>
 
-        <el-form-item label="acme.sh 路径">
+        <el-form-item :label="$t('settings.acmePath')">
           <el-input v-model="settings.acme.bin" placeholder="/root/.acme.sh/acme.sh" />
         </el-form-item>
       </el-form>
@@ -33,18 +33,18 @@
 
     <el-card style="margin-top: 20px">
       <template #header>
-        <span>系统信息</span>
+        <span>{{ $t('settings.systemInfo') }}</span>
       </template>
 
       <el-descriptions :column="2" border>
-        <el-descriptions-item label="系统版本">{{ settings.system.os }}</el-descriptions-item>
-        <el-descriptions-item label="系统架构">{{ settings.system.arch }}</el-descriptions-item>
-        <el-descriptions-item label="主机名">{{ settings.system.hostname }}</el-descriptions-item>
-        <el-descriptions-item label="CPU核心数">{{ settings.system.cpu_cores }}</el-descriptions-item>
-        <el-descriptions-item label="Nginx版本">{{ settings.system.nginx_version || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="Rust版本">{{ settings.system.rust_version }}</el-descriptions-item>
-        <el-descriptions-item label="服务地址">{{ settings.server.host }}:{{ settings.server.port }}</el-descriptions-item>
-        <el-descriptions-item label="OxNginx版本">1.0.0</el-descriptions-item>
+        <el-descriptions-item :label="$t('settings.osVersion')">{{ settings.system.os }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('settings.arch')">{{ settings.system.arch }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('settings.hostname')">{{ settings.system.hostname }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('settings.cpuCores')">{{ settings.system.cpu_cores }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('settings.nginxVersion')">{{ settings.system.nginx_version || '-' }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('settings.rustVersion')">{{ settings.system.rust_version }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('settings.serverAddress')">{{ settings.server.host }}:{{ settings.server.port }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('settings.oxnginxVersion')">1.0.0</el-descriptions-item>
       </el-descriptions>
     </el-card>
   </div>
@@ -53,7 +53,10 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import api from '@/api'
+
+const { t } = useI18n()
 
 const saving = ref(false)
 
@@ -112,10 +115,10 @@ async function saveSettings() {
     if (response.data.code === 0) {
       ElMessage.success(response.data.data)
     } else {
-      ElMessage.error(response.data.message || '保存失败')
+      ElMessage.error(response.data.message || t('settings.saveFailed'))
     }
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '保存失败')
+    ElMessage.error(error.response?.data?.message || t('settings.saveFailed'))
   } finally {
     saving.value = false
   }

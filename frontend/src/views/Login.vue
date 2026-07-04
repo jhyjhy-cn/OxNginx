@@ -4,7 +4,7 @@
       <template #header>
         <div class="card-header">
           <h2>OxNginx Manager</h2>
-          <p>轻量级Nginx可视化管理面板</p>
+          <p>{{ $t('login.subtitle') }}</p>
         </div>
       </template>
 
@@ -18,7 +18,7 @@
         <el-form-item prop="username">
           <el-input
             v-model="form.username"
-            placeholder="用户名"
+            :placeholder="$t('login.username')"
             prefix-icon="User"
             size="large"
           />
@@ -28,7 +28,7 @@
           <el-input
             v-model="form.password"
             type="password"
-            placeholder="密码"
+            :placeholder="$t('login.password')"
             prefix-icon="Lock"
             size="large"
             show-password
@@ -44,15 +44,15 @@
             style="width: 100%"
             @click="handleLogin"
           >
-            登录
+            {{ $t('login.loginBtn') }}
           </el-button>
         </el-form-item>
       </el-form>
 
       <div v-if="needSetup" class="setup-tip">
-        <el-divider>首次使用</el-divider>
+        <el-divider>{{ $t('login.firstUse') }}</el-divider>
         <el-button type="success" @click="handleSetup">
-          初始化管理员账户
+          {{ $t('login.initAdmin') }}
         </el-button>
       </div>
     </el-card>
@@ -62,10 +62,12 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { ElMessage } from 'element-plus'
 import api from '@/api'
 
+const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 
@@ -79,8 +81,8 @@ const form = reactive({
 })
 
 const rules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+  username: [{ required: true, message: () => t('login.enterUsername'), trigger: 'blur' }],
+  password: [{ required: true, message: () => t('login.enterPassword'), trigger: 'blur' }],
 }
 
 onMounted(() => {
@@ -107,10 +109,10 @@ async function handleLogin() {
   loading.value = true
   try {
     await authStore.login(form.username, form.password)
-    ElMessage.success('登录成功')
+    ElMessage.success(t('login.loginSuccess'))
     router.push('/')
   } catch (error: any) {
-    ElMessage.error(error.message || '登录失败')
+    ElMessage.error(error.message || t('login.loginFailed'))
   } finally {
     loading.value = false
   }
@@ -127,13 +129,13 @@ async function handleSetup() {
       password: form.password,
     })
     if (response.data.code === 0) {
-      ElMessage.success('管理员账户创建成功，请登录')
+      ElMessage.success(t('login.initSuccess'))
       needSetup.value = false
     } else {
       ElMessage.error(response.data.message)
     }
   } catch (error: any) {
-    ElMessage.error(error.message || '初始化失败')
+    ElMessage.error(error.message || t('login.initFailed'))
   } finally {
     loading.value = false
   }

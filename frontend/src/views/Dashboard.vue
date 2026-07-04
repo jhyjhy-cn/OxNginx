@@ -11,11 +11,11 @@
             </el-icon>
           </div>
           <div class="status-info">
-            <h2>Nginx {{ nginxStatus.running ? '运行中' : (nginxStatus.not_installed ? '未安装' : '已停止') }}</h2>
+            <h2>Nginx {{ nginxStatus.running ? $t('dashboard.running') : (nginxStatus.not_installed ? $t('dashboard.notInstalled') : $t('dashboard.stopped')) }}</h2>
             <div class="status-meta">
-              <span v-if="nginxStatus.version">版本: {{ nginxStatus.version }}</span>
+              <span v-if="nginxStatus.version">{{ $t('dashboard.version') }}: {{ nginxStatus.version }}</span>
               <span v-if="nginxStatus.pid">PID: {{ nginxStatus.pid }}</span>
-              <span v-if="nginxStatus.uptime">运行时间: {{ nginxStatus.uptime }}</span>
+              <span v-if="nginxStatus.uptime">{{ $t('dashboard.uptime') }}: {{ nginxStatus.uptime }}</span>
             </div>
           </div>
         </div>
@@ -27,7 +27,7 @@
             @click="installNginx"
           >
             <el-icon v-if="!loading.install"><Download /></el-icon>
-            一键安装
+            {{ $t('dashboard.install') }}
           </el-button>
           <template v-else>
             <el-button
@@ -36,19 +36,19 @@
               @click="toggleNginx"
             >
               <el-icon v-if="!loading.startStop"><VideoPlay v-if="!nginxStatus.running" /><VideoPause v-else /></el-icon>
-              {{ nginxStatus.running ? '停止' : '启动' }}
+              {{ nginxStatus.running ? $t('dashboard.stop') : $t('dashboard.start') }}
             </el-button>
             <el-button :loading="loading.restart" @click="restartNginx">
               <el-icon v-if="!loading.restart"><RefreshRight /></el-icon>
-              重启
+              {{ $t('dashboard.restart') }}
             </el-button>
             <el-button :loading="loading.reload" @click="reloadConfig">
               <el-icon v-if="!loading.reload"><Refresh /></el-icon>
-              重载配置
+              {{ $t('dashboard.reloadConfig') }}
             </el-button>
             <el-button :loading="loading.test" @click="testConfig">
               <el-icon v-if="!loading.test"><Finished /></el-icon>
-              测试配置
+              {{ $t('dashboard.testConfig') }}
             </el-button>
           </template>
         </div>
@@ -63,7 +63,7 @@
         </div>
         <div class="stat-info">
           <div class="stat-value">{{ stats.site_count }}</div>
-          <div class="stat-label">站点数</div>
+          <div class="stat-label">{{ $t('dashboard.sites') }}</div>
         </div>
       </el-card>
       <el-card class="stat-card" shadow="hover">
@@ -72,7 +72,7 @@
         </div>
         <div class="stat-info">
           <div class="stat-value">{{ stats.cert_count }}</div>
-          <div class="stat-label">SSL证书</div>
+          <div class="stat-label">{{ $t('dashboard.certificates') }}</div>
         </div>
       </el-card>
       <el-card class="stat-card" shadow="hover">
@@ -81,7 +81,7 @@
         </div>
         <div class="stat-info">
           <div class="stat-value">{{ stats.cpu_usage.toFixed(1) }}%</div>
-          <div class="stat-label">CPU使用率</div>
+          <div class="stat-label">{{ $t('dashboard.cpuUsage') }}</div>
         </div>
       </el-card>
       <el-card class="stat-card" shadow="hover">
@@ -90,7 +90,7 @@
         </div>
         <div class="stat-info">
           <div class="stat-value">{{ stats.memory_usage.toFixed(1) }}%</div>
-          <div class="stat-label">系统内存</div>
+          <div class="stat-label">{{ $t('dashboard.memoryUsage') }}</div>
         </div>
       </el-card>
       <el-card class="stat-card" shadow="hover">
@@ -99,7 +99,7 @@
         </div>
         <div class="stat-info">
           <div class="stat-value">{{ stats.app_memory }} MB</div>
-          <div class="stat-label">面板内存</div>
+          <div class="stat-label">{{ $t('dashboard.appMemory') }}</div>
         </div>
       </el-card>
     </div>
@@ -107,31 +107,31 @@
     <!-- 快捷操作 -->
     <el-card class="quick-card">
       <template #header>
-        <span>快捷操作</span>
+        <span>{{ $t('dashboard.quickActions') }}</span>
       </template>
       <el-row :gutter="20">
         <el-col :span="6" :xs="12">
           <el-button class="quick-btn" @click="$router.push('/sites')">
             <el-icon :size="28"><Monitor /></el-icon>
-            <span>站点管理</span>
+            <span>{{ $t('menu.sites') }}</span>
           </el-button>
         </el-col>
         <el-col :span="6" :xs="12">
           <el-button class="quick-btn" @click="$router.push('/ssl')">
             <el-icon :size="28"><Lock /></el-icon>
-            <span>SSL证书</span>
+            <span>{{ $t('dashboard.certificates') }}</span>
           </el-button>
         </el-col>
         <el-col :span="6" :xs="12">
           <el-button class="quick-btn" @click="$router.push('/logs')">
             <el-icon :size="28"><Document /></el-icon>
-            <span>日志查看</span>
+            <span>{{ $t('dashboard.viewLogs') }}</span>
           </el-button>
         </el-col>
         <el-col :span="6" :xs="12">
           <el-button class="quick-btn" @click="$router.push('/settings')">
             <el-icon :size="28"><Setting /></el-icon>
-            <span>系统设置</span>
+            <span>{{ $t('dashboard.sysSettings') }}</span>
           </el-button>
         </el-col>
       </el-row>
@@ -140,17 +140,17 @@
     <!-- 系统信息 -->
     <el-card class="system-card">
       <template #header>
-        <span>系统信息</span>
+        <span>{{ $t('dashboard.systemInfo') }}</span>
       </template>
       <el-descriptions :column="3" border>
-        <el-descriptions-item label="系统版本">{{ systemInfo.os }}</el-descriptions-item>
-        <el-descriptions-item label="系统架构">{{ systemInfo.arch }}</el-descriptions-item>
-        <el-descriptions-item label="主机名">{{ systemInfo.hostname }}</el-descriptions-item>
-        <el-descriptions-item label="CPU核心数">{{ systemInfo.cpu_cores }}</el-descriptions-item>
-        <el-descriptions-item label="Nginx版本">{{ systemInfo.nginx_version || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="Rust版本">{{ systemInfo.rust_version }}</el-descriptions-item>
-        <el-descriptions-item label="服务地址">{{ systemInfo.host }}:{{ systemInfo.port }}</el-descriptions-item>
-        <el-descriptions-item label="OxNginx版本">1.0.0</el-descriptions-item>
+        <el-descriptions-item :label="$t('dashboard.osVersion')">{{ systemInfo.os }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('dashboard.arch')">{{ systemInfo.arch }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('dashboard.hostname')">{{ systemInfo.hostname }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('dashboard.cpuCores')">{{ systemInfo.cpu_cores }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('dashboard.nginxVersion')">{{ systemInfo.nginx_version || '-' }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('dashboard.rustVersion')">{{ systemInfo.rust_version }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('dashboard.serverAddress')">{{ systemInfo.host }}:{{ systemInfo.port }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('dashboard.oxnginxVersion')">1.0.0</el-descriptions-item>
       </el-descriptions>
     </el-card>
   </div>
@@ -158,6 +158,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import {
   SuccessFilled,
@@ -177,6 +178,8 @@ import {
   Download,
 } from '@element-plus/icons-vue'
 import api from '@/api'
+
+const { t } = useI18n()
 
 const nginxStatus = ref({
   running: false,
@@ -284,22 +287,22 @@ async function toggleNginx() {
     if (nginxStatus.value.running) {
       const response = await api.post('/api/nginx/stop')
       if (response.data.code === 0) {
-        ElMessage.success('Nginx已停止')
+        ElMessage.success(t('dashboard.nginxStopped'))
       } else {
-        ElMessage.error(response.data.message || '停止失败')
+        ElMessage.error(response.data.message || t('dashboard.stopFailed'))
       }
     } else {
       const response = await api.post('/api/nginx/start')
       if (response.data.code === 0) {
-        ElMessage.success('Nginx已启动')
+        ElMessage.success(t('dashboard.nginxStarted'))
       } else {
-        ElMessage.error(response.data.message || '启动失败')
+        ElMessage.error(response.data.message || t('dashboard.startFailed'))
       }
     }
     await delay(800)
     await fetchNginxStatus()
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '操作失败')
+    ElMessage.error(error.response?.data?.message || t('dashboard.operationFailed'))
   } finally {
     loading.startStop = false
   }
@@ -310,14 +313,14 @@ async function restartNginx() {
   try {
     const response = await api.post('/api/nginx/restart')
     if (response.data.code === 0) {
-      ElMessage.success('Nginx已重启')
+      ElMessage.success(t('dashboard.nginxRestarted'))
     } else {
-      ElMessage.error(response.data.message || '重启失败')
+      ElMessage.error(response.data.message || t('dashboard.restartFailed'))
     }
     await delay(800)
     await fetchNginxStatus()
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '重启失败')
+    ElMessage.error(error.response?.data?.message || t('dashboard.restartFailed'))
   } finally {
     loading.restart = false
   }
@@ -328,14 +331,14 @@ async function reloadConfig() {
   try {
     const response = await api.post('/api/nginx/reload')
     if (response.data.code === 0) {
-      ElMessage.success('配置已重载')
+      ElMessage.success(t('dashboard.configReloaded'))
     } else {
-      ElMessage.error(response.data.message || '重载失败')
+      ElMessage.error(response.data.message || t('dashboard.reloadFailed'))
     }
     await delay(500)
     await fetchNginxStatus()
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '重载失败')
+    ElMessage.error(error.response?.data?.message || t('dashboard.reloadFailed'))
   } finally {
     loading.reload = false
   }
@@ -348,15 +351,15 @@ async function testConfig() {
     if (response.data.code === 0) {
       const result = response.data.data
       if (result.success) {
-        ElMessage.success('配置测试通过')
+        ElMessage.success(t('dashboard.configTestPassed'))
       } else {
-        ElMessage.error('配置测试失败: ' + result.message)
+        ElMessage.error(t('dashboard.configTestFailed') + ': ' + result.message)
       }
     } else {
-      ElMessage.error(response.data.message || '测试失败')
+      ElMessage.error(response.data.message || t('dashboard.testFailed'))
     }
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '测试失败')
+    ElMessage.error(error.response?.data?.message || t('dashboard.testFailed'))
   } finally {
     loading.test = false
   }
@@ -365,18 +368,18 @@ async function testConfig() {
 async function installNginx() {
   loading.install = true
   try {
-    ElMessage.info('正在安装 Nginx，请稍候...')
+    ElMessage.info(t('dashboard.installing'))
     const response = await api.post('/api/nginx/install', null, { timeout: 300000 })
     if (response.data.code === 0) {
-      ElMessage.success('Nginx 安装成功')
+      ElMessage.success(t('dashboard.installSuccess'))
       await delay(1000)
       await fetchNginxStatus()
       await fetchDashboard()
     } else {
-      ElMessage.error(response.data.message || '安装失败')
+      ElMessage.error(response.data.message || t('dashboard.installFailed'))
     }
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '安装失败')
+    ElMessage.error(error.response?.data?.message || t('dashboard.installFailed'))
   } finally {
     loading.install = false
   }
@@ -386,7 +389,7 @@ async function installNginx() {
 <style scoped>
 .dashboard {
   padding: 20px;
-  background: #f5f7fa;
+  background: var(--el-bg-color-page);
   min-height: 100vh;
 }
 
@@ -435,13 +438,13 @@ async function installNginx() {
   margin: 0 0 8px 0;
   font-size: 20px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .status-meta {
   display: flex;
   gap: 20px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
 }
 
@@ -524,14 +527,14 @@ async function installNginx() {
 .stat-value {
   font-size: 20px;
   font-weight: 700;
-  color: #303133;
+  color: var(--el-text-color-primary);
   line-height: 1.2;
   margin-bottom: 4px;
 }
 
 .stat-label {
   font-size: 13px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .quick-card {
@@ -543,9 +546,9 @@ async function installNginx() {
 
 .quick-card :deep(.el-card__header) {
   padding: 16px 20px;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid var(--el-border-color-lighter);
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .quick-btn {
@@ -559,10 +562,10 @@ async function installNginx() {
   font-size: 14px;
   font-weight: 500;
   border-radius: 12px;
-  border: 1px solid #e4e7ed;
-  background: #fff;
+  border: 1px solid var(--el-border-color);
+  background: var(--el-bg-color);
   transition: all 0.3s ease;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .quick-btn:hover {
@@ -590,9 +593,9 @@ async function installNginx() {
 
 .system-card :deep(.el-card__header) {
   padding: 16px 20px;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid var(--el-border-color-lighter);
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .system-card :deep(.el-descriptions) {
@@ -601,12 +604,12 @@ async function installNginx() {
 
 .system-card :deep(.el-descriptions__label) {
   font-weight: 500;
-  color: #606266;
-  background: #fafafa;
+  color: var(--el-text-color-regular);
+  background: var(--el-fill-color-light);
 }
 
 .system-card :deep(.el-descriptions__content) {
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 /* 响应式设计 */

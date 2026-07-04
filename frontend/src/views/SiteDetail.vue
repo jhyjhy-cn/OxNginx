@@ -3,33 +3,33 @@
     <el-card v-loading="loading">
       <template #header>
         <div class="card-header">
-          <span>站点详情</span>
-          <el-button @click="$router.back()">返回</el-button>
+          <span>{{ $t('siteDetail.title') }}</span>
+          <el-button @click="$router.back()">{{ $t('common.back') }}</el-button>
         </div>
       </template>
 
       <template v-if="site">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="名称">{{ site.name }}</el-descriptions-item>
-          <el-descriptions-item label="域名">{{ site.server_name }}</el-descriptions-item>
-          <el-descriptions-item label="端口">{{ site.listen }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('siteDetail.name')">{{ site.name }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('siteDetail.domain')">{{ site.server_name }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('siteDetail.port')">{{ site.listen }}</el-descriptions-item>
           <el-descriptions-item label="SSL">
             <el-tag :type="site.ssl ? 'success' : 'info'" size="small">
-              {{ site.ssl ? '是' : '否' }}
+              {{ site.ssl ? $t('common.yes') : $t('common.no') }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="反向代理">{{ site.proxy_pass || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="根目录">{{ site.root_path || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="状态">
+          <el-descriptions-item :label="$t('siteDetail.proxyPass')">{{ site.proxy_pass || '-' }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('siteDetail.rootPath')">{{ site.root_path || '-' }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('common.status')">
             <el-tag :type="site.status === 'enabled' ? 'success' : 'danger'" size="small">
-              {{ site.status === 'enabled' ? '启用' : '禁用' }}
+              {{ site.status === 'enabled' ? $t('common.enabled') : $t('common.disabled') }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="创建时间">{{ site.created_at }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('common.createdAt')">{{ site.created_at }}</el-descriptions-item>
         </el-descriptions>
 
         <div style="margin-top: 20px">
-          <h3>生成的配置</h3>
+          <h3>{{ $t('siteDetail.generatedConfig') }}</h3>
           <el-input
             v-model="configContent"
             type="textarea"
@@ -43,21 +43,21 @@
         <el-card style="margin-top: 20px">
           <template #header>
             <div class="card-header">
-              <span>备份管理</span>
+              <span>{{ $t('siteDetail.backupManagement') }}</span>
               <el-button type="primary" size="small" @click="createBackup">
-                创建备份
+                {{ $t('siteDetail.createBackup') }}
               </el-button>
             </div>
           </template>
 
           <el-table :data="backups" style="width: 100%">
-            <el-table-column prop="version" label="版本" width="100" />
-            <el-table-column prop="created_at" label="创建时间" width="180" />
-            <el-table-column label="操作" width="250">
+            <el-table-column prop="version" :label="$t('common.version')" width="100" />
+            <el-table-column prop="created_at" :label="$t('common.createdAt')" width="180" />
+            <el-table-column :label="$t('common.action')" width="250">
               <template #default="{ row }">
-                <el-button size="small" @click="restoreBackup(row)">恢复</el-button>
-                <el-button size="small" @click="viewBackup(row)">查看</el-button>
-                <el-button size="small" type="danger" @click="deleteBackup(row)">删除</el-button>
+                <el-button size="small" @click="restoreBackup(row)">{{ $t('siteDetail.restore') }}</el-button>
+                <el-button size="small" @click="viewBackup(row)">{{ $t('siteDetail.view') }}</el-button>
+                <el-button size="small" type="danger" @click="deleteBackup(row)">{{ $t('common.delete') }}</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -69,9 +69,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '@/api'
+
+const { t } = useI18n()
 
 interface Backup {
   id: number
@@ -120,53 +123,53 @@ async function createBackup() {
   try {
     const response = await api.post(`/api/backups/${route.params.id}`)
     if (response.data.code === 0) {
-      ElMessage.success('备份创建成功')
+      ElMessage.success(t('siteDetail.backupCreateSuccess'))
       fetchBackups()
     } else {
-      ElMessage.error(response.data.message || '创建失败')
+      ElMessage.error(response.data.message || t('siteDetail.createFailed'))
     }
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '创建失败')
+    ElMessage.error(error.response?.data?.message || t('siteDetail.createFailed'))
   }
 }
 
 async function restoreBackup(backup: Backup) {
   try {
-    await ElMessageBox.confirm(`确定要恢复到版本 ${backup.version} 吗？`, '提示')
+    await ElMessageBox.confirm(t('siteDetail.restoreConfirm', { version: backup.version }), t('common.tip'))
     const response = await api.post(`/api/backups/restore/${backup.id}`)
     if (response.data.code === 0) {
-      ElMessage.success('备份恢复成功')
+      ElMessage.success(t('siteDetail.restoreSuccess'))
       fetchSite()
     } else {
-      ElMessage.error(response.data.message || '恢复失败')
+      ElMessage.error(response.data.message || t('siteDetail.restoreFailed'))
     }
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || '恢复失败')
+      ElMessage.error(error.response?.data?.message || t('siteDetail.restoreFailed'))
     }
   }
 }
 
 function viewBackup(_backup: Backup) {
   // TODO: 实现查看备份内容
-  ElMessage.info('查看备份功能开发中')
+  ElMessage.info(t('siteDetail.viewDeveloping'))
 }
 
 async function deleteBackup(backup: Backup) {
   try {
-    await ElMessageBox.confirm(`确定要删除版本 ${backup.version} 的备份吗？`, '提示', {
+    await ElMessageBox.confirm(t('siteDetail.deleteConfirm', { version: backup.version }), t('common.warning'), {
       type: 'warning',
     })
     const response = await api.delete(`/api/backups/${backup.id}`)
     if (response.data.code === 0) {
-      ElMessage.success('备份已删除')
+      ElMessage.success(t('siteDetail.deleteSuccess'))
       fetchBackups()
     } else {
-      ElMessage.error(response.data.message || '删除失败')
+      ElMessage.error(response.data.message || t('siteDetail.deleteFailed'))
     }
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || '删除失败')
+      ElMessage.error(error.response?.data?.message || t('siteDetail.deleteFailed'))
     }
   }
 }
