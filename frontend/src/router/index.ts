@@ -69,6 +69,12 @@ const router = createRouter({
           meta: { title: 'menu.templates' },
         },
         {
+          path: 'files',
+          name: 'Files',
+          component: () => import('@/views/Files.vue'),
+          meta: { title: 'menu.files' },
+        },
+        {
           path: 'settings',
           name: 'Settings',
           component: () => import('@/views/Settings.vue'),

@@ -1,0 +1,217 @@
+use axum::{extract::Query, extract::State, Json};
+use serde::Deserialize;
+use serde_json::json;
+use std::path::Path;
+
+use crate::dto::file_dto::*;
+use crate::dto::ApiResponse;
+use crate::service::file_service;
+use crate::AppState;
+
+/// 查询参数
+#[derive(Debug, Deserialize)]
+pub struct PathQuery {
+    pub path: String,
+}
+
+/// 列出目录内容
+pub async fn list_files(
+    State(state): State<AppState>,
+    Query(query): Query<PathQuery>,
+) -> Json<serde_json::Value> {
+    let path = if query.path.is_empty() {
+        #[cfg(target_os = "windows")]
+        {
+            "C:\\".to_string()
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            "/".to_string()
+        }
+    } else {
+        query.path
+    };
+
+    // 如果请求的是根级别，返回根目录列表
+    #[cfg(target_os = "windows")]
+    if path == "/" || path == "\\" {
+        let roots = file_service::get_root_dirs();
+        let items: Vec<FileItem> = roots
+            .into_iter()
+            .map(|drive| FileItem {
+                name: drive.clone(),
+                path: drive,
+                is_dir: true,
+                size: 0,
+                permissions: String::new(),
+                owner: "SYSTEM".to_string(),
+                modified: String::new(),
+                extension: String::new(),
+                note: None,
+            })
+            .collect();
+        return Json(json!(ApiResponse::success(FileListResponse {
+            path: "/".to_string(),
+            parent: None,
+            items,
+        })));
+    }
+
+    let parent = Path::new(&path)
+        .parent()
+        .map(|p| p.to_string_lossy().to_string());
+
+    match file_service::list_directory(&state, &path).await {
+        Ok(mut items) => {
+            // 批量查询备注
+            let paths: Vec<String> = items.iter().map(|i| i.path.clone()).collect();
+            match file_service::get_notes(&state, &paths).await {
+                Ok(notes) => {
+                    let note_map: std::collections::HashMap<String, String> =
+                        notes.into_iter().collect();
+                    for item in &mut items {
+                        item.note = note_map.get(&item.path).cloned();
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!("查询文件备注失败: {}", e);
+                }
+            }
+
+            Json(json!(ApiResponse::success(FileListResponse {
+                path,
+                parent,
+                items,
+            })))
+        }
+        Err(e) => Json(json!(ApiResponse::<()>::error(format!("列出目录失败: {}", e)))),
+    }
+}
+
+/// 获取根目录列表
+pub async fn list_roots() -> Json<serde_json::Value> {
+    let roots = file_service::get_root_dirs();
+    Json(json!(ApiResponse::success(roots)))
+}
+
+/// 读取文件内容
+pub async fn read_file(Query(query): Query<PathQuery>) -> Json<serde_json::Value> {
+    match file_service::read_file(&query.path).await {
+        Ok(content) => Json(json!(ApiResponse::success(json!({
+            "path": query.path,
+            "content": content,
+        })))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(format!("读取文件失败: {}", e)))),
+    }
+}
+
+/// 写入文件
+pub async fn write_file(
+    State(_state): State<AppState>,
+    Json(req): Json<FileWriteRequest>,
+) -> Json<serde_json::Value> {
+    match file_service::write_file(&req.path, &req.content).await {
+        Ok(_) => Json(json!(ApiResponse::success("文件已保存"))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(format!("写入文件失败: {}", e)))),
+    }
+}
+
+/// 创建目录
+pub async fn mkdir(Json(req): Json<FileMkdirRequest>) -> Json<serde_json::Value> {
+    match file_service::create_dir(&req.path, &req.name).await {
+        Ok(new_path) => Json(json!(ApiResponse::success(json!({ "path": new_path })))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(format!("创建目录失败: {}", e)))),
+    }
+}
+
+/// 创建文件
+pub async fn touch(Json(req): Json<FileTouchRequest>) -> Json<serde_json::Value> {
+    match file_service::create_file(&req.path, &req.name).await {
+        Ok(new_path) => Json(json!(ApiResponse::success(json!({ "path": new_path })))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(format!("创建文件失败: {}", e)))),
+    }
+}
+
+/// 重命名
+pub async fn rename(
+    Json(req): Json<FileRenameRequest>,
+) -> Json<serde_json::Value> {
+    match file_service::rename(&req.path, &req.new_name).await {
+        Ok(new_path) => Json(json!(ApiResponse::success(json!({ "path": new_path })))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(format!("重命名失败: {}", e)))),
+    }
+}
+
+/// 移动文件
+pub async fn move_file(Json(req): Json<FileMoveRequest>) -> Json<serde_json::Value> {
+    match file_service::move_path(&req.source, &req.destination).await {
+        Ok(_) => Json(json!(ApiResponse::success("移动成功"))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(format!("移动失败: {}", e)))),
+    }
+}
+
+/// 复制文件
+pub async fn copy_file(Json(req): Json<FileCopyRequest>) -> Json<serde_json::Value> {
+    match file_service::copy_path(&req.source, &req.destination).await {
+        Ok(_) => Json(json!(ApiResponse::success("复制成功"))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(format!("复制失败: {}", e)))),
+    }
+}
+
+/// 删除文件
+pub async fn delete_file(
+    State(state): State<AppState>,
+    Json(req): Json<FileDeleteRequest>,
+) -> Json<serde_json::Value> {
+    match file_service::delete_path(&req.path).await {
+        Ok(_) => {
+            // 同时删除备注
+            let _ = file_service::delete_note(&state, &req.path).await;
+            Json(json!(ApiResponse::success("删除成功")))
+        }
+        Err(e) => Json(json!(ApiResponse::<()>::error(format!("删除失败: {}", e)))),
+    }
+}
+
+/// 修改权限
+pub async fn chmod(Json(req): Json<FileChmodRequest>) -> Json<serde_json::Value> {
+    match file_service::chmod(&req.path, &req.mode).await {
+        Ok(_) => Json(json!(ApiResponse::success("权限已修改"))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(format!("修改权限失败: {}", e)))),
+    }
+}
+
+/// 压缩文件
+pub async fn compress(Json(req): Json<FileCompressRequest>) -> Json<serde_json::Value> {
+    match file_service::compress(&req.paths, &req.destination, &req.format).await {
+        Ok(_) => Json(json!(ApiResponse::success("压缩完成"))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(format!("压缩失败: {}", e)))),
+    }
+}
+
+/// 解压文件
+pub async fn extract(Json(req): Json<FileExtractRequest>) -> Json<serde_json::Value> {
+    match file_service::extract(&req.path, &req.destination).await {
+        Ok(_) => Json(json!(ApiResponse::success("解压完成"))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(format!("解压失败: {}", e)))),
+    }
+}
+
+/// 保存备注
+pub async fn save_note(
+    State(state): State<AppState>,
+    Json(req): Json<FileNoteRequest>,
+) -> Json<serde_json::Value> {
+    match file_service::save_note(&state, &req.path, &req.note).await {
+        Ok(_) => Json(json!(ApiResponse::success("备注已保存"))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(format!("保存备注失败: {}", e)))),
+    }
+}
+
+/// 计算文件/目录大小
+pub async fn calc_size(Query(query): Query<PathQuery>) -> Json<serde_json::Value> {
+    match file_service::calc_size(&query.path).await {
+        Ok(size) => Json(json!(ApiResponse::success(json!({ "size": size })))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(format!("计算大小失败: {}", e)))),
+    }
+}

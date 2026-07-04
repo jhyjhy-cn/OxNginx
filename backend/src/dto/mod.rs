@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+pub mod file_dto;
+
 /// 统一API响应
 #[derive(Debug, Serialize)]
 pub struct ApiResponse<T: Serialize> {

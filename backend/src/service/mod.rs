@@ -6,3 +6,4 @@ pub mod system_service;
 pub mod upstream_service;
 pub mod access_service;
 pub mod template_service;
+pub mod file_service;

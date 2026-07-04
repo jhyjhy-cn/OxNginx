@@ -109,8 +109,4 @@ const svgStyle = computed(() => {
   fill: currentColor;
   overflow: hidden;
 }
-/* SVG 组件内 path 使用 currentColor 而非硬编码 fill */
-.on-icon-svg-wrapper svg path {
-  fill: currentColor;
-}
 </style>
