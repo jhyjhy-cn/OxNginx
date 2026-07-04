@@ -256,6 +256,7 @@ defineEmits<{
   flex: 1;
   overflow-y: auto;
   padding: 20px;
+  background: var(--el-bg-color-page);
 }
 
 /* ===== 页面过渡动画 ===== */

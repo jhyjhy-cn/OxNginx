@@ -4,24 +4,38 @@
     <div class="fm-pathbar">
       <div class="pathbar-left">
         <el-button :icon="Back" size="small" @click="fm.goBack()" :disabled="!fm.currentParent.value" />
-        <el-input v-model="fm.inputPath.value" size="small" class="path-input" :placeholder="fm.currentPath.value" @keyup.enter="fm.goToInputPath()" @focus="fm.inputPath.value = fm.currentPath.value">
-          <template #prefix>
-            <el-dropdown v-if="fm.drives.value.length > 1" @command="fm.handleDriveChange" trigger="click">
-              <span class="drive-prefix">{{ fm.currentDrive.value }}</span>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item v-for="d in fm.drives.value" :key="d" :command="d" :class="{ active: d === fm.currentDrive.value }">{{ d }}</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
+        <!-- 盘符/根目录 - 始终显示 -->
+        <button v-if="fm.drives.value.length > 1" class="path-seg-btn drive-btn" @click.stop="fm.openDriveDropdown($event)">{{ fm.currentDriveLabel.value }}</button>
+        <button v-else class="path-seg-btn" @click.stop="fm.navigateToSegment('/')">根目录</button>
+        <!-- 面包屑视图（未聚焦） -->
+        <div v-if="!fm.pathInputFocused.value" class="path-breadcrumb" @dblclick="fm.pathInputFocused.value = true; fm.inputPath.value = fm.currentPath.value">
+          <template v-for="(seg, i) in fm.pathSegments.value" :key="seg.path">
+            <button v-if="i > 0" class="path-sep" @click.stop="fm.togglePathDropdown(i - 1, $event)">›</button>
+            <button class="path-seg-btn" @click.stop="fm.navigateToSegment(seg.path)">{{ seg.name }}</button>
           </template>
-        </el-input>
+        </div>
+        <!-- 输入框视图（聚焦） -->
+        <el-input v-else v-model="fm.inputPath.value" size="small" class="path-input" :placeholder="fm.currentPath.value"
+          @keyup.enter="fm.goToInputPath()" @keyup.escape="fm.pathInputFocused.value = false"
+          @blur="fm.pathInputFocused.value = false" autofocus />
         <el-button :icon="Refresh" size="small" @click="fm.fetchFiles()" />
       </div>
       <div class="pathbar-right">
         <el-input v-model="fm.searchQuery.value" size="small" class="search-input" placeholder="搜索文件..." clearable :prefix-icon="Search" />
       </div>
     </div>
+
+    <!-- 路径下拉菜单 -->
+    <Teleport to="body">
+      <div v-if="fm.pathDropdown.visible" class="path-dropdown-mask" @click="fm.closePathDropdown()"></div>
+      <div v-if="fm.pathDropdown.visible" class="path-dropdown" :style="{ left: fm.pathDropdown.x + 'px', top: fm.pathDropdown.y + 'px' }">
+        <div v-if="fm.pathDropdown.dirs.length === 0" class="path-dropdown-empty">无子目录</div>
+        <div v-for="dir in fm.pathDropdown.dirs" :key="dir.path" class="path-dropdown-item" :class="{ active: fm.pathDropdown.level === -1 && dir.path.toLowerCase().startsWith(fm.currentDrive.value.toLowerCase()) }" @click="fm.navigateToSegment(dir.path)">
+          <template v-if="fm.pathDropdown.level === -1">{{ dir.name }}</template>
+          <template v-else><el-icon class="path-dropdown-icon"><Folder /></el-icon>{{ dir.name }}</template>
+        </div>
+      </div>
+    </Teleport>
 
     <!-- 操作栏 -->
     <div class="fm-actionbar">
@@ -131,7 +145,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { Back, Refresh, Search, Plus, List, Grid, ArrowDown, CopyDocument, Rank, FolderAdd, Lock, Delete } from '@element-plus/icons-vue'
+import { Back, Refresh, Search, Plus, List, Grid, ArrowDown, CopyDocument, Rank, FolderAdd, Lock, Delete, Folder } from '@element-plus/icons-vue'
 import { useFileManager } from './useFileManager'
 import FileListView from './FileListView.vue'
 import FileGridView from './FileGridView.vue'
@@ -165,4 +179,23 @@ const fm = useFileManager()
 .stat-sep { color: var(--el-border-color); }
 
 :deep(.el-dropdown-menu__item.active) { color: var(--el-color-primary); font-weight: 600; }
+
+/* 面包屑路径 */
+.path-breadcrumb { display: flex; align-items: center; flex: 1; min-width: 0; gap: 2px; padding: 2px 8px; border: 1px dashed var(--el-border-color); border-radius: 4px; cursor: text; }
+.path-breadcrumb:hover { border-color: var(--el-border-color-darker); }
+.path-seg-btn { font-size: 13px; color: var(--el-text-color-regular); background: var(--el-fill-color-light); border: 1px solid var(--el-border-color-lighter); border-radius: 3px; padding: 2px 8px; cursor: pointer; white-space: nowrap; line-height: 1.4; }
+.path-seg-btn:hover { color: var(--el-color-primary); border-color: var(--el-color-primary-light-7); background: var(--el-color-primary-light-9); }
+.drive-btn { font-weight: 600; }
+.drive-btn::after { content: '▾'; margin-left: 2px; font-size: 10px; }
+.path-sep { font-size: 12px; color: var(--el-text-color-placeholder); background: var(--el-fill-color-light); border: 1px solid var(--el-border-color-lighter); border-radius: 3px; padding: 2px 4px; cursor: pointer; line-height: 1.4; }
+.path-sep:hover { color: var(--el-color-primary); border-color: var(--el-color-primary-light-7); background: var(--el-color-primary-light-9); }
+
+/* 路径下拉 */
+.path-dropdown-mask { position: fixed; inset: 0; z-index: 2000; }
+.path-dropdown { position: fixed; z-index: 2001; background: var(--el-bg-color-overlay); border: 1px solid var(--el-border-color-light); border-radius: 4px; box-shadow: var(--el-box-shadow-light); padding: 4px 0; min-width: 120px; max-height: 280px; overflow-y: auto; }
+.path-dropdown-item { display: flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.path-dropdown-item:hover { background: var(--el-fill-color-light); color: var(--el-color-primary); }
+.path-dropdown-item.active { color: var(--el-color-primary); font-weight: 600; }
+.path-dropdown-icon { font-size: 14px; flex-shrink: 0; }
+.path-dropdown-empty { padding: 8px 12px; font-size: 13px; color: var(--el-text-color-placeholder); }
 </style>

@@ -53,13 +53,42 @@ export function useFileManager() {
   // 盘符
   const drives = ref<string[]>([])
   const currentDrive = computed(() => {
-    const p = currentPath.value.replace(/\\/g, '/')
+    const p = currentPath.value.replace(/\\\\\?\\/g, '').replace(/\\/g, '/')
     const match = p.match(/^([A-Za-z]:)/)
     return match ? match[1] : '/'
+  })
+  const currentDriveLabel = computed(() => {
+    const d = currentDrive.value
+    const letter = d.replace(/[^A-Za-z]/g, '').toUpperCase()
+    return letter ? letter + '盘' : d
+  })
+
+  // 路径面包屑
+  const pathSegments = computed(() => {
+    const p = currentPath.value.replace(/\\\\\?\\/g, '').replace(/\\/g, '/')
+    const segs: { name: string; path: string }[] = []
+    // 盘符
+    const driveMatch = p.match(/^([A-Za-z]:)/)
+    if (driveMatch) {
+      segs.push({ name: driveMatch[1], path: driveMatch[1] + '/' })
+    }
+    const rest = driveMatch ? p.slice(driveMatch[0].length).replace(/^\//, '') : p.replace(/^\//, '')
+    if (!rest) return segs
+    const parts = rest.split('/').filter(Boolean)
+    let accumulated = driveMatch ? driveMatch[1] + '/' : '/'
+    for (const part of parts) {
+      accumulated += part + '/'
+      segs.push({ name: part, path: accumulated })
+    }
+    return segs
   })
 
   // 右键菜单
   const contextMenu = reactive({ visible: false, x: 0, y: 0, row: null as FileItem | null })
+
+  // 路径下拉菜单
+  const pathInputFocused = ref(false)
+  const pathDropdown = reactive({ visible: false, x: 0, y: 0, dirs: [] as { name: string; path: string }[], level: -1 })
 
   // 选中
   const selectedFiles = ref<FileItem[]>([])
@@ -86,7 +115,7 @@ export function useFileManager() {
     document.removeEventListener('click', closeContextMenu)
   })
 
-  function closeContextMenu() { contextMenu.visible = false }
+  function closeContextMenu() { contextMenu.visible = false; closePathDropdown() }
 
   // ===== API =====
   async function fetchFiles() {
@@ -97,8 +126,8 @@ export function useFileManager() {
       const { data } = await api.get('/api/files/list', { params: { path: currentPath.value } })
       if (data.code === 0) {
         files.value = data.data.items
-        currentPath.value = data.data.path
-        currentParent.value = data.data.parent
+        currentPath.value = data.data.path.replace(/\\\\\?\\/, '').replace(/\\/g, '/')
+        currentParent.value = data.data.parent ? data.data.parent.replace(/\\\\\?\\/, '').replace(/\\/g, '/') : null
         currentPage.value = 1
       } else {
         ElMessage.error(data.message)
@@ -117,7 +146,7 @@ export function useFileManager() {
     } catch { /* 非 Windows */ }
   }
 
-  function handleDriveChange(drive: string) { currentPath.value = drive; fetchFiles() }
+  function handleDriveChange(drive: string) { currentPath.value = drive.replace(/\\\\\?\\/, '').replace(/\\/g, '/'); fetchFiles() }
 
   async function calcTotalSize() {
     calcTotalLoading.value = true
@@ -165,10 +194,59 @@ export function useFileManager() {
 
   // ===== 导航 =====
   function goBack() { if (currentParent.value) { currentPath.value = currentParent.value; fetchFiles() } }
-  function goToInputPath() { if (inputPath.value) { currentPath.value = inputPath.value; inputPath.value = ''; fetchFiles() } }
+  function goToInputPath() {
+    if (!inputPath.value) return
+    const normalized = inputPath.value.replace(/\\\\\?\\/, '').replace(/\\/g, '/').replace(/\/+/g, '/')
+    currentPath.value = normalized
+    inputPath.value = ''
+    pathInputFocused.value = false
+    fetchFiles()
+  }
+
+  async function togglePathDropdown(level: number, event: MouseEvent) {
+    if (pathDropdown.visible && pathDropdown.level === level) { pathDropdown.visible = false; return }
+    const seg = pathSegments.value[level]
+    if (!seg) return
+    const targetPath = seg.path
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+    pathDropdown.x = rect.left
+    pathDropdown.y = rect.bottom + 4
+    pathDropdown.level = level
+    pathDropdown.dirs = []
+    pathDropdown.visible = true
+    try {
+      const { data } = await api.get('/api/files/list', { params: { path: targetPath } })
+      if (data.code === 0) {
+        pathDropdown.dirs = data.data.items
+          .filter((f: FileItem) => f.is_dir)
+          .map((f: FileItem) => ({ name: f.name, path: f.path }))
+      }
+    } catch { pathDropdown.dirs = [] }
+  }
+
+  function navigateToSegment(path: string) {
+    pathDropdown.visible = false
+    currentPath.value = path
+    fetchFiles()
+  }
+
+  function closePathDropdown() { pathDropdown.visible = false }
+
+  function openDriveDropdown(event: MouseEvent) {
+    if (pathDropdown.visible && pathDropdown.level === -1) { pathDropdown.visible = false; return }
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+    pathDropdown.x = rect.left
+    pathDropdown.y = rect.bottom + 4
+    pathDropdown.level = -1
+    pathDropdown.dirs = drives.value.map(d => {
+      const letter = d.replace(/[^A-Za-z]/g, '').toUpperCase()
+      return { name: letter ? letter + '盘' : d, path: d.replace(/\\/g, '/') + '/' }
+    })
+    pathDropdown.visible = true
+  }
 
   function handleDblClick(row: FileItem) { row.is_dir ? enterDir(row) : handleEdit(row) }
-  function enterDir(row: FileItem) { currentPath.value = row.path; fetchFiles() }
+  function enterDir(row: FileItem) { currentPath.value = row.path.replace(/\\\\\?\\/, '').replace(/\\/g, '/'); fetchFiles() }
 
   function handleContextMenu(row: FileItem, colOrEvent: unknown, tableEvent?: MouseEvent) {
     const event = tableEvent || (colOrEvent instanceof MouseEvent ? colOrEvent : null)
@@ -362,13 +440,15 @@ export function useFileManager() {
     loading, currentPath, currentParent, files, inputPath, searchQuery, viewMode,
     filteredFiles, currentPage, pageSize, filteredPagedFiles,
     dirCount, fileCount, totalSize, calcTotalLoading,
-    drives, currentDrive, contextMenu, selectedFiles,
+    drives, currentDrive, currentDriveLabel, contextMenu, selectedFiles,
     createDialog, renameDialog, moveDialog, compressDialog, chmodDialog,
     hoverNotePath, editingNote, editDialog, propDialog,
+    pathInputFocused, pathDropdown, pathSegments,
     // 方法
     fetchFiles, fetchDrives, handleDriveChange, calcTotalSize, calcFileSize,
     formatSize, isArchive, getFileIcon,
     goBack, goToInputPath, handleDblClick, enterDir, handleContextMenu, closeContextMenu,
+    togglePathDropdown, navigateToSegment, closePathDropdown, openDriveDropdown,
     handleCreate, submitCreate, handleRename, submitRename, handleEdit, submitEdit,
     handleCopy, handleMove, submitMove, handleDelete,
     handleCompressSingle, submitCompress, handleExtract,

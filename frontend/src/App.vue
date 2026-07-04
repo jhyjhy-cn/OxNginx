@@ -16,6 +16,10 @@ const epLocale = computed(() => locale.value === 'zh-CN' ? zhCn : en)
 </script>
 
 <style>
+:root {
+  --el-bg-color-page: #f3f5f8;
+}
+
 * {
   margin: 0;
   padding: 0;
