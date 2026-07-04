@@ -26,7 +26,7 @@
     </el-card>
 
     <!-- 添加/编辑对话框 -->
-    <el-dialog
+    <OnDialog
       v-model="dialogVisible"
       :title="isEdit ? '编辑模板' : '添加模板'"
       width="700px"
@@ -60,10 +60,10 @@
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="submitForm">确定</el-button>
       </template>
-    </el-dialog>
+    </OnDialog>
 
     <!-- 预览对话框 -->
-    <el-dialog v-model="previewVisible" title="模板预览" width="600px">
+    <OnDialog v-model="previewVisible" title="模板预览" width="600px" :maximizable="false">
       <div v-if="previewTemplate_">
         <el-form label-width="100px">
           <el-form-item
@@ -79,7 +79,7 @@
 
         <pre class="config-preview">{{ previewConfig }}</pre>
       </div>
-    </el-dialog>
+    </OnDialog>
   </div>
 </template>
 
@@ -88,6 +88,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import api from '@/api'
+import OnDialog from '@/components/OnDialog/index.vue'
 
 interface Template {
   id: number

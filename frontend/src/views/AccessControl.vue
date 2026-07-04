@@ -43,7 +43,7 @@
     </el-card>
 
     <!-- 添加/编辑对话框 -->
-    <el-dialog
+    <OnDialog
       v-model="dialogVisible"
       :title="isEdit ? '编辑规则' : '添加规则'"
       width="500px"
@@ -96,7 +96,7 @@
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="submitForm">确定</el-button>
       </template>
-    </el-dialog>
+    </OnDialog>
   </div>
 </template>
 
@@ -105,6 +105,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import api from '@/api'
+import OnDialog from '@/components/OnDialog/index.vue'
 
 interface AccessRule {
   id: number

@@ -136,7 +136,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import api from '@/api'
-import OnDialog from '@/components/OnDialog.vue'
+import OnDialog from '@/components/OnDialog/index.vue'
 
 interface Site {
   id: number

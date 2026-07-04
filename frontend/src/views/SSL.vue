@@ -32,7 +32,7 @@
     </el-card>
 
     <!-- 申请证书对话框 -->
-    <el-dialog v-model="dialogVisible" title="申请证书" width="400px">
+    <OnDialog v-model="dialogVisible" title="申请证书" width="400px" :maximizable="false">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="域名" prop="domain">
           <el-input v-model="form.domain" placeholder="example.com" />
@@ -42,7 +42,7 @@
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="submitApply">申请</el-button>
       </template>
-    </el-dialog>
+    </OnDialog>
   </div>
 </template>
 
@@ -51,6 +51,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import api from '@/api'
+import OnDialog from '@/components/OnDialog/index.vue'
 
 interface Certificate {
   id: number

@@ -4,6 +4,7 @@
     :width="maximized ? '100%' : width"
     :close-on-click-modal="closeOnClickModal"
     :show-close="false"
+    :destroy-on-close="destroyOnClose"
     :top="maximized ? '0' : '15vh'"
     :class="['on-dialog', { 'on-dialog--maximized': maximized }]"
     :style="{ '--el-dialog-padding-primary': '0' }"
@@ -56,11 +57,13 @@ const props = withDefaults(defineProps<{
   width?: string
   maximizable?: boolean
   closeOnClickModal?: boolean
+  destroyOnClose?: boolean
 }>(), {
   title: '',
   width: '600px',
   maximizable: true,
   closeOnClickModal: true,
+  destroyOnClose: false,
 })
 
 const emit = defineEmits<{

@@ -36,7 +36,7 @@
     </el-card>
 
     <!-- 添加/编辑对话框 -->
-    <el-dialog
+    <OnDialog
       v-model="dialogVisible"
       :title="isEdit ? '编辑上游服务器' : '添加上游服务器'"
       width="700px"
@@ -106,7 +106,7 @@
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="submitForm">确定</el-button>
       </template>
-    </el-dialog>
+    </OnDialog>
   </div>
 </template>
 
@@ -115,6 +115,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import api from '@/api'
+import OnDialog from '@/components/OnDialog/index.vue'
 
 interface Upstream {
   id: number

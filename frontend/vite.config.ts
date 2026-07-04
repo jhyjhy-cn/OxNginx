@@ -14,6 +14,7 @@ export default defineConfig({
     alias: {
       '@': resolve(__dirname, 'src'),
     },
+    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.vue'],
   },
   css: {
     // element-plus 2.13 需要 dart-sass modern API —— ponytail: 否则 build 报 deprecation

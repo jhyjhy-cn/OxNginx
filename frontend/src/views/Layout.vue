@@ -98,7 +98,7 @@
   </el-container>
 
   <!-- 修改密码弹窗 -->
-  <el-dialog v-model="pwdDialogVisible" title="修改密码" width="400px" destroy-on-close>
+  <OnDialog v-model="pwdDialogVisible" title="修改密码" width="400px" :maximizable="false" :destroy-on-close="true">
     <el-form ref="pwdFormRef" :model="pwdForm" :rules="pwdRules" label-width="80px">
       <el-form-item label="旧密码" prop="oldPassword">
         <el-input v-model="pwdForm.oldPassword" type="password" show-password placeholder="请输入旧密码" />
@@ -114,10 +114,10 @@
       <el-button @click="pwdDialogVisible = false">取消</el-button>
       <el-button type="primary" :loading="pwdLoading" @click="submitChangePassword">确认修改</el-button>
     </template>
-  </el-dialog>
+  </OnDialog>
 
   <!-- 修改账号弹窗 -->
-  <el-dialog v-model="userDialogVisible" title="修改账号" width="400px" destroy-on-close>
+  <OnDialog v-model="userDialogVisible" title="修改账号" width="400px" :maximizable="false" :destroy-on-close="true">
     <el-form ref="userFormRef" :model="userForm" :rules="userRules" label-width="80px">
       <el-form-item label="当前账号">
         <el-input :model-value="authStore.username" disabled />
@@ -133,7 +133,7 @@
       <el-button @click="userDialogVisible = false">取消</el-button>
       <el-button type="primary" :loading="userLoading" @click="submitChangeUsername">确认修改</el-button>
     </template>
-  </el-dialog>
+  </OnDialog>
 </template>
 
 <script setup lang="ts">
@@ -143,6 +143,7 @@ import { useAuthStore } from '@/stores/auth'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import api from '@/api'
+import OnDialog from '@/components/OnDialog/index.vue'
 
 const route = useRoute()
 const router = useRouter()
