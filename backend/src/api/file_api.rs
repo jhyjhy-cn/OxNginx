@@ -1,4 +1,7 @@
-use axum::{extract::Query, extract::State, Json};
+use axum::extract::Query;
+use axum::http::header;
+use axum::response::{IntoResponse, Response};
+use axum::{extract::State, Json};
 use serde::Deserialize;
 use serde_json::json;
 use std::path::Path;
@@ -213,5 +216,32 @@ pub async fn calc_size(Query(query): Query<PathQuery>) -> Json<serde_json::Value
     match file_service::calc_size(&query.path).await {
         Ok(size) => Json(json!(ApiResponse::success(json!({ "size": size })))),
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("计算大小失败: {}", e)))),
+    }
+}
+
+/// 下载文件
+pub async fn download_file(Query(query): Query<PathQuery>) -> Response {
+    let path = Path::new(&query.path);
+    let file_name = path
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| "download".to_string());
+
+    match tokio::fs::read(&query.path).await {
+        Ok(content) => (
+            [
+                (header::CONTENT_TYPE, "application/octet-stream".to_string()),
+                (
+                    header::CONTENT_DISPOSITION,
+                    format!("attachment; filename=\"{}\"", file_name),
+                ),
+            ],
+            content,
+        )
+            .into_response(),
+        Err(e) => {
+            let body = Json(json!(ApiResponse::<()>::error(format!("下载失败: {}", e))));
+            (axum::http::StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
+        }
     }
 }

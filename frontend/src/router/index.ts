@@ -71,7 +71,7 @@ const router = createRouter({
         {
           path: 'files',
           name: 'Files',
-          component: () => import('@/views/Files.vue'),
+          component: () => import('@/views/files/index.vue'),
           meta: { title: 'menu.files' },
         },
         {

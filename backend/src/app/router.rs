@@ -90,6 +90,7 @@ pub fn build(state: AppState) -> Router {
         .route("/api/files/extract", post(api::file_api::extract))
         .route("/api/files/note", post(api::file_api::save_note))
         .route("/api/files/size", get(api::file_api::calc_size))
+        .route("/api/files/download", get(api::file_api::download_file))
         .layer(from_fn_with_state(state.clone(), middleware::auth_middleware));
 
     // 静态文件服务（前端 SPA）
