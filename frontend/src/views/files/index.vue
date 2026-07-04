@@ -161,7 +161,7 @@ const fm = useFileManager()
 
 .fm-pathbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 16px; background: var(--el-bg-color); border-bottom: 1px solid var(--el-border-color-lighter); flex-shrink: 0; }
 .pathbar-left { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
-.path-input { flex: 1; min-width: 200px; }
+.path-input { flex: 1; min-width: 200px; max-width: 66%; }
 .drive-prefix { cursor: pointer; font-size: 12px; color: var(--el-color-primary); margin-right: 2px; }
 .pathbar-right { flex-shrink: 0; }
 .search-input { width: 220px; }
@@ -181,7 +181,7 @@ const fm = useFileManager()
 :deep(.el-dropdown-menu__item.active) { color: var(--el-color-primary); font-weight: 600; }
 
 /* 面包屑路径 */
-.path-breadcrumb { display: flex; align-items: center; flex: 1; min-width: 0; gap: 2px; padding: 2px 8px; border: 1px dashed var(--el-border-color); border-radius: 4px; cursor: text; }
+.path-breadcrumb { display: flex; align-items: center; flex: 1; min-width: 0; max-width: 66%; gap: 2px; padding: 2px 8px; border: 1px dashed var(--el-border-color); border-radius: 4px; cursor: text; }
 .path-breadcrumb:hover { border-color: var(--el-border-color-darker); }
 .path-seg-btn { font-size: 13px; color: var(--el-text-color-regular); background: var(--el-fill-color-light); border: 1px solid var(--el-border-color-lighter); border-radius: 3px; padding: 2px 8px; cursor: pointer; white-space: nowrap; line-height: 1.4; }
 .path-seg-btn:hover { color: var(--el-color-primary); border-color: var(--el-color-primary-light-7); background: var(--el-color-primary-light-9); }
