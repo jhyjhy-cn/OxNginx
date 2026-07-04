@@ -20,6 +20,9 @@ pub struct FileListResponse {
     pub path: String,
     pub parent: Option<String>,
     pub items: Vec<FileItem>,
+    pub total: usize,
+    pub dir_count: usize,
+    pub file_count: usize,
 }
 
 /// 写入文件请求

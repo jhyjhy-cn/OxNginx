@@ -75,9 +75,9 @@ pub fn build(state: AppState) -> Router {
         .route("/api/templates/:id/preview", post(api::template_api::preview_template))
         .route("/api/settings", get(api::settings_api::get_settings))
         .route("/api/settings", put(api::settings_api::update_settings))
-        .route("/api/files/list", get(api::file_api::list_files))
+        .route("/api/files/list", post(api::file_api::list_files))
         .route("/api/files/roots", get(api::file_api::list_roots))
-        .route("/api/files/read", get(api::file_api::read_file))
+        .route("/api/files/read", post(api::file_api::read_file))
         .route("/api/files/write", post(api::file_api::write_file))
         .route("/api/files/mkdir", post(api::file_api::mkdir))
         .route("/api/files/touch", post(api::file_api::touch))
@@ -89,7 +89,7 @@ pub fn build(state: AppState) -> Router {
         .route("/api/files/compress", post(api::file_api::compress))
         .route("/api/files/extract", post(api::file_api::extract))
         .route("/api/files/note", post(api::file_api::save_note))
-        .route("/api/files/size", get(api::file_api::calc_size))
+        .route("/api/files/size", post(api::file_api::calc_size))
         .route("/api/files/download", get(api::file_api::download_file))
         .layer(from_fn_with_state(state.clone(), middleware::auth_middleware));
 

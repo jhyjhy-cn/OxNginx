@@ -109,7 +109,7 @@
     <!-- 分页栏 -->
     <div class="fm-pagination">
       <div class="pagination-left">
-        <span>{{ t('files.totalItems', { n: fm.filteredFiles.value.length }) }}</span>
+        <span>{{ t('files.totalItems', { n: fm.total.value }) }}</span>
         <span class="stat-sep">|</span>
         <span>{{ fm.dirCount.value }} 个目录</span>
         <span class="stat-sep">|</span>
@@ -117,7 +117,7 @@
         <span class="stat-sep">|</span>
         <span>大小: <template v-if="fm.totalSize.value !== null">{{ fm.formatSize(fm.totalSize.value) }}</template><el-button v-else link type="primary" size="small" :loading="fm.calcTotalLoading.value" @click="fm.calcTotalSize()">计算</el-button></span>
       </div>
-      <el-pagination v-model:current-page="fm.currentPage.value" v-model:page-size="fm.pageSize.value" :page-sizes="[100, 500, 1000, 1500, 2000]" :total="fm.filteredFiles.value.length" layout="sizes, prev, pager, next, jumper" background small />
+      <el-pagination v-model:current-page="fm.currentPage.value" v-model:page-size="fm.pageSize.value" :page-sizes="[100, 500, 1000, 1500, 2000]" :total="fm.total.value" layout="sizes, prev, pager, next, jumper" background small />
     </div>
 
     <!-- 右键菜单 -->

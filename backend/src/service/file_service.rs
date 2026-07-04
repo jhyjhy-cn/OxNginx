@@ -157,9 +157,12 @@ pub async fn delete_note(state: &AppState, path: &str) -> Result<()> {
 }
 
 /// 读取文件内容（文本）
-pub async fn read_file(path: &str) -> Result<String> {
-    let content = tokio::fs::read_to_string(path).await?;
-    Ok(content)
+pub async fn read_file(path: &str) -> Result<(bool, String)> {
+    let bytes = tokio::fs::read(path).await?;
+    match String::from_utf8(bytes) {
+        Ok(content) => Ok((true, content)),
+        Err(_) => Ok((false, String::new())),
+    }
 }
 
 /// 写入文件内容

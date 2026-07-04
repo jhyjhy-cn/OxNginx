@@ -11,18 +11,33 @@ use crate::dto::ApiResponse;
 use crate::service::file_service;
 use crate::AppState;
 
-/// 查询参数
+/// 查询参数（GET 接口用）
 #[derive(Debug, Deserialize)]
 pub struct PathQuery {
     pub path: String,
 }
 
+/// POST 请求参数
+#[derive(Debug, Deserialize)]
+pub struct ListFilesRequest {
+    pub path: String,
+    #[serde(default)]
+    pub search: String,
+    #[serde(default = "default_page")]
+    pub page: usize,
+    #[serde(default = "default_page_size")]
+    pub page_size: usize,
+}
+
+fn default_page() -> usize { 1 }
+fn default_page_size() -> usize { 100 }
+
 /// 列出目录内容
 pub async fn list_files(
     State(state): State<AppState>,
-    Query(query): Query<PathQuery>,
+    Json(req): Json<ListFilesRequest>,
 ) -> Json<serde_json::Value> {
-    let path = if query.path.is_empty() {
+    let path = if req.path.is_empty() {
         #[cfg(target_os = "windows")]
         {
             "C:\\".to_string()
@@ -32,7 +47,7 @@ pub async fn list_files(
             "/".to_string()
         }
     } else {
-        query.path
+        req.path
     };
 
     // 如果请求的是根级别，返回根目录列表
@@ -56,6 +71,9 @@ pub async fn list_files(
         return Json(json!(ApiResponse::success(FileListResponse {
             path: "/".to_string(),
             parent: None,
+            total: items.len(),
+            dir_count: items.iter().filter(|i| i.is_dir).count(),
+            file_count: items.iter().filter(|i| !i.is_dir).count(),
             items,
         })));
     }
@@ -81,10 +99,29 @@ pub async fn list_files(
                 }
             }
 
+            // 搜索过滤
+            if !req.search.is_empty() {
+                let q = req.search.to_lowercase();
+                items.retain(|i| i.name.to_lowercase().contains(&q));
+            }
+
+            let total = items.len();
+            let dir_count = items.iter().filter(|i| i.is_dir).count();
+            let file_count = items.iter().filter(|i| !i.is_dir).count();
+
+            // 分页
+            let page = req.page.max(1);
+            let page_size = req.page_size.clamp(1, 10000);
+            let start = (page - 1) * page_size;
+            let paged: Vec<FileItem> = items.into_iter().skip(start).take(page_size).collect();
+
             Json(json!(ApiResponse::success(FileListResponse {
                 path,
                 parent,
-                items,
+                items: paged,
+                total,
+                dir_count,
+                file_count,
             })))
         }
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("列出目录失败: {}", e)))),
@@ -98,11 +135,17 @@ pub async fn list_roots() -> Json<serde_json::Value> {
 }
 
 /// 读取文件内容
-pub async fn read_file(Query(query): Query<PathQuery>) -> Json<serde_json::Value> {
-    match file_service::read_file(&query.path).await {
-        Ok(content) => Json(json!(ApiResponse::success(json!({
-            "path": query.path,
+pub async fn read_file(Json(req): Json<PathQuery>) -> Json<serde_json::Value> {
+    match file_service::read_file(&req.path).await {
+        Ok((true, content)) => Json(json!(ApiResponse::success(json!({
+            "path": req.path,
             "content": content,
+            "is_binary": false,
+        })))),
+        Ok((false, _)) => Json(json!(ApiResponse::success(json!({
+            "path": req.path,
+            "content": null,
+            "is_binary": true,
         })))),
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("读取文件失败: {}", e)))),
     }
@@ -212,8 +255,8 @@ pub async fn save_note(
 }
 
 /// 计算文件/目录大小
-pub async fn calc_size(Query(query): Query<PathQuery>) -> Json<serde_json::Value> {
-    match file_service::calc_size(&query.path).await {
+pub async fn calc_size(Json(req): Json<PathQuery>) -> Json<serde_json::Value> {
+    match file_service::calc_size(&req.path).await {
         Ok(size) => Json(json!(ApiResponse::success(json!({ "size": size })))),
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("计算大小失败: {}", e)))),
     }

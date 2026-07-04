@@ -1,4 +1,4 @@
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '@/api'
@@ -31,24 +31,14 @@ export function useFileManager(initialPath?: string, tabId?: string) {
   const searchQuery = ref('')
   const viewMode = ref<'list' | 'card'>('list')
 
-  // 搜索过滤
-  const filteredFiles = computed(() => {
-    if (!searchQuery.value) return files.value
-    const q = searchQuery.value.toLowerCase()
-    return files.value.filter(f => f.name.toLowerCase().includes(q))
-  })
-
-  // 分页
+  // 分页（服务端）
   const currentPage = ref(1)
   const pageSize = ref(100)
-  const filteredPagedFiles = computed(() => {
-    const start = (currentPage.value - 1) * pageSize.value
-    return filteredFiles.value.slice(start, start + pageSize.value)
-  })
-
-  // 统计
-  const dirCount = computed(() => filteredFiles.value.filter(f => f.is_dir).length)
-  const fileCount = computed(() => filteredFiles.value.filter(f => !f.is_dir).length)
+  const total = ref(0)
+  const dirCount = ref(0)
+  const fileCount = ref(0)
+  const filteredFiles = computed(() => files.value)
+  const filteredPagedFiles = computed(() => files.value)
   const totalSize = ref<number | null>(null)
   const calcTotalLoading = ref(false)
 
@@ -119,20 +109,36 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     document.removeEventListener('click', closeContextMenu)
   })
 
+  // 搜索防抖
+  let searchTimer: ReturnType<typeof setTimeout> | null = null
+  watch(searchQuery, () => {
+    if (searchTimer) clearTimeout(searchTimer)
+    searchTimer = setTimeout(() => { currentPage.value = 1; fetchFiles() }, 300)
+  })
+
+  // 翻页 / 切换每页条数
+  watch([currentPage, pageSize], () => fetchFiles())
+
   function closeContextMenu() { contextMenu.visible = false; closePathDropdown() }
 
   // ===== API =====
   async function fetchFiles() {
     loading.value = true
     totalSize.value = null
-    searchQuery.value = ''
     try {
-      const { data } = await api.get('/api/files/list', { params: { path: currentPath.value } })
+      const { data } = await api.post('/api/files/list', {
+        path: currentPath.value,
+        search: searchQuery.value,
+        page: currentPage.value,
+        page_size: pageSize.value,
+      })
       if (data.code === 0) {
         files.value = data.data.items
+        total.value = data.data.total
+        dirCount.value = data.data.dir_count
+        fileCount.value = data.data.file_count
         currentPath.value = data.data.path.replace(/\\\\\?\\/, '').replace(/\\/g, '/')
         currentParent.value = data.data.parent ? data.data.parent.replace(/\\\\\?\\/, '').replace(/\\/g, '/') : null
-        currentPage.value = 1
         filesStore.lastPath = currentPath.value
         if (tabId) filesStore.updateTabPath(tabId, currentPath.value)
       } else {
@@ -152,12 +158,12 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     } catch { /* 非 Windows */ }
   }
 
-  function handleDriveChange(drive: string) { currentPath.value = drive.replace(/\\\\\?\\/, '').replace(/\\/g, '/'); fetchFiles() }
+  function handleDriveChange(drive: string) { currentPath.value = drive.replace(/\\\\\?\\/, '').replace(/\\/g, '/'); currentPage.value = 1; searchQuery.value = ''; fetchFiles() }
 
   async function calcTotalSize() {
     calcTotalLoading.value = true
     try {
-      const { data } = await api.get('/api/files/size', { params: { path: currentPath.value } })
+      const { data } = await api.post('/api/files/size', { path: currentPath.value })
       if (data.code === 0) totalSize.value = data.data.size
       else ElMessage.error(data.message)
     } catch { ElMessage.error(t('common.operationFailed')) }
@@ -167,7 +173,7 @@ export function useFileManager(initialPath?: string, tabId?: string) {
   async function calcFileSize(row: FileItem) {
     row._calcLoading = true
     try {
-      const { data } = await api.get('/api/files/size', { params: { path: row.path } })
+      const { data } = await api.post('/api/files/size', { path: row.path })
       if (data.code === 0) row._size = data.data.size
       else ElMessage.error(data.message)
     } catch { ElMessage.error(t('common.operationFailed')) }
@@ -199,13 +205,15 @@ export function useFileManager(initialPath?: string, tabId?: string) {
   }
 
   // ===== 导航 =====
-  function goBack() { if (currentParent.value) { currentPath.value = currentParent.value; fetchFiles() } }
+  function goBack() { if (currentParent.value) { currentPath.value = currentParent.value; currentPage.value = 1; searchQuery.value = ''; fetchFiles() } }
   function goToInputPath() {
     if (!inputPath.value) return
     const normalized = inputPath.value.replace(/\\\\\?\\/, '').replace(/\\/g, '/').replace(/\/+/g, '/')
     currentPath.value = normalized
     inputPath.value = ''
     pathInputFocused.value = false
+    currentPage.value = 1
+    searchQuery.value = ''
     fetchFiles()
   }
 
@@ -233,6 +241,8 @@ export function useFileManager(initialPath?: string, tabId?: string) {
   function navigateToSegment(path: string) {
     pathDropdown.visible = false
     currentPath.value = path
+    currentPage.value = 1
+    searchQuery.value = ''
     fetchFiles()
   }
 
@@ -252,7 +262,7 @@ export function useFileManager(initialPath?: string, tabId?: string) {
   }
 
   function handleDblClick(row: FileItem) { row.is_dir ? enterDir(row) : handleEdit(row) }
-  function enterDir(row: FileItem) { currentPath.value = row.path.replace(/\\\\\?\\/, '').replace(/\\/g, '/'); fetchFiles() }
+  function enterDir(row: FileItem) { currentPath.value = row.path.replace(/\\\\\?\\/, '').replace(/\\/g, '/'); currentPage.value = 1; searchQuery.value = ''; fetchFiles() }
 
   function handleContextMenu(row: FileItem, colOrEvent: unknown, tableEvent?: MouseEvent) {
     const event = tableEvent || (colOrEvent instanceof MouseEvent ? colOrEvent : null)
@@ -293,8 +303,11 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     contextMenu.visible = false
     if (row.size > 5 * 1024 * 1024) { ElMessage.warning(t('files.fileTooLarge')); return }
     try {
-      const { data } = await api.get('/api/files/read', { params: { path: row.path } })
-      if (data.code === 0) { editDialog.path = row.path; editDialog.content = data.data.content; editDialog.visible = true }
+      const { data } = await api.post('/api/files/read', { path: row.path })
+      if (data.code === 0) {
+        if (data.data.is_binary) { ElMessage.warning(t('files.notEditable')); return }
+        editDialog.path = row.path; editDialog.content = data.data.content; editDialog.visible = true
+      }
       else ElMessage.error(data.message)
     } catch { ElMessage.error(t('files.readError')) }
   }
@@ -445,7 +458,7 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     // 状态
     loading, currentPath, currentParent, files, inputPath, searchQuery, viewMode,
     filteredFiles, currentPage, pageSize, filteredPagedFiles,
-    dirCount, fileCount, totalSize, calcTotalLoading,
+    dirCount, fileCount, total, totalSize, calcTotalLoading,
     drives, currentDrive, currentDriveLabel, contextMenu, selectedFiles,
     createDialog, renameDialog, moveDialog, compressDialog, chmodDialog,
     hoverNotePath, editingNote, editDialog, propDialog,
