@@ -607,7 +607,11 @@ function openFileManager(path: string) {
   const tabStore = useTabStore();
   const filesStore = useFilesStore();
   tabStore.addTab({ path: '/files', title: 'menu.files', closable: true });
-  const existing = filesStore.tabs.find(t => t.path === path);
+  // 归一化路径后比较，避免斜杠/大小写差异导致重复创建
+  const normalized = path.replace(/\\/g, '/').replace(/\/+$/, '');
+  const existing = filesStore.tabs.find(
+    t => t.path.replace(/\\/g, '/').replace(/\/+$/, '') === normalized
+  );
   if (existing) {
     filesStore.setActiveTab(existing.id);
   } else {
