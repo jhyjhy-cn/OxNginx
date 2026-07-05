@@ -7,7 +7,16 @@
     :destroy-on-close="destroyOnClose"
     :top="maximized ? '0' : '15vh'"
     :class="['on-dialog', { 'on-dialog--maximized': maximized }]"
-    :style="{ '--el-dialog-padding-primary': '0' }"
+    :style="{
+      '--el-dialog-padding-primary': '0',
+      ...(props.height && !maximized ? {
+        height: props.height,
+        maxHeight: props.height,
+        display: 'flex',
+        flexDirection: 'column',
+      } : {})
+    }"
+    :body-style="props.height && !maximized ? { flex: '1', overflow: 'auto', display: 'flex', flexDirection: 'column' } : {}"
     @close="handleClose"
   >
     <!-- 自定义标题栏 -->
@@ -93,12 +102,14 @@ const props = withDefaults(defineProps<{
   modelValue: boolean
   title?: string
   width?: string
+  height?: string
   maximizable?: boolean
   closeOnClickModal?: boolean
   destroyOnClose?: boolean
 }>(), {
   title: '',
   width: '600px',
+  height: '',
   maximizable: true,
   closeOnClickModal: true,
   destroyOnClose: false,

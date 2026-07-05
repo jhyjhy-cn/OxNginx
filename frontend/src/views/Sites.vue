@@ -278,7 +278,8 @@
     <OnDialog
       v-model="editDialogVisible"
       :title="`${$t('sites.editSite')}[${editSiteName}]`"
-      width="900px"
+      width="60%"
+      height="70%"
     >
       <el-tabs v-model="editActiveTab" tab-position="left" class="edit-tabs">
         <!-- 1. 域名管理 -->
@@ -339,11 +340,17 @@
 
         <!-- 3. 配置文件 -->
         <el-tab-pane :label="$t('sites.tabConfig')" name="config">
-          <div style="display: flex; gap: 8px; margin-bottom: 8px">
-            <el-button type="primary" size="small" :loading="configSaving" @click="saveSiteConfig">{{ $t('common.save') }}</el-button>
-            <el-button size="small" @click="loadSiteConfig">{{ $t('common.refresh') }}</el-button>
+          <div class="config-tab-content">
+            <div class="config-hint">
+              <p>提示：Ctrl+F 搜索关键字，Ctrl+S 保存，Ctrl+H 查找替换</p>
+              <p>此处为站点主配置文件，若您不了解配置规则，请勿随意修改</p>
+            </div>
+            <div ref="configEditorRef" class="config-editor-box" />
+            <div style="display: flex; gap: 8px; margin-top: 8px">
+              <el-button type="primary" size="small" :loading="configSaving" @click="saveSiteConfig">{{ $t('common.save') }}</el-button>
+              <el-button size="small" @click="loadSiteConfig">{{ $t('common.refresh') }}</el-button>
+            </div>
           </div>
-          <div ref="configEditorRef" class="config-editor-box" />
         </el-tab-pane>
 
         <!-- 4. SSL证书 -->
@@ -879,6 +886,10 @@ watch(editActiveTab, (tab) => {
           automaticLayout: true,
           tabSize: 4,
         })
+        // Ctrl+S 保存
+        configEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+          saveSiteConfig()
+        })
       }
       loadSiteConfig()
     })
@@ -1271,7 +1282,7 @@ async function batchDelete() {
 
 /* 编辑弹窗左侧标签页 */
 .edit-tabs {
-  height: 500px;
+  height: 100%;
 }
 .edit-tabs :deep(.el-tabs__header) {
   min-width: 120px;
@@ -1279,6 +1290,10 @@ async function batchDelete() {
 .edit-tabs :deep(.el-tabs__content) {
   padding: 0 16px;
   overflow-y: auto;
+  height: 100%;
+}
+.edit-tabs :deep(.el-tab-pane) {
+  height: 100%;
 }
 
 /* 规则行 */
@@ -1290,11 +1305,27 @@ async function batchDelete() {
 }
 
 /* 配置文件编辑器 */
+.config-tab-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
 .config-editor-box {
   width: 100%;
-  height: 420px;
+  flex: 1;
+  min-height: 300px;
   border: 1px solid var(--el-border-color-lighter);
   border-radius: 4px;
+}
+
+.config-hint {
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  background: var(--el-fill-color-light);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  line-height: 1.8;
 }
 
 /* 日志输出 */

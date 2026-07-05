@@ -24,6 +24,30 @@ struct HotlinkConfig {
 
 fn default_hotlink_code() -> u16 { 403 }
 
+/// 解析 server_name 中的 host:port，返回 (纯 host 列表, 额外端口列表)
+/// 例如 "test.com 192.168.3.14:81 192.168.3.14:82" → (["test.com","192.168.3.14"], [81,82])
+fn parse_server_names(server_name: &str) -> (Vec<String>, Vec<u16>) {
+    let mut hosts = Vec::new();
+    let mut ports = Vec::new();
+    for part in server_name.split_whitespace() {
+        if let Some(idx) = part.rfind(':') {
+            let host = &part[..idx];
+            let port_str = &part[idx + 1..];
+            if let Ok(port) = port_str.parse::<u16>() {
+                hosts.push(host.to_string());
+                if !ports.contains(&port) {
+                    ports.push(port);
+                }
+            } else {
+                hosts.push(part.to_string());
+            }
+        } else {
+            hosts.push(part.to_string());
+        }
+    }
+    (hosts, ports)
+}
+
 /// 追加公共 server 指令（日志、rewrite、防盗链、重定向）
 fn append_common_directives(config: &mut String, site: &Site, indent: &str) {
     // per-site 日志
@@ -82,87 +106,121 @@ pub fn generate_site_config(site: &Site) -> String {
     let mut config = String::new();
 
     if site.ssl == 1 {
-        // ========== 80 端口：HTTP 强制跳转到 HTTPS ==========
-        config.push_str("server {\n");
-        config.push_str(&format!("    listen {};\n", site.listen));
-        config.push_str(&format!("    listen [::]:{};\n", site.listen));
-        config.push_str(&format!("    server_name {};\n", site.server_name));
-        config.push_str(&format!(
-            "    return 301 https://$server_name$request_uri;\n"
-        ));
-        config.push_str("}\n\n");
+        let (hosts, extra_ports) = parse_server_names(&site.server_name);
+        let server_name_clean = hosts.join(" ");
+        let main_port: u16 = site.listen.parse().unwrap_or(80);
+
+        // 额外的 HTTP 端口（非 80、非 443）也需要生成跳转块
+        let mut redirect_ports = vec![main_port];
+        for p in &extra_ports {
+            if *p != 443 && !redirect_ports.contains(p) {
+                redirect_ports.push(*p);
+            }
+        }
+
+        // ========== HTTP 端口：强制跳转到 HTTPS ==========
+        for port in &redirect_ports {
+            config.push_str("server {\n");
+            config.push_str(&format!("    listen {};\n", port));
+            config.push_str(&format!("    listen [::]:{};\n", port));
+            config.push_str(&format!("    server_name {};\n", server_name_clean));
+            config.push_str("    return 301 https://$host$request_uri;\n");
+            config.push_str("}\n\n");
+        }
 
         // ========== 443 端口：SSL 终止 ==========
-        config.push_str("server {\n");
-        config.push_str("    listen 443 ssl;\n");
-        config.push_str("    listen [::]:443 ssl;\n");
-        config.push_str(&format!("    server_name {};\n", site.server_name));
-        if let Some(cert_path) = &site.certificate_path {
-            config.push_str(&format!("    ssl_certificate {};\n", cert_path));
+        let mut ssl_ports = vec![443u16];
+        for p in &extra_ports {
+            if *p != 443 && *p != main_port && !redirect_ports.contains(p) && !ssl_ports.contains(p) {
+                ssl_ports.push(*p);
+            }
         }
-        if let Some(key_path) = &site.key_path {
-            config.push_str(&format!("    ssl_certificate_key {};\n", key_path));
-        }
-        config.push_str("    ssl_protocols TLSv1.2 TLSv1.3;\n");
-        config.push_str("    ssl_ciphers HIGH:!aNULL:!MD5;\n");
 
-        append_common_directives(&mut config, site, "    ");
+        for port in &ssl_ports {
+            config.push_str("server {\n");
+            config.push_str(&format!("    listen {} ssl;\n", port));
+            config.push_str(&format!("    listen [::]:{} ssl;\n", port));
+            config.push_str(&format!("    server_name {};\n", server_name_clean));
+            if let Some(cert_path) = &site.certificate_path {
+                config.push_str(&format!("    ssl_certificate {};\n", cert_path));
+            }
+            if let Some(key_path) = &site.key_path {
+                config.push_str(&format!("    ssl_certificate_key {};\n", key_path));
+            }
+            config.push_str("    ssl_protocols TLSv1.2 TLSv1.3;\n");
+            config.push_str("    ssl_ciphers HIGH:!aNULL:!MD5;\n");
 
-        if let Some(proxy_pass) = &site.proxy_pass {
-            config.push_str("\n    location / {\n");
-            config.push_str(&format!("        proxy_pass {};\n", proxy_pass));
-            config.push_str("        proxy_set_header Host $host;\n");
-            config.push_str("        proxy_set_header X-Real-IP $remote_addr;\n");
-            config.push_str("        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n");
-            config.push_str("        proxy_set_header X-Forwarded-Proto $scheme;\n");
-            config.push_str("        proxy_http_version 1.1;\n");
-            config.push_str("        proxy_set_header Upgrade $http_upgrade;\n");
-            config.push_str("        proxy_set_header Connection \"upgrade\";\n");
-            config.push_str("    }\n");
-        } else if let Some(root_path) = &site.root_path {
-            let root_path = root_path.replace('\\', "/");
-            config.push_str(&format!("\n    root {};\n", root_path));
-            config.push_str("    index index.html index.htm;\n");
-            config.push_str("\n    location = /index.html {\n");
-            config.push_str("        expires -1;\n");
-            config.push_str("    }\n");
-            config.push_str("\n    location / {\n");
-            config.push_str("        try_files $uri $uri/ =404;\n");
-            config.push_str("    }\n");
+            append_common_directives(&mut config, site, "    ");
+
+            if let Some(proxy_pass) = &site.proxy_pass {
+                config.push_str("\n    location / {\n");
+                config.push_str(&format!("        proxy_pass {};\n", proxy_pass));
+                config.push_str("        proxy_set_header Host $host;\n");
+                config.push_str("        proxy_set_header X-Real-IP $remote_addr;\n");
+                config.push_str("        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n");
+                config.push_str("        proxy_set_header X-Forwarded-Proto $scheme;\n");
+                config.push_str("        proxy_http_version 1.1;\n");
+                config.push_str("        proxy_set_header Upgrade $http_upgrade;\n");
+                config.push_str("        proxy_set_header Connection \"upgrade\";\n");
+                config.push_str("    }\n");
+            } else if let Some(root_path) = &site.root_path {
+                let root_path = root_path.replace('\\', "/");
+                config.push_str(&format!("\n    root {};\n", root_path));
+                config.push_str("    index index.html index.htm;\n");
+                config.push_str("\n    location = /index.html {\n");
+                config.push_str("        expires -1;\n");
+                config.push_str("    }\n");
+                config.push_str("\n    location / {\n");
+                config.push_str("        try_files $uri $uri/ =404;\n");
+                config.push_str("    }\n");
+            }
+            config.push_str("}\n\n");
         }
-        config.push_str("}\n");
     } else {
         // 非 SSL：普通 HTTP server
-        config.push_str("server {\n");
-        config.push_str(&format!("    listen {};\n", site.listen));
-        config.push_str(&format!("    listen [::]:{};\n", site.listen));
-        config.push_str(&format!("    server_name {};\n", site.server_name));
-
-        append_common_directives(&mut config, site, "    ");
-
-        if let Some(proxy_pass) = &site.proxy_pass {
-            config.push_str("\n    location / {\n");
-            config.push_str(&format!("        proxy_pass {};\n", proxy_pass));
-            config.push_str("        proxy_set_header Host $host;\n");
-            config.push_str("        proxy_set_header X-Real-IP $remote_addr;\n");
-            config.push_str("        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n");
-            config.push_str("        proxy_set_header X-Forwarded-Proto $scheme;\n");
-            config.push_str("        proxy_http_version 1.1;\n");
-            config.push_str("        proxy_set_header Upgrade $http_upgrade;\n");
-            config.push_str("        proxy_set_header Connection \"upgrade\";\n");
-            config.push_str("    }\n");
-        } else if let Some(root_path) = &site.root_path {
-            let root_path = root_path.replace('\\', "/");
-            config.push_str(&format!("\n    root {};\n", root_path));
-            config.push_str("    index index.html index.htm;\n");
-            config.push_str("\n    location = /index.html {\n");
-            config.push_str("        expires -1;\n");
-            config.push_str("    }\n");
-            config.push_str("\n    location / {\n");
-            config.push_str("        try_files $uri $uri/ =404;\n");
-            config.push_str("    }\n");
+        let (hosts, extra_ports) = parse_server_names(&site.server_name);
+        let server_name_clean = hosts.join(" ");
+        // 收集所有监听端口（主端口 + server_name 中的端口，去重）
+        let main_port: u16 = site.listen.parse().unwrap_or(80);
+        let mut all_ports = vec![main_port];
+        for p in &extra_ports {
+            if !all_ports.contains(p) {
+                all_ports.push(*p);
+            }
         }
-        config.push_str("}\n");
+
+        for port in &all_ports {
+            config.push_str("server {\n");
+            config.push_str(&format!("    listen {};\n", port));
+            config.push_str(&format!("    listen [::]:{};\n", port));
+            config.push_str(&format!("    server_name {};\n", server_name_clean));
+
+            append_common_directives(&mut config, site, "    ");
+
+            if let Some(proxy_pass) = &site.proxy_pass {
+                config.push_str("\n    location / {\n");
+                config.push_str(&format!("        proxy_pass {};\n", proxy_pass));
+                config.push_str("        proxy_set_header Host $host;\n");
+                config.push_str("        proxy_set_header X-Real-IP $remote_addr;\n");
+                config.push_str("        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n");
+                config.push_str("        proxy_set_header X-Forwarded-Proto $scheme;\n");
+                config.push_str("        proxy_http_version 1.1;\n");
+                config.push_str("        proxy_set_header Upgrade $http_upgrade;\n");
+                config.push_str("        proxy_set_header Connection \"upgrade\";\n");
+                config.push_str("    }\n");
+            } else if let Some(root_path) = &site.root_path {
+                let root_path = root_path.replace('\\', "/");
+                config.push_str(&format!("\n    root {};\n", root_path));
+                config.push_str("    index index.html index.htm;\n");
+                config.push_str("\n    location = /index.html {\n");
+                config.push_str("        expires -1;\n");
+                config.push_str("    }\n");
+                config.push_str("\n    location / {\n");
+                config.push_str("        try_files $uri $uri/ =404;\n");
+                config.push_str("    }\n");
+            }
+            config.push_str("}\n\n");
+        }
     }
 
     config

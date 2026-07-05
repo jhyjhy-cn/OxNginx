@@ -26,13 +26,11 @@ pub async fn list_config_files(
     State(state): State<AppState>,
 ) -> Json<serde_json::Value> {
     let config = state.get_config();
-    let sites_available = format!("{}/../sites-available", config.nginx.sites_enabled);
     let sites_enabled = &config.nginx.sites_enabled;
 
     let mut files = Vec::new();
 
-    // 列出 sites-available 目录
-    if let Ok(entries) = std::fs::read_dir(&sites_available) {
+    if let Ok(entries) = std::fs::read_dir(sites_enabled) {
         for entry in entries.flatten() {
             let path = entry.path();
             if path.extension().map_or(false, |ext| ext == "conf") {
@@ -46,16 +44,12 @@ pub async fn list_config_files(
                         Some(datetime.format("%Y-%m-%d %H:%M:%S").to_string())
                     });
 
-                // 检查是否已启用
-                let enabled_path = format!("{}/{}", sites_enabled, name);
-                let enabled = std::path::Path::new(&enabled_path).exists();
-
                 files.push(serde_json::json!({
                     "name": name,
                     "path": path.to_string_lossy(),
                     "size": size,
                     "modified": modified,
-                    "enabled": enabled,
+                    "enabled": true,
                 }));
             }
         }
@@ -118,15 +112,19 @@ pub async fn get_site_config(
     Path(name): Path<String>,
 ) -> Json<serde_json::Value> {
     let config = state.get_config();
-    let sites_available = format!("{}/../sites-available", config.nginx.sites_enabled);
-    let config_path = format!("{}/{}", sites_available, name);
+    let conf_name = if name.ends_with(".conf") { name } else { format!("{}.conf", name) };
+    let config_path = format!("{}/{}", config.nginx.sites_enabled, conf_name);
+    tracing::info!("读取站点配置: {}", config_path);
 
     match tokio::fs::read_to_string(&config_path).await {
         Ok(content) => Json(json!(ApiResponse::success(ConfigContent {
             path: config_path,
             content,
         }))),
-        Err(e) => Json(json!(ApiResponse::<()>::error(format!("读取配置文件失败: {}", e)))),
+        Err(e) => {
+            tracing::error!("读取配置文件失败: {} - {}", config_path, e);
+            Json(json!(ApiResponse::<()>::error(format!("读取配置文件失败: {}", e))))
+        }
     }
 }
 
@@ -137,8 +135,9 @@ pub async fn save_site_config(
     Json(req): Json<SaveConfigRequest>,
 ) -> Json<serde_json::Value> {
     let config = state.get_config();
-    let sites_available = format!("{}/../sites-available", config.nginx.sites_enabled);
-    let config_path = format!("{}/{}", sites_available, name);
+    let conf_name = if name.ends_with(".conf") { name } else { format!("{}.conf", name) };
+    let config_path = format!("{}/{}", config.nginx.sites_enabled, conf_name);
+    tracing::info!("保存站点配置: {}", config_path);
 
     // 备份原配置
     let backup_path = format!("{}.bak.{}", config_path, chrono::Local::now().format("%Y%m%d%H%M%S"));
@@ -154,6 +153,7 @@ pub async fn save_site_config(
             if test_result.success {
                 Json(json!(ApiResponse::success("配置保存成功")))
             } else {
+                tracing::error!("配置测试失败，已回滚: {}", test_result.message);
                 // 配置测试失败，恢复备份
                 if let Ok(backup_content) = tokio::fs::read_to_string(&backup_path).await {
                     let _ = tokio::fs::write(&config_path, backup_content).await;
@@ -161,7 +161,10 @@ pub async fn save_site_config(
                 Json(json!(ApiResponse::<()>::error(format!("配置测试失败，已回滚: {}", test_result.message))))
             }
         }
-        Err(e) => Json(json!(ApiResponse::<()>::error(format!("保存配置文件失败: {}", e)))),
+        Err(e) => {
+            tracing::error!("保存配置文件失败: {} - {}", config_path, e);
+            Json(json!(ApiResponse::<()>::error(format!("保存配置文件失败: {}", e))))
+        }
     }
 }
 
@@ -171,38 +174,19 @@ pub async fn toggle_site_config(
     Path(name): Path<String>,
 ) -> Json<serde_json::Value> {
     let config = state.get_config();
-    let sites_available = format!("{}/../sites-available", config.nginx.sites_enabled);
-    let sites_enabled = &config.nginx.sites_enabled;
+    let conf_name = if name.ends_with(".conf") { name } else { format!("{}.conf", name) };
+    let config_path = format!("{}/{}", config.nginx.sites_enabled, conf_name);
 
-    let source = format!("{}/{}", sites_available, name);
-    let target = format!("{}/{}", sites_enabled, name);
-
-    if !std::path::Path::new(&source).exists() {
+    if !std::path::Path::new(&config_path).exists() {
+        tracing::error!("配置文件不存在: {}", config_path);
         return Json(json!(ApiResponse::<()>::error("配置文件不存在")));
     }
 
-    let target_path = std::path::Path::new(&target);
-    if target_path.exists() {
-        // 已启用，禁用它
-        match tokio::fs::remove_file(&target).await {
-            Ok(_) => Json(json!(ApiResponse::success("配置已禁用"))),
-            Err(e) => Json(json!(ApiResponse::<()>::error(format!("禁用失败: {}", e)))),
-        }
-    } else {
-        // 未启用，启用它（复制文件而非符号链接，兼容 Windows）
-        match tokio::fs::copy(&source, &target).await {
-            Ok(_) => {
-                // 测试配置
-                let test_result = crate::nginx::test_config(&config.nginx.bin).await;
-                if test_result.success {
-                    Json(json!(ApiResponse::success("配置已启用")))
-                } else {
-                    // 配置测试失败，移除复制的文件
-                    let _ = tokio::fs::remove_file(&target).await;
-                    Json(json!(ApiResponse::<()>::error(format!("配置测试失败: {}", test_result.message))))
-                }
-            }
-            Err(e) => Json(json!(ApiResponse::<()>::error(format!("启用失败: {}", e)))),
+    match tokio::fs::remove_file(&config_path).await {
+        Ok(_) => Json(json!(ApiResponse::success("配置已禁用"))),
+        Err(e) => {
+            tracing::error!("禁用配置失败: {} - {}", config_path, e);
+            Json(json!(ApiResponse::<()>::error(format!("禁用失败: {}", e))))
         }
     }
 }
@@ -213,20 +197,14 @@ pub async fn delete_site_config(
     Path(name): Path<String>,
 ) -> Json<serde_json::Value> {
     let config = state.get_config();
-    let sites_available = format!("{}/../sites-available", config.nginx.sites_enabled);
-    let sites_enabled = &config.nginx.sites_enabled;
+    let conf_name = if name.ends_with(".conf") { name } else { format!("{}.conf", name) };
+    let config_path = format!("{}/{}", config.nginx.sites_enabled, conf_name);
 
-    let source = format!("{}/{}", sites_available, name);
-    let target = format!("{}/{}", sites_enabled, name);
-
-    // 删除符号链接
-    if std::path::Path::new(&target).exists() {
-        let _ = tokio::fs::remove_file(&target).await;
-    }
-
-    // 删除源文件
-    match tokio::fs::remove_file(&source).await {
+    match tokio::fs::remove_file(&config_path).await {
         Ok(_) => Json(json!(ApiResponse::success("配置文件已删除"))),
-        Err(e) => Json(json!(ApiResponse::<()>::error(format!("删除失败: {}", e)))),
+        Err(e) => {
+            tracing::error!("删除配置文件失败: {} - {}", config_path, e);
+            Json(json!(ApiResponse::<()>::error(format!("删除失败: {}", e))))
+        }
     }
 }
