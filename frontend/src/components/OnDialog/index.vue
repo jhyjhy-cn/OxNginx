@@ -6,7 +6,7 @@
     :show-close="false"
     :destroy-on-close="destroyOnClose"
     :top="maximized ? '0' : '15vh'"
-    :class="['on-dialog', { 'on-dialog--maximized': maximized }]"
+    :class="['on-dialog', { 'on-dialog--maximized': maximized }, { 'on-dialog--has-height': props.height }]"
     :style="{
       '--el-dialog-padding-primary': '0',
       ...(props.height && !maximized ? {
@@ -388,6 +388,10 @@ watch(() => props.modelValue, (val) => {
 
 .on-dialog .el-dialog__body {
   padding: 0 16px 16px 16px !important;
+}
+
+.on-dialog--has-height .el-dialog__body {
+  height: 100% !important;
 }
 
 .on-dialog .el-dialog__footer {

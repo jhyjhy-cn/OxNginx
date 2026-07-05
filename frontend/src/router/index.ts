@@ -23,7 +23,7 @@ const router = createRouter({
         {
           path: 'sites',
           name: 'Sites',
-          component: () => import('@/views/Sites.vue'),
+          component: () => import('@/views/sites/index.vue'),
           meta: { title: 'menu.sites' },
         },
         {
