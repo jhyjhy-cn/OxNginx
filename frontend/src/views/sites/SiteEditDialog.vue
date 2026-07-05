@@ -127,32 +127,7 @@
         </div>
       </el-tab-pane>
 
-      <!-- 4. SSL证书 -->
-      <el-tab-pane :label="$t('sites.tabSsl')" name="ssl">
-        <el-form label-width="80px">
-          <el-form-item :label="$t('sites.enableSsl')">
-            <el-switch v-model="editForm.ssl" @change="debouncedSave" />
-          </el-form-item>
-          <template v-if="editForm.ssl">
-            <el-form-item :label="$t('sites.certPath')">
-              <el-input
-                v-model="editForm.certificate_path"
-                placeholder="/opt/oxnginx/ssl/fullchain.cer"
-                @change="debouncedSave"
-              />
-            </el-form-item>
-            <el-form-item :label="$t('sites.keyPath')">
-              <el-input
-                v-model="editForm.key_path"
-                placeholder="/opt/oxnginx/ssl/private.key"
-                @change="debouncedSave"
-              />
-            </el-form-item>
-          </template>
-        </el-form>
-      </el-tab-pane>
-
-      <!-- 5. 反向代理 -->
+      <!-- 4. 反向代理 -->
       <el-tab-pane :label="$t('sites.tabProxy')" name="proxy">
         <el-form label-width="80px">
           <el-form-item :label="$t('sites.proxyPass')">
@@ -172,7 +147,7 @@
         </el-form>
       </el-tab-pane>
 
-      <!-- 6. 重定向 -->
+      <!-- 5. 重定向 -->
       <el-tab-pane :label="$t('sites.tabRedirect')" name="redirect">
         <el-alert
           :title="$t('sites.redirectHint')"
@@ -224,7 +199,7 @@
         </el-button>
       </el-tab-pane>
 
-      <!-- 7. 防盗链 -->
+      <!-- 6. 防盗链 -->
       <el-tab-pane :label="$t('sites.tabHotlink')" name="hotlink">
         <el-form label-width="100px">
           <el-form-item :label="$t('sites.hotlinkEnable')">
@@ -245,6 +220,31 @@
                 <el-option label="403 Forbidden" :value="403" />
                 <el-option label="404 Not Found" :value="404" />
               </el-select>
+            </el-form-item>
+          </template>
+        </el-form>
+      </el-tab-pane>
+
+      <!-- 7. SSL证书 -->
+      <el-tab-pane :label="$t('sites.tabSsl')" name="ssl">
+        <el-form label-width="80px">
+          <el-form-item :label="$t('sites.enableSsl')">
+            <el-switch v-model="editForm.ssl" @change="debouncedSave" />
+          </el-form-item>
+          <template v-if="editForm.ssl">
+            <el-form-item :label="$t('sites.certPath')">
+              <el-input
+                v-model="editForm.certificate_path"
+                placeholder="/opt/oxnginx/ssl/fullchain.cer"
+                @change="debouncedSave"
+              />
+            </el-form-item>
+            <el-form-item :label="$t('sites.keyPath')">
+              <el-input
+                v-model="editForm.key_path"
+                placeholder="/opt/oxnginx/ssl/private.key"
+                @change="debouncedSave"
+              />
             </el-form-item>
           </template>
         </el-form>
@@ -503,7 +503,7 @@ watch(activeTab, (tab) => {
         configEditor.addCommand(
           monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
           () => {
-            if (activeTab.value === 'config') saveSiteConfig();
+            if (activeTab.value === "config") saveSiteConfig();
           },
         );
       }
@@ -527,7 +527,7 @@ watch(activeTab, (tab) => {
         rewriteEditor.addCommand(
           monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
           () => {
-            if (activeTab.value === 'rewrite') saveRewrite();
+            if (activeTab.value === "rewrite") saveRewrite();
           },
         );
       }
