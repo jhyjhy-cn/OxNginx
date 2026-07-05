@@ -182,7 +182,8 @@ const fm = useFileManager(props.initialPath, props.tabId)
 :deep(.el-dropdown-menu__item.active) { color: var(--el-color-primary); font-weight: 600; }
 
 /* 面包屑路径 */
-.path-breadcrumb { display: flex; align-items: center; flex: 1; min-width: 0; max-width: 66%; gap: 2px; padding: 2px 8px; border: 1px dashed var(--el-border-color); border-radius: 4px; cursor: text; }
+.path-breadcrumb { display: flex; align-items: center; flex: 1; min-width: 0; max-width: 66%; gap: 2px; padding: 2px 8px; border: 1px dashed var(--el-border-color); border-radius: 4px; cursor: text; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.path-breadcrumb::-webkit-scrollbar { display: none; }
 .path-breadcrumb:hover { border-color: var(--el-border-color-darker); }
 .path-seg-btn { font-size: 13px; color: var(--el-text-color-regular); background: var(--el-fill-color-light); border: 1px solid var(--el-border-color-lighter); border-radius: 3px; padding: 2px 8px; cursor: pointer; white-space: nowrap; line-height: 1.4; }
 .path-seg-btn:hover { color: var(--el-color-primary); border-color: var(--el-color-primary-light-7); background: var(--el-color-primary-light-9); }

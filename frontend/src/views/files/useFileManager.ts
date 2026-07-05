@@ -229,7 +229,7 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     pathDropdown.dirs = []
     pathDropdown.visible = true
     try {
-      const { data } = await api.get('/api/files/list', { params: { path: targetPath } })
+      const { data } = await api.post('/api/files/list', { path: targetPath })
       if (data.code === 0) {
         pathDropdown.dirs = data.data.items
           .filter((f: FileItem) => f.is_dir)
