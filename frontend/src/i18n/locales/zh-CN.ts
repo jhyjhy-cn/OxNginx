@@ -87,6 +87,10 @@ export default {
     initFailed: '初始化失败',
     enterUsername: '请输入用户名',
     enterPassword: '请输入密码',
+    agreement: '用户协议',
+    privacy: '隐私政策',
+    contactUs: '联系我们',
+    icp: '备案号: xx',
   },
 
   // 仪表盘

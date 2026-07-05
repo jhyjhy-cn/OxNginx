@@ -81,6 +81,10 @@ export default {
     initFailed: 'Initialization failed',
     enterUsername: 'Enter username',
     enterPassword: 'Enter password',
+    agreement: 'User Agreement',
+    privacy: 'Privacy Policy',
+    contactUs: 'Contact Us',
+    icp: 'ICP: xx',
   },
 
   dashboard: {
