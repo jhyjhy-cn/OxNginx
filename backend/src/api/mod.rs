@@ -8,5 +8,6 @@ pub mod log_api;
 pub mod nginx_api;
 pub mod settings_api;
 pub mod site_api;
+pub mod site_backup_api;
 pub mod template_api;
 pub mod upstream_api;

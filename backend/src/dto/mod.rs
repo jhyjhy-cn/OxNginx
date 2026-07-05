@@ -69,6 +69,8 @@ pub struct CreateSiteRequest {
     pub key_path: Option<String>,
     pub proxy_pass: Option<String>,
     pub root_path: Option<String>,
+    pub remark: Option<String>,
+    pub expire_time: Option<String>,
 }
 
 fn default_listen() -> String {
@@ -99,6 +101,8 @@ pub struct UpdateSiteRequest {
     pub key_path: Option<String>,
     pub proxy_pass: Option<String>,
     pub root_path: Option<String>,
+    pub remark: Option<String>,
+    pub expire_time: Option<String>,
     pub status: Option<String>,
 }
 

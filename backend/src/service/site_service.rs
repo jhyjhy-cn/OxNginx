@@ -1,6 +1,7 @@
 use crate::dto::{CreateSiteRequest, UpdateSiteRequest};
 use crate::model::Site;
 use crate::AppState;
+use std::collections::HashMap;
 
 /// 获取所有站点
 pub async fn get_all_sites(state: &AppState) -> anyhow::Result<Vec<Site>> {
@@ -8,6 +9,11 @@ pub async fn get_all_sites(state: &AppState) -> anyhow::Result<Vec<Site>> {
         .fetch_all(state.db.pool())
         .await?;
     Ok(sites)
+}
+
+/// 获取所有站点的备份数量（从文件系统）
+pub fn get_backup_counts_from_fs(site_names: &[String]) -> HashMap<String, u64> {
+    crate::service::site_backup_service::get_backup_counts(site_names)
 }
 
 /// 证书信息（含剩余天数）
@@ -48,8 +54,8 @@ pub async fn create_site(state: &AppState, req: CreateSiteRequest) -> anyhow::Re
     let ssl_value = if req.ssl { 1 } else { 0 };
     let result = sqlx::query_as::<_, Site>(
         r#"
-        INSERT INTO sites (name, server_name, listen, ssl, certificate_path, key_path, proxy_pass, root_path)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO sites (name, server_name, listen, ssl, certificate_path, key_path, proxy_pass, root_path, remark, expire_time)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING *
         "#,
     )
@@ -61,6 +67,8 @@ pub async fn create_site(state: &AppState, req: CreateSiteRequest) -> anyhow::Re
     .bind(&req.key_path)
     .bind(&req.proxy_pass)
     .bind(&req.root_path)
+    .bind(&req.remark)
+    .bind(&req.expire_time)
     .fetch_one(state.db.pool())
     .await?;
 
@@ -93,12 +101,14 @@ pub async fn update_site(
     let key_path = req.key_path.or(existing.key_path);
     let proxy_pass = req.proxy_pass.or(existing.proxy_pass);
     let root_path = req.root_path.or(existing.root_path);
+    let remark = req.remark.or(existing.remark);
+    let expire_time = req.expire_time.or(existing.expire_time);
     let status = req.status.unwrap_or(existing.status);
 
     let site = sqlx::query_as::<_, Site>(
         r#"
         UPDATE sites
-        SET name = ?, server_name = ?, listen = ?, ssl = ?, certificate_path = ?, key_path = ?, proxy_pass = ?, root_path = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+        SET name = ?, server_name = ?, listen = ?, ssl = ?, certificate_path = ?, key_path = ?, proxy_pass = ?, root_path = ?, remark = ?, expire_time = ?, status = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         RETURNING *
         "#,
@@ -111,6 +121,8 @@ pub async fn update_site(
     .bind(&key_path)
     .bind(&proxy_pass)
     .bind(&root_path)
+    .bind(&remark)
+    .bind(&expire_time)
     .bind(&status)
     .bind(id)
     .fetch_optional(state.db.pool())

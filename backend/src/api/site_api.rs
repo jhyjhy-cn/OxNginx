@@ -31,31 +31,43 @@ pub async fn list_sites_with_certs(
 ) -> Json<serde_json::Value> {
     match site_service::get_all_sites(&state).await {
         Ok(sites) => {
+            // 一次性获取所有站点的备份数量
+            let site_names: Vec<String> = sites.iter().map(|s| s.name.clone()).collect();
+            let backup_counts = crate::service::site_backup_service::get_backup_counts(&site_names);
+
             let mut result = Vec::new();
             for site in sites {
-                if site.ssl == 1 {
+                let (cert_expire_time, cert_expire_days) = if site.ssl == 1 {
                     let cert_info = site.get_cert_expire_info().await;
-                    let json = serde_json::json!({
-                        "id": site.id,
-                        "name": site.name,
-                        "server_name": site.server_name,
-                        "listen": site.listen,
-                        "ssl": site.ssl,
-                        "certificate_path": site.certificate_path,
-                        "key_path": site.key_path,
-                        "proxy_pass": site.proxy_pass,
-                        "root_path": site.root_path,
-                        "config": site.config,
-                        "status": site.status,
-                        "created_at": site.created_at,
-                        "updated_at": site.updated_at,
-                        "expire_time": cert_info.as_ref().and_then(|c| c.expire_time.clone()),
-                        "cert_expire_days": cert_info.as_ref().and_then(|c| c.days_remaining),
-                    });
-                    result.push(json);
+                    (
+                        cert_info.as_ref().and_then(|c| c.expire_time.clone()),
+                        cert_info.as_ref().and_then(|c| c.days_remaining),
+                    )
                 } else {
-                    result.push(serde_json::json!(site));
-                }
+                    (None, None)
+                };
+
+                let json = serde_json::json!({
+                    "id": site.id,
+                    "name": site.name,
+                    "server_name": site.server_name,
+                    "listen": site.listen,
+                    "ssl": site.ssl,
+                    "certificate_path": site.certificate_path,
+                    "key_path": site.key_path,
+                    "proxy_pass": site.proxy_pass,
+                    "root_path": site.root_path,
+                    "config": site.config,
+                    "remark": site.remark,
+                    "expire_time": site.expire_time,
+                    "status": site.status,
+                    "created_at": site.created_at,
+                    "updated_at": site.updated_at,
+                    "cert_expire_time": cert_expire_time,
+                    "cert_expire_days": cert_expire_days,
+                    "backup_count": backup_counts.get(&site.name).copied().unwrap_or(0),
+                });
+                result.push(json);
             }
             Json(json!(ApiResponse::success(result)))
         }
@@ -81,6 +93,14 @@ pub async fn create_site(
     Json(mut req): Json<CreateSiteRequest>,
 ) -> Json<serde_json::Value> {
     let config = state.get_config();
+
+    // 归一化 server_name：换行符转空格，去首尾空白
+    req.server_name = req.server_name
+        .lines()
+        .map(|l| l.trim())
+        .filter(|l| !l.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ");
 
     // 如果未指定根目录，以站点名称自动创建
     if req.root_path.is_none() || req.root_path.as_deref() == Some("") {
@@ -110,6 +130,8 @@ pub async fn create_site(
         proxy_pass: req.proxy_pass.clone(),
         root_path: req.root_path.clone(),
         config: None,
+        remark: req.remark.clone(),
+        expire_time: req.expire_time.clone(),
         status: "enabled".into(),
         created_at: None,
         updated_at: None,
@@ -235,6 +257,8 @@ pub async fn batch_enable(
             key_path: None,
             proxy_pass: None,
             root_path: None,
+            remark: None,
+            expire_time: None,
             status: Some("enabled".to_string()),
         };
 
@@ -278,6 +302,8 @@ pub async fn batch_disable(
             key_path: None,
             proxy_pass: None,
             root_path: None,
+            remark: None,
+            expire_time: None,
             status: Some("disabled".to_string()),
         };
 
@@ -368,6 +394,8 @@ pub async fn deploy_ssl(
         key_path: Some(key_path.to_string()),
         proxy_pass: None,
         root_path: None,
+        remark: None,
+        expire_time: None,
         status: None,
     };
 

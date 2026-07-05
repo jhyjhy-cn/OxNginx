@@ -24,6 +24,8 @@ pub struct Site {
     pub proxy_pass: Option<String>,
     pub root_path: Option<String>,
     pub config: Option<String>,
+    pub remark: Option<String>,
+    pub expire_time: Option<String>,
     pub status: String,
     pub created_at: Option<NaiveDateTime>,
     pub updated_at: Option<NaiveDateTime>,

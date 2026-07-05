@@ -7,3 +7,4 @@ pub mod upstream_service;
 pub mod access_service;
 pub mod template_service;
 pub mod file_service;
+pub mod site_backup_service;

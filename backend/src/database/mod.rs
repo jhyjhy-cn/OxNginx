@@ -50,6 +50,8 @@ impl Database {
                 proxy_pass TEXT,
                 root_path TEXT,
                 config TEXT,
+                remark TEXT,
+                expire_time DATETIME,
                 status TEXT NOT NULL DEFAULT 'enabled',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -127,6 +129,14 @@ impl Database {
         )
         .execute(&self.pool)
         .await?;
+
+        // 兼容旧库：sites 表加 remark 列（已存在则忽略）
+        let _ = sqlx::query("ALTER TABLE sites ADD COLUMN remark TEXT")
+            .execute(&self.pool)
+            .await;
+        let _ = sqlx::query("ALTER TABLE sites ADD COLUMN expire_time DATETIME")
+            .execute(&self.pool)
+            .await;
 
         Ok(())
     }
