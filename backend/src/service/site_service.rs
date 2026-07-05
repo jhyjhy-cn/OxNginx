@@ -48,8 +48,8 @@ pub async fn create_site(state: &AppState, req: CreateSiteRequest) -> anyhow::Re
     let ssl_value = if req.ssl { 1 } else { 0 };
     let result = sqlx::query_as::<_, Site>(
         r#"
-        INSERT INTO sites (name, server_name, listen, ssl, certificate_path, key_path, proxy_pass, root_path, remark, expire_time)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO sites (name, server_name, listen, ssl, certificate_path, key_path, proxy_pass, root_path, remark, expire_time, rewrite_rules, redirect_rules, hotlink_config, log_access_path, log_error_path)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING *
         "#,
     )
@@ -63,6 +63,11 @@ pub async fn create_site(state: &AppState, req: CreateSiteRequest) -> anyhow::Re
     .bind(&req.root_path)
     .bind(&req.remark)
     .bind(&req.expire_time)
+    .bind(&req.rewrite_rules)
+    .bind(&req.redirect_rules)
+    .bind(&req.hotlink_config)
+    .bind(&req.log_access_path)
+    .bind(&req.log_error_path)
     .fetch_one(state.db.pool())
     .await?;
 
@@ -97,12 +102,17 @@ pub async fn update_site(
     let root_path = req.root_path.or(existing.root_path);
     let remark = req.remark.or(existing.remark);
     let expire_time = req.expire_time.or(existing.expire_time);
+    let rewrite_rules = req.rewrite_rules.or(existing.rewrite_rules);
+    let redirect_rules = req.redirect_rules.or(existing.redirect_rules);
+    let hotlink_config = req.hotlink_config.or(existing.hotlink_config);
+    let log_access_path = req.log_access_path.or(existing.log_access_path);
+    let log_error_path = req.log_error_path.or(existing.log_error_path);
     let status = req.status.unwrap_or(existing.status);
 
     let site = sqlx::query_as::<_, Site>(
         r#"
         UPDATE sites
-        SET name = ?, server_name = ?, listen = ?, ssl = ?, certificate_path = ?, key_path = ?, proxy_pass = ?, root_path = ?, remark = ?, expire_time = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+        SET name = ?, server_name = ?, listen = ?, ssl = ?, certificate_path = ?, key_path = ?, proxy_pass = ?, root_path = ?, remark = ?, expire_time = ?, rewrite_rules = ?, redirect_rules = ?, hotlink_config = ?, log_access_path = ?, log_error_path = ?, status = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         RETURNING *
         "#,
@@ -117,6 +127,11 @@ pub async fn update_site(
     .bind(&root_path)
     .bind(&remark)
     .bind(&expire_time)
+    .bind(&rewrite_rules)
+    .bind(&redirect_rules)
+    .bind(&hotlink_config)
+    .bind(&log_access_path)
+    .bind(&log_error_path)
     .bind(&status)
     .bind(id)
     .fetch_optional(state.db.pool())

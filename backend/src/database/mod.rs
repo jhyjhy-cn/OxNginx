@@ -52,6 +52,11 @@ impl Database {
                 config TEXT,
                 remark TEXT,
                 expire_time DATETIME,
+                rewrite_rules TEXT,
+                redirect_rules TEXT,
+                hotlink_config TEXT,
+                log_access_path TEXT,
+                log_error_path TEXT,
                 status TEXT NOT NULL DEFAULT 'enabled',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -135,6 +140,21 @@ impl Database {
             .execute(&self.pool)
             .await;
         let _ = sqlx::query("ALTER TABLE sites ADD COLUMN expire_time DATETIME")
+            .execute(&self.pool)
+            .await;
+        let _ = sqlx::query("ALTER TABLE sites ADD COLUMN rewrite_rules TEXT")
+            .execute(&self.pool)
+            .await;
+        let _ = sqlx::query("ALTER TABLE sites ADD COLUMN redirect_rules TEXT")
+            .execute(&self.pool)
+            .await;
+        let _ = sqlx::query("ALTER TABLE sites ADD COLUMN hotlink_config TEXT")
+            .execute(&self.pool)
+            .await;
+        let _ = sqlx::query("ALTER TABLE sites ADD COLUMN log_access_path TEXT")
+            .execute(&self.pool)
+            .await;
+        let _ = sqlx::query("ALTER TABLE sites ADD COLUMN log_error_path TEXT")
             .execute(&self.pool)
             .await;
 

@@ -71,6 +71,11 @@ pub struct CreateSiteRequest {
     pub root_path: Option<String>,
     pub remark: Option<String>,
     pub expire_time: Option<String>,
+    pub rewrite_rules: Option<String>,
+    pub redirect_rules: Option<String>,
+    pub hotlink_config: Option<String>,
+    pub log_access_path: Option<String>,
+    pub log_error_path: Option<String>,
 }
 
 fn default_listen() -> String {
@@ -103,6 +108,11 @@ pub struct UpdateSiteRequest {
     pub root_path: Option<String>,
     pub remark: Option<String>,
     pub expire_time: Option<String>,
+    pub rewrite_rules: Option<String>,
+    pub redirect_rules: Option<String>,
+    pub hotlink_config: Option<String>,
+    pub log_access_path: Option<String>,
+    pub log_error_path: Option<String>,
     pub status: Option<String>,
 }
 

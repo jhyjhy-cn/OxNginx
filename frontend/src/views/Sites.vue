@@ -277,84 +277,160 @@
     <!-- 编辑站点对话框 -->
     <OnDialog
       v-model="editDialogVisible"
-      :title="`${$t('sites.editSite')}[${editSiteName}] - ${$t('sites.addTime')}[${editCreatedAt}]`"
-      width="600px"
+      :title="`${$t('sites.editSite')}[${editSiteName}]`"
+      width="900px"
     >
-      <el-form
-        ref="editFormRef"
-        :model="editForm"
-        :rules="editRules"
-        label-width="100px"
-      >
-        <el-form-item :label="$t('sites.name')" prop="name">
-          <el-input
-            v-model="editForm.name"
-            :placeholder="$t('sites.enterSiteName')"
-          />
-        </el-form-item>
-        <el-form-item :label="$t('sites.domain')" prop="server_name">
-          <el-input v-model="editForm.server_name" placeholder="example.com" />
-        </el-form-item>
-        <el-form-item :label="$t('sites.enableSsl')">
-          <el-switch v-model="editForm.ssl" />
-        </el-form-item>
-        <template v-if="editForm.ssl">
-          <el-form-item :label="$t('sites.certPath')">
-            <el-input
-              v-model="editForm.certificate_path"
-              placeholder="/opt/oxnginx/ssl/fullchain.cer"
-            />
-          </el-form-item>
-          <el-form-item :label="$t('sites.keyPath')">
-            <el-input
-              v-model="editForm.key_path"
-              placeholder="/opt/oxnginx/ssl/private.key"
-            />
-          </el-form-item>
-        </template>
-        <el-form-item :label="$t('sites.proxyPass')">
-          <el-input
-            v-model="editForm.proxy_pass"
-            placeholder="http://127.0.0.1:8080"
-          />
-        </el-form-item>
-        <el-form-item :label="$t('sites.rootPath')">
-          <el-input
-            v-model="editForm.root_path"
-            placeholder="/opt/oxnginx/wwwroot"
-          />
-        </el-form-item>
-        <el-form-item :label="$t('sites.remark')">
-          <el-input
-            v-model="editForm.remark"
-            type="textarea"
-            :autosize="{ minRows: 2, maxRows: 4 }"
-            :placeholder="$t('sites.remarkHint')"
-          />
-        </el-form-item>
-        <el-form-item :label="$t('sites.expireTime')">
-          <el-date-picker
-            v-model="editForm.expire_time"
-            type="datetime"
-            :placeholder="$t('sites.permanent')"
-            format="YYYY-MM-DD HH:mm:ss"
-            value-format="YYYY-MM-DD HH:mm:ss"
-            clearable
-            style="width: 100%"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="editDialogVisible = false">{{
-          $t("common.cancel")
-        }}</el-button>
-        <el-button
-          type="primary"
-          :loading="submitting"
-          @click="submitEditForm"
-          >{{ $t("common.confirm") }}</el-button
-        >
-      </template>
+      <el-tabs v-model="editActiveTab" tab-position="left" class="edit-tabs">
+        <!-- 1. 域名管理 -->
+        <el-tab-pane :label="$t('sites.tabDomain')" name="domain">
+          <el-form label-width="80px">
+            <el-form-item :label="$t('sites.domain')">
+              <div style="display: flex; gap: 8px; width: 100%">
+                <el-input
+                  v-model="editDomainInput"
+                  type="textarea"
+                  :autosize="{ minRows: 2, maxRows: 6 }"
+                  :placeholder="$t('sites.domainInputHint')"
+                  style="flex: 1"
+                />
+                <el-button type="primary" style="align-self: flex-end" @click="addDomains">{{ $t('sites.addDomain') }}</el-button>
+              </div>
+            </el-form-item>
+          </el-form>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
+            <el-button v-if="editDomainSelected.length > 0" type="danger" size="small" @click="deleteSelectedDomains">
+              {{ $t('common.delete') }} ({{ editDomainSelected.length }})
+            </el-button>
+            <span v-else />
+            <span style="font-size: 12px; color: #909399">{{ $t('sites.domainCount', { n: editDomains.length }) }}</span>
+          </div>
+          <el-table :data="editDomainsDisplay" style="width: 100%" max-height="380" @selection-change="(val: DomainItem[]) => editDomainSelected = val">
+            <el-table-column type="selection" width="45" />
+            <el-table-column :label="$t('sites.domain')">
+              <template #default="{ row }">
+                <el-button type="primary" link @click="openDomain(row.domain)">{{ row.domain }}</el-button>
+              </template>
+            </el-table-column>
+            <el-table-column :label="$t('common.action')" width="80">
+              <template #default="{ row }">
+                <el-button type="danger" link size="small" @click="deleteDomain(row.domain)">{{ $t('common.delete') }}</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-tab-pane>
+
+        <!-- 2. 伪静态 -->
+        <el-tab-pane :label="$t('sites.tabRewrite')" name="rewrite">
+          <div v-for="(rule, i) in editRewriteRules" :key="i" class="rule-row">
+            <el-input v-model="rule.pattern" placeholder="^/old/(.*)$" style="flex: 2" @change="debouncedSave" />
+            <el-input v-model="rule.replacement" placeholder="/new/$1" style="flex: 2" @change="debouncedSave" />
+            <el-select v-model="rule.flag" style="width: 110px" @change="debouncedSave">
+              <el-option label="last" value="last" />
+              <el-option label="break" value="break" />
+              <el-option label="redirect" value="redirect" />
+              <el-option label="permanent" value="permanent" />
+            </el-select>
+            <el-button type="danger" :icon="Delete" circle size="small" @click="editRewriteRules.splice(i, 1); debouncedSave()" />
+          </div>
+          <el-button type="primary" plain size="small" @click="editRewriteRules.push({ pattern: '', replacement: '', flag: 'last' })">
+            <el-icon><Plus /></el-icon> {{ $t('sites.addRule') }}
+          </el-button>
+        </el-tab-pane>
+
+        <!-- 3. 配置文件 -->
+        <el-tab-pane :label="$t('sites.tabConfig')" name="config">
+          <div style="display: flex; gap: 8px; margin-bottom: 8px">
+            <el-button type="primary" size="small" :loading="configSaving" @click="saveSiteConfig">{{ $t('common.save') }}</el-button>
+            <el-button size="small" @click="loadSiteConfig">{{ $t('common.refresh') }}</el-button>
+          </div>
+          <div ref="configEditorRef" class="config-editor-box" />
+        </el-tab-pane>
+
+        <!-- 4. SSL证书 -->
+        <el-tab-pane :label="$t('sites.tabSsl')" name="ssl">
+          <el-form label-width="80px">
+            <el-form-item :label="$t('sites.enableSsl')">
+              <el-switch v-model="editForm.ssl" @change="debouncedSave" />
+            </el-form-item>
+            <template v-if="editForm.ssl">
+              <el-form-item :label="$t('sites.certPath')">
+                <el-input v-model="editForm.certificate_path" placeholder="/opt/oxnginx/ssl/fullchain.cer" @change="debouncedSave" />
+              </el-form-item>
+              <el-form-item :label="$t('sites.keyPath')">
+                <el-input v-model="editForm.key_path" placeholder="/opt/oxnginx/ssl/private.key" @change="debouncedSave" />
+              </el-form-item>
+            </template>
+          </el-form>
+        </el-tab-pane>
+
+        <!-- 5. 反向代理 -->
+        <el-tab-pane :label="$t('sites.tabProxy')" name="proxy">
+          <el-form label-width="80px">
+            <el-form-item :label="$t('sites.proxyPass')">
+              <el-input v-model="editForm.proxy_pass" placeholder="http://127.0.0.1:8080" @change="debouncedSave" />
+            </el-form-item>
+            <el-form-item :label="$t('sites.rootPath')">
+              <el-input v-model="editForm.root_path" placeholder="/opt/oxnginx/wwwroot" @change="debouncedSave" />
+            </el-form-item>
+          </el-form>
+        </el-tab-pane>
+
+        <!-- 6. 重定向 -->
+        <el-tab-pane :label="$t('sites.tabRedirect')" name="redirect">
+          <el-alert :title="$t('sites.redirectHint')" type="info" :closable="false" style="margin-bottom: 12px" />
+          <div v-for="(rule, i) in editRedirectRules" :key="i" class="rule-row">
+            <el-input v-model="rule.domain" :placeholder="$t('sites.redirectDomain')" style="flex: 2" @change="debouncedSave" />
+            <el-input v-model="rule.target" :placeholder="$t('sites.redirectTarget')" style="flex: 2" @change="debouncedSave" />
+            <el-select v-model="rule.redirect_type" style="width: 90px" @change="debouncedSave">
+              <el-option label="301" :value="301" />
+              <el-option label="302" :value="302" />
+            </el-select>
+            <el-button type="danger" :icon="Delete" circle size="small" @click="editRedirectRules.splice(i, 1); debouncedSave()" />
+          </div>
+          <el-button type="primary" plain size="small" @click="editRedirectRules.push({ domain: '', target: '', redirect_type: 301 })">
+            <el-icon><Plus /></el-icon> {{ $t('sites.addRule') }}
+          </el-button>
+        </el-tab-pane>
+
+        <!-- 7. 防盗链 -->
+        <el-tab-pane :label="$t('sites.tabHotlink')" name="hotlink">
+          <el-form label-width="100px">
+            <el-form-item :label="$t('sites.hotlinkEnable')">
+              <el-switch v-model="editHotlink.enabled" @change="debouncedSave" />
+            </el-form-item>
+            <template v-if="editHotlink.enabled">
+              <el-form-item :label="$t('sites.hotlinkDomains')">
+                <el-input v-model="editHotlink.domainsStr" type="textarea" :autosize="{ minRows: 3, maxRows: 6 }" :placeholder="$t('sites.hotlinkDomainsHint')" @change="debouncedSave" />
+              </el-form-item>
+              <el-form-item :label="$t('sites.hotlinkCode')">
+                <el-select v-model="editHotlink.return_code" @change="debouncedSave">
+                  <el-option label="403 Forbidden" :value="403" />
+                  <el-option label="404 Not Found" :value="404" />
+                </el-select>
+              </el-form-item>
+            </template>
+          </el-form>
+        </el-tab-pane>
+
+        <!-- 8. 网站日志 -->
+        <el-tab-pane :label="$t('sites.tabLog')" name="log">
+          <el-form label-width="100px">
+            <el-form-item :label="$t('sites.logAccessPath')">
+              <el-input v-model="editForm.log_access_path" :placeholder="$t('sites.logAccessPathHint')" @change="debouncedSave" />
+            </el-form-item>
+            <el-form-item :label="$t('sites.logErrorPath')">
+              <el-input v-model="editForm.log_error_path" :placeholder="$t('sites.logErrorPathHint')" @change="debouncedSave" />
+            </el-form-item>
+          </el-form>
+          <el-divider />
+          <div style="display: flex; gap: 8px; margin-bottom: 8px">
+            <el-button size="small" :loading="logLoading" @click="loadSiteLog('access')">{{ $t('sites.accessLog') }}</el-button>
+            <el-button size="small" :loading="logLoading" @click="loadSiteLog('error')">{{ $t('sites.errorLog') }}</el-button>
+          </div>
+          <pre v-if="siteLog" class="log-output">{{ siteLog }}</pre>
+          <el-empty v-else :description="$t('sites.clickToLoadLog')" />
+        </el-tab-pane>
+      </el-tabs>
     </OnDialog>
 
     <!-- 删除确认对话框 -->
@@ -458,15 +534,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, reactive, computed, onMounted, nextTick, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { ElMessage, ElMessageBox } from "element-plus";
+import { Delete } from "@element-plus/icons-vue";
 import type { FormInstance } from "element-plus";
 import api from "@/api";
 import OnDialog from "@/components/OnDialog/index.vue";
 import { useTabStore } from "@/stores/tabs";
 import { useFilesStore } from "@/stores/files";
+import { monaco } from "@/utils/monaco-env";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -483,6 +561,11 @@ interface Site {
   root_path: string | null;
   remark: string | null;
   expire_time: string | null;
+  rewrite_rules: string | null;
+  redirect_rules: string | null;
+  hotlink_config: string | null;
+  log_access_path: string | null;
+  log_error_path: string | null;
   status: string;
   created_at?: string;
   cert_expire_time?: string;
@@ -526,10 +609,75 @@ const domainPlaceholder = computed(() =>
 
 // 编辑站点
 const editDialogVisible = ref(false);
-const editFormRef = ref<FormInstance>();
 const editId = ref<number | null>(null);
 const editSiteName = ref("");
 const editCreatedAt = ref("");
+const editActiveTab = ref("domain");
+
+interface DomainItem { domain: string }
+const editDomainInput = ref('');
+const editDomains = ref<string[]>([]);
+const editDomainSelected = ref<DomainItem[]>([]);
+const editDomainsDisplay = computed(() => editDomains.value.map(d => ({ domain: d })));
+
+function openDomain(domain: string) {
+  window.open('http://' + domain, '_blank');
+}
+
+function addDomains() {
+  const lines = editDomainInput.value.split('\n').map(l => l.trim()).filter(Boolean);
+  let added = false;
+  for (const d of lines) {
+    if (!editDomains.value.includes(d)) {
+      editDomains.value.push(d);
+      added = true;
+    }
+  }
+  editDomainInput.value = '';
+  if (added) saveDomains();
+}
+
+function deleteDomain(domain: string) {
+  editDomains.value = editDomains.value.filter(d => d !== domain);
+  saveDomains();
+}
+
+function deleteSelectedDomains() {
+  const toDelete = new Set(editDomainSelected.value.map(d => d.domain));
+  editDomains.value = editDomains.value.filter(d => !toDelete.has(d));
+  editDomainSelected.value = [];
+  saveDomains();
+}
+
+async function saveDomains() {
+  if (!editId.value) return;
+  try {
+    const server_name = editDomains.value.join(' ');
+    const listen = extractPort(editDomains.value[0] || '80');
+    await api.put(`/api/sites/${editId.value}`, { server_name, listen });
+    ElMessage.success(t("common.success"));
+    fetchSites();
+  } catch (error: any) {
+    ElMessage.error(error.response?.data?.message || t("sites.operationFailed"));
+  }
+}
+
+interface RewriteRule { pattern: string; replacement: string; flag: string }
+interface RedirectRule { domain: string; target: string; redirect_type: number }
+interface HotlinkCfg { enabled: boolean; domainsStr: string; return_code: number }
+
+const editRewriteRules = ref<RewriteRule[]>([]);
+const editRedirectRules = ref<RedirectRule[]>([]);
+const editHotlink = reactive<HotlinkCfg>({ enabled: false, domainsStr: '', return_code: 403 });
+
+// 配置文件编辑器
+const configEditorRef = ref<HTMLElement>();
+const configSaving = ref(false);
+let configEditor: monaco.editor.IStandaloneCodeEditor | null = null;
+
+// 网站日志
+const logLoading = ref(false);
+const siteLog = ref('');
 const editForm = reactive({
   name: "",
   server_name: "",
@@ -540,15 +688,12 @@ const editForm = reactive({
   root_path: "",
   remark: "",
   expire_time: "",
+  rewrite_rules: "",
+  redirect_rules: "",
+  hotlink_config: "",
+  log_access_path: "",
+  log_error_path: "",
 });
-const editRules = {
-  name: [
-    { required: true, message: t("sites.enterSiteName"), trigger: "blur" },
-  ],
-  server_name: [
-    { required: true, message: t("sites.enterDomain"), trigger: "blur" },
-  ],
-};
 
 onMounted(() => {
   fetchSites();
@@ -641,12 +786,38 @@ function editSite(site: Site) {
   editForm.name = site.name;
   editForm.server_name = site.server_name;
   editForm.ssl = !!site.ssl;
+  // 解析域名列表
+  editDomains.value = site.server_name.split(' ').map(d => d.trim()).filter(Boolean);
+  editDomainInput.value = '';
+  editDomainSelected.value = [];
   editForm.certificate_path = site.certificate_path || "";
   editForm.key_path = site.key_path || "";
   editForm.proxy_pass = site.proxy_pass || "";
   editForm.root_path = site.root_path || "";
   editForm.remark = site.remark || "";
   editForm.expire_time = site.expire_time || "";
+  editForm.rewrite_rules = site.rewrite_rules || "";
+  editForm.redirect_rules = site.redirect_rules || "";
+  editForm.hotlink_config = site.hotlink_config || "";
+  editForm.log_access_path = site.log_access_path || "";
+  editForm.log_error_path = site.log_error_path || "";
+
+  // 解析伪静态规则
+  try { editRewriteRules.value = JSON.parse(editForm.rewrite_rules || '[]') } catch { editRewriteRules.value = [] }
+  // 解析重定向规则
+  try { editRedirectRules.value = JSON.parse(editForm.redirect_rules || '[]') } catch { editRedirectRules.value = [] }
+  // 解析防盗链
+  try {
+    const hc = JSON.parse(editForm.hotlink_config || '{}')
+    editHotlink.enabled = hc.enabled || false
+    editHotlink.domainsStr = (hc.allowed_domains || []).join('\n')
+    editHotlink.return_code = hc.return_code || 403
+  } catch {
+    editHotlink.enabled = false; editHotlink.domainsStr = ''; editHotlink.return_code = 403
+  }
+
+  editActiveTab.value = "domain";
+  siteLog.value = '';
   editDialogVisible.value = true;
 }
 
@@ -692,35 +863,103 @@ async function submitAddForm() {
   }
 }
 
-async function submitEditForm() {
-  const valid = await editFormRef.value?.validate().catch(() => false);
-  if (!valid) return;
+// 配置文件编辑器初始化（切换到 config tab 时）
+watch(editActiveTab, (tab) => {
+  if (tab === 'config' && configEditorRef.value && editId.value) {
+    nextTick(() => {
+      if (!configEditor) {
+        configEditor = monaco.editor.create(configEditorRef.value!, {
+          value: '',
+          language: 'nginx',
+          theme: 'vs-dark',
+          minimap: { enabled: false },
+          fontSize: 13,
+          lineNumbers: 'on',
+          scrollBeyondLastLine: false,
+          automaticLayout: true,
+          tabSize: 4,
+        })
+      }
+      loadSiteConfig()
+    })
+  }
+})
 
-  submitting.value = true;
+async function loadSiteConfig() {
+  if (!editId.value) return
+  try {
+    const res = await api.get(`/api/config/file/${editSiteName.value}`)
+    if (res.data.code === 0 && configEditor) {
+      configEditor.setValue(res.data.data?.content || '')
+    }
+  } catch { /* ignore */ }
+}
+
+async function saveSiteConfig() {
+  if (!editId.value || !configEditor) return
+  configSaving.value = true
+  try {
+    const res = await api.put(`/api/config/file/${editSiteName.value}`, {
+      content: configEditor.getValue(),
+    })
+    if (res.data.code === 0) {
+      ElMessage.success(t("common.success"))
+    } else {
+      ElMessage.error(res.data.message)
+    }
+  } catch (error: any) {
+    ElMessage.error(error.response?.data?.message || t("common.failed"))
+  } finally {
+    configSaving.value = false
+  }
+}
+
+async function loadSiteLog(type: 'access' | 'error') {
+  logLoading.value = true
+  try {
+    const res = await api.get(`/api/log/${type}`)
+    if (res.data.code === 0) {
+      siteLog.value = (res.data.data?.lines || []).join('\n')
+    }
+  } catch {
+    siteLog.value = t('sites.logLoadFailed')
+  } finally {
+    logLoading.value = false
+  }
+}
+
+async function saveAllSettings() {
+  if (!editId.value) return;
   try {
     const data = {
-      name: editForm.name,
-      server_name: editForm.server_name,
-      listen: extractPort(editForm.server_name),
       ssl: editForm.ssl,
       certificate_path: editForm.certificate_path || null,
       key_path: editForm.key_path || null,
       proxy_pass: editForm.proxy_pass || null,
       root_path: editForm.root_path || null,
-      remark: editForm.remark || null,
-      expire_time: editForm.expire_time || null,
+      rewrite_rules: JSON.stringify(editRewriteRules.value),
+      redirect_rules: JSON.stringify(editRedirectRules.value),
+      hotlink_config: JSON.stringify({
+        enabled: editHotlink.enabled,
+        allowed_domains: editHotlink.domainsStr.split('\n').map(d => d.trim()).filter(Boolean),
+        return_code: editHotlink.return_code,
+      }),
+      log_access_path: editForm.log_access_path || null,
+      log_error_path: editForm.log_error_path || null,
     };
     await api.put(`/api/sites/${editId.value}`, data);
-    ElMessage.success(t("sites.updateSuccess"));
-    editDialogVisible.value = false;
+    ElMessage.success(t("common.success"));
     fetchSites();
   } catch (error: any) {
-    ElMessage.error(
-      error.response?.data?.message || t("sites.operationFailed"),
-    );
-  } finally {
-    submitting.value = false;
+    ElMessage.error(error.response?.data?.message || t("sites.operationFailed"));
   }
+}
+
+// 防抖保存（字段变更时自动调用）
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+function debouncedSave() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => saveAllSettings(), 500);
 }
 
 async function toggleSite(site: Site, enable?: boolean) {
@@ -1028,6 +1267,49 @@ async function batchDelete() {
 }
 .traffic-header:hover {
   color: var(--el-color-primary);
+}
+
+/* 编辑弹窗左侧标签页 */
+.edit-tabs {
+  height: 500px;
+}
+.edit-tabs :deep(.el-tabs__header) {
+  min-width: 120px;
+}
+.edit-tabs :deep(.el-tabs__content) {
+  padding: 0 16px;
+  overflow-y: auto;
+}
+
+/* 规则行 */
+.rule-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+/* 配置文件编辑器 */
+.config-editor-box {
+  width: 100%;
+  height: 420px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 4px;
+}
+
+/* 日志输出 */
+.log-output {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  max-height: 380px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 0;
 }
 </style>
 

@@ -1,5 +1,81 @@
 use crate::dto::{CreateUpstreamRequest, NginxTestResult};
 use crate::model::{Site, Upstream, UpstreamServer};
+use serde::Deserialize;
+
+/// 重定向规则
+#[derive(Debug, Deserialize)]
+struct RedirectRule {
+    domain: String,
+    target: String,
+    #[serde(default)]
+    redirect_type: u16, // 301 or 302
+}
+
+/// 防盗链配置
+#[derive(Debug, Deserialize)]
+struct HotlinkConfig {
+    #[serde(default)]
+    enabled: bool,
+    #[serde(default)]
+    allowed_domains: Vec<String>,
+    #[serde(default = "default_hotlink_code")]
+    return_code: u16,
+}
+
+fn default_hotlink_code() -> u16 { 403 }
+
+/// 追加公共 server 指令（日志、rewrite、防盗链、重定向）
+fn append_common_directives(config: &mut String, site: &Site, indent: &str) {
+    // per-site 日志
+    if let Some(ref path) = site.log_access_path {
+        config.push_str(&format!("{}access_log {};\n", indent, path));
+    }
+    if let Some(ref path) = site.log_error_path {
+        config.push_str(&format!("{}error_log {};\n", indent, path));
+    }
+
+    // 伪静态 rewrite 规则
+    if let Some(ref json) = site.rewrite_rules {
+        if let Ok(rules) = serde_json::from_str::<Vec<serde_json::Value>>(json) {
+            for rule in &rules {
+                let pattern = rule["pattern"].as_str().unwrap_or("");
+                let replacement = rule["replacement"].as_str().unwrap_or("");
+                let flag = rule["flag"].as_str().unwrap_or("last");
+                if !pattern.is_empty() {
+                    config.push_str(&format!("{}rewrite {} {} {};\n", indent, pattern, replacement, flag));
+                }
+            }
+        }
+    }
+
+    // 防盗链
+    if let Some(ref json) = site.hotlink_config {
+        if let Ok(hc) = serde_json::from_str::<HotlinkConfig>(json) {
+            if hc.enabled && !hc.allowed_domains.is_empty() {
+                config.push_str(&format!("\n{}valid_referers none blocked", indent));
+                for domain in &hc.allowed_domains {
+                    config.push_str(&format!(" {}", domain));
+                }
+                config.push_str(";\n");
+                config.push_str(&format!("{}if ($invalid_referer) {{\n", indent));
+                config.push_str(&format!("{}    return {};\n", indent, hc.return_code));
+                config.push_str(&format!("{}}}\n", indent));
+            }
+        }
+    }
+
+    // 重定向规则（作为额外 location 块）
+    if let Some(ref json) = site.redirect_rules {
+        if let Ok(rules) = serde_json::from_str::<Vec<RedirectRule>>(json) {
+            for rule in &rules {
+                let code = if rule.redirect_type == 302 { 302 } else { 301 };
+                config.push_str(&format!("\n{}location {} {{\n", indent, rule.domain));
+                config.push_str(&format!("{}    return {} {};\n", indent, code, rule.target));
+                config.push_str(&format!("{}}}\n", indent));
+            }
+        }
+    }
+}
 
 /// 生成Nginx站点配置
 pub fn generate_site_config(site: &Site) -> String {
@@ -29,6 +105,9 @@ pub fn generate_site_config(site: &Site) -> String {
         }
         config.push_str("    ssl_protocols TLSv1.2 TLSv1.3;\n");
         config.push_str("    ssl_ciphers HIGH:!aNULL:!MD5;\n");
+
+        append_common_directives(&mut config, site, "    ");
+
         if let Some(proxy_pass) = &site.proxy_pass {
             config.push_str("\n    location / {\n");
             config.push_str(&format!("        proxy_pass {};\n", proxy_pass));
@@ -58,6 +137,9 @@ pub fn generate_site_config(site: &Site) -> String {
         config.push_str(&format!("    listen {};\n", site.listen));
         config.push_str(&format!("    listen [::]:{};\n", site.listen));
         config.push_str(&format!("    server_name {};\n", site.server_name));
+
+        append_common_directives(&mut config, site, "    ");
+
         if let Some(proxy_pass) = &site.proxy_pass {
             config.push_str("\n    location / {\n");
             config.push_str(&format!("        proxy_pass {};\n", proxy_pass));
