@@ -34,6 +34,33 @@ export const useFilesStore = defineStore('files', () => {
     }
   }
 
+  function closeLeft(id: string) {
+    const idx = tabs.value.findIndex(t => t.id === id)
+    if (idx <= 0) return
+    tabs.value = tabs.value.filter((t, i) => i >= idx || t.id === activeTabId.value)
+    if (!tabs.value.find(t => t.id === activeTabId.value)) {
+      activeTabId.value = tabs.value[0].id
+    }
+  }
+
+  function closeRight(id: string) {
+    const idx = tabs.value.findIndex(t => t.id === id)
+    if (idx === -1) return
+    tabs.value = tabs.value.filter((t, i) => i <= idx || t.id === activeTabId.value)
+    if (!tabs.value.find(t => t.id === activeTabId.value)) {
+      activeTabId.value = tabs.value[tabs.value.length - 1].id
+    }
+  }
+
+  function closeOther(id: string) {
+    tabs.value = tabs.value.filter(t => t.id === id)
+    activeTabId.value = id
+  }
+
+  function reorder(newTabs: FileTab[]) {
+    tabs.value = newTabs
+  }
+
   function setActiveTab(id: string) {
     activeTabId.value = id
   }
@@ -47,7 +74,7 @@ export const useFilesStore = defineStore('files', () => {
     lastPath.value = path // 兼容
   }
 
-  return { tabs, activeTabId, activeTab, lastPath, addTab, closeTab, setActiveTab, updateTabPath }
+  return { tabs, activeTabId, activeTab, lastPath, addTab, closeTab, closeLeft, closeRight, closeOther, setActiveTab, updateTabPath, reorder }
 }, {
   persist: true,
 })

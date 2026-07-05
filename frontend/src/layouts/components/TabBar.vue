@@ -200,6 +200,7 @@ function handleCloseOther() {
 
 .tab-home {
   margin-right: 6px;
+  cursor: pointer;
 }
 
 .tab-list {
@@ -224,11 +225,12 @@ function handleCloseOther() {
   font-size: 12px;
   color: var(--el-text-color-regular);
   background: var(--el-fill-color-light);
-  cursor: pointer;
+  cursor: grab;
   white-space: nowrap;
   flex-shrink: 0;
   transition: color 0.2s, background 0.2s;
   user-select: none;
+  will-change: transform;
 }
 
 .tab-item:hover {
@@ -244,12 +246,14 @@ function handleCloseOther() {
 .tab-ghost {
   opacity: 0.4;
   background: var(--el-color-primary-light-7) !important;
+  cursor: grabbing !important;
 }
 .tab-chosen {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 .tab-drag {
   opacity: 0.9;
+  cursor: grabbing !important;
 }
 
 .tab-title {
@@ -262,6 +266,7 @@ function handleCloseOther() {
   border-radius: 50%;
   padding: 1px;
   transition: all 0.15s;
+  cursor: pointer;
 }
 .tab-close:hover {
   background: rgba(0, 0, 0, 0.15);
