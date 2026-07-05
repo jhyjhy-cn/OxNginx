@@ -104,6 +104,7 @@ pub fn build(state: AppState) -> Router {
 
     public_routes
         .merge(protected_routes)
+        .layer(axum::middleware::from_fn(middleware::logging_middleware))
         .layer(CorsLayer::permissive())
         .fallback_service(static_service)
         .with_state(state)

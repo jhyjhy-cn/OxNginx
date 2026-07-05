@@ -8,6 +8,26 @@ use axum::{
 use crate::auth;
 use crate::AppState;
 
+/// 请求日志中间件
+pub async fn logging_middleware(request: Request, next: Next) -> Response {
+    let method = request.method().clone();
+    let uri = request.uri().clone();
+    let start = std::time::Instant::now();
+
+    let response = next.run(request).await;
+
+    let elapsed = start.elapsed();
+    tracing::info!(
+        "{} {} - {} ({:.1}ms)",
+        method,
+        uri,
+        response.status(),
+        elapsed.as_secs_f64() * 1000.0,
+    );
+
+    response
+}
+
 /// JWT认证中间件
 pub async fn auth_middleware(
     state: axum::extract::State<AppState>,

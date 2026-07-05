@@ -1,7 +1,6 @@
 use crate::dto::{CreateSiteRequest, UpdateSiteRequest};
 use crate::model::Site;
 use crate::AppState;
-use std::collections::HashMap;
 
 /// 获取所有站点
 pub async fn get_all_sites(state: &AppState) -> anyhow::Result<Vec<Site>> {
@@ -9,11 +8,6 @@ pub async fn get_all_sites(state: &AppState) -> anyhow::Result<Vec<Site>> {
         .fetch_all(state.db.pool())
         .await?;
     Ok(sites)
-}
-
-/// 获取所有站点的备份数量（从文件系统）
-pub fn get_backup_counts_from_fs(site_names: &[String]) -> HashMap<String, u64> {
-    crate::service::site_backup_service::get_backup_counts(site_names)
 }
 
 /// 证书信息（含剩余天数）

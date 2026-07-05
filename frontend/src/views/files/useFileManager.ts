@@ -4,6 +4,10 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '@/api'
 import { useFilesStore } from '@/stores/files'
 
+// ponytail: 盘符列表全局共享，只请求一次
+const sharedDrives = ref<string[]>([])
+let drivesLoaded = false
+
 export interface FileItem {
   name: string
   path: string
@@ -42,8 +46,8 @@ export function useFileManager(initialPath?: string, tabId?: string) {
   const totalSize = ref<number | null>(null)
   const calcTotalLoading = ref(false)
 
-  // 盘符
-  const drives = ref<string[]>([])
+  // 盘符（全局共享）
+  const drives = sharedDrives
   const currentDrive = computed(() => {
     const p = currentPath.value.replace(/\\\\\?\\/g, '').replace(/\\/g, '/')
     const match = p.match(/^([A-Za-z]:)/)
@@ -101,7 +105,14 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     if (initialPath) currentPath.value = initialPath
     else if (filesStore.lastPath) currentPath.value = filesStore.lastPath
     fetchDrives()
-    fetchFiles()
+    // 只在当前标签激活时加载，未激活的等切换过来再加载
+    if (!tabId || filesStore.activeTabId === tabId) {
+      fetchFiles()
+    } else {
+      const stop = watch(() => filesStore.activeTabId, (id) => {
+        if (id === tabId) { fetchFiles(); stop() }
+      })
+    }
     document.addEventListener('click', closeContextMenu)
   })
 
@@ -152,10 +163,12 @@ export function useFileManager(initialPath?: string, tabId?: string) {
   }
 
   async function fetchDrives() {
+    if (drivesLoaded) return
+    drivesLoaded = true
     try {
       const { data } = await api.get('/api/files/roots')
-      if (data.code === 0) drives.value = data.data
-    } catch { /* 非 Windows */ }
+      if (data.code === 0) sharedDrives.value = data.data
+    } catch { drivesLoaded = false }  // 失败时允许重试
   }
 
   function handleDriveChange(drive: string) { currentPath.value = drive.replace(/\\\\\?\\/, '').replace(/\\/g, '/'); currentPage.value = 1; searchQuery.value = ''; fetchFiles() }
