@@ -94,19 +94,18 @@ pub async fn update_site(
         .ssl
         .map(|v| if v { 1 } else { 0 })
         .unwrap_or(existing.ssl);
-    let certificate_path = req
-        .certificate_path
-        .or(existing.certificate_path);
-    let key_path = req.key_path.or(existing.key_path);
-    let proxy_pass = req.proxy_pass.or(existing.proxy_pass);
-    let root_path = req.root_path.or(existing.root_path);
-    let remark = req.remark.or(existing.remark);
-    let expire_time = req.expire_time.or(existing.expire_time);
-    let rewrite_rules = req.rewrite_rules.or(existing.rewrite_rules);
-    let redirect_rules = req.redirect_rules.or(existing.redirect_rules);
-    let hotlink_config = req.hotlink_config.or(existing.hotlink_config);
-    let log_access_path = req.log_access_path.or(existing.log_access_path);
-    let log_error_path = req.log_error_path.or(existing.log_error_path);
+    // Option<Option<String>>: None=未传, Some(None)=清空, Some(Some(v))=新值
+    let certificate_path = req.certificate_path.unwrap_or(existing.certificate_path);
+    let key_path = req.key_path.unwrap_or(existing.key_path);
+    let proxy_pass = req.proxy_pass.unwrap_or(existing.proxy_pass);
+    let root_path = req.root_path.unwrap_or(existing.root_path);
+    let remark = req.remark.unwrap_or(existing.remark);
+    let expire_time = req.expire_time.unwrap_or(existing.expire_time);
+    let rewrite_rules = req.rewrite_rules.unwrap_or(existing.rewrite_rules);
+    let redirect_rules = req.redirect_rules.unwrap_or(existing.redirect_rules);
+    let hotlink_config = req.hotlink_config.unwrap_or(existing.hotlink_config);
+    let log_access_path = req.log_access_path.unwrap_or(existing.log_access_path);
+    let log_error_path = req.log_error_path.unwrap_or(existing.log_error_path);
     let status = req.status.unwrap_or(existing.status);
 
     let site = sqlx::query_as::<_, Site>(

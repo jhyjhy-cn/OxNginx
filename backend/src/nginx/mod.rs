@@ -58,20 +58,6 @@ fn append_common_directives(config: &mut String, site: &Site, indent: &str) {
         config.push_str(&format!("{}error_log {};\n", indent, path));
     }
 
-    // 伪静态 rewrite 规则
-    if let Some(ref json) = site.rewrite_rules {
-        if let Ok(rules) = serde_json::from_str::<Vec<serde_json::Value>>(json) {
-            for rule in &rules {
-                let pattern = rule["pattern"].as_str().unwrap_or("");
-                let replacement = rule["replacement"].as_str().unwrap_or("");
-                let flag = rule["flag"].as_str().unwrap_or("last");
-                if !pattern.is_empty() {
-                    config.push_str(&format!("{}rewrite {} {} {};\n", indent, pattern, replacement, flag));
-                }
-            }
-        }
-    }
-
     // 防盗链
     if let Some(ref json) = site.hotlink_config {
         if let Ok(hc) = serde_json::from_str::<HotlinkConfig>(json) {
@@ -96,6 +82,17 @@ fn append_common_directives(config: &mut String, site: &Site, indent: &str) {
                 config.push_str(&format!("\n{}location {} {{\n", indent, rule.domain));
                 config.push_str(&format!("{}    return {} {};\n", indent, code, rule.target));
                 config.push_str(&format!("{}}}\n", indent));
+            }
+        }
+    }
+
+    // 伪静态 rewrite 规则（直接输出原文，带缩进）
+    if let Some(ref rules) = site.rewrite_rules {
+        let trimmed = rules.trim();
+        if !trimmed.is_empty() {
+            config.push('\n');
+            for line in trimmed.lines() {
+                config.push_str(&format!("{}{}\n", indent, line.trim_end()));
             }
         }
     }

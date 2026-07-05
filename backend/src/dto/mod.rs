@@ -2,6 +2,32 @@ use serde::{Deserialize, Serialize};
 
 pub mod file_dto;
 
+/// 反序列化 JSON null → Some(None)，字段缺失 → None，有值 → Some(Some(v))
+/// 用于区分"未传字段"和"传了 null 清空"
+fn deserialize_clearable<'de, D>(deserializer: D) -> Result<Option<Option<String>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::de::{self, Visitor};
+    struct V;
+    impl<'de> Visitor<'de> for V {
+        type Value = Option<Option<String>>;
+        fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+            f.write_str("string or null")
+        }
+        fn visit_some<D: de::Deserializer<'de>>(self, d: D) -> Result<Self::Value, D::Error> {
+            String::deserialize(d).map(|s| Some(Some(s)))
+        }
+        fn visit_none<E: de::Error>(self) -> Result<Self::Value, E> {
+            Ok(Some(None))
+        }
+        fn visit_unit<E: de::Error>(self) -> Result<Self::Value, E> {
+            Ok(Some(None))
+        }
+    }
+    deserializer.deserialize_option(V)
+}
+
 /// 统一API响应
 #[derive(Debug, Serialize)]
 pub struct ApiResponse<T: Serialize> {
@@ -96,23 +122,35 @@ fn default_true() -> bool {
 }
 
 /// 更新站点请求
+/// 清空字段: JSON null → Some(None)，字段缺失 → None，有值 → Some(Some(v))
 #[derive(Debug, Deserialize)]
 pub struct UpdateSiteRequest {
     pub name: Option<String>,
     pub server_name: Option<String>,
     pub listen: Option<String>,
     pub ssl: Option<bool>,
-    pub certificate_path: Option<String>,
-    pub key_path: Option<String>,
-    pub proxy_pass: Option<String>,
-    pub root_path: Option<String>,
-    pub remark: Option<String>,
-    pub expire_time: Option<String>,
-    pub rewrite_rules: Option<String>,
-    pub redirect_rules: Option<String>,
-    pub hotlink_config: Option<String>,
-    pub log_access_path: Option<String>,
-    pub log_error_path: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_clearable")]
+    pub certificate_path: Option<Option<String>>,
+    #[serde(default, deserialize_with = "deserialize_clearable")]
+    pub key_path: Option<Option<String>>,
+    #[serde(default, deserialize_with = "deserialize_clearable")]
+    pub proxy_pass: Option<Option<String>>,
+    #[serde(default, deserialize_with = "deserialize_clearable")]
+    pub root_path: Option<Option<String>>,
+    #[serde(default, deserialize_with = "deserialize_clearable")]
+    pub remark: Option<Option<String>>,
+    #[serde(default, deserialize_with = "deserialize_clearable")]
+    pub expire_time: Option<Option<String>>,
+    #[serde(default, deserialize_with = "deserialize_clearable")]
+    pub rewrite_rules: Option<Option<String>>,
+    #[serde(default, deserialize_with = "deserialize_clearable")]
+    pub redirect_rules: Option<Option<String>>,
+    #[serde(default, deserialize_with = "deserialize_clearable")]
+    pub hotlink_config: Option<Option<String>>,
+    #[serde(default, deserialize_with = "deserialize_clearable")]
+    pub log_access_path: Option<Option<String>>,
+    #[serde(default, deserialize_with = "deserialize_clearable")]
+    pub log_error_path: Option<Option<String>>,
     pub status: Option<String>,
 }
 
