@@ -107,3 +107,17 @@ pub struct Template {
     pub created_at: Option<NaiveDateTime>,
     pub updated_at: Option<NaiveDateTime>,
 }
+
+/// 反向代理模型
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct ReverseProxy {
+    pub id: i64,
+    pub site_id: i64,
+    pub name: String,
+    pub proxy_dir: String,
+    pub target_url: String,
+    pub cache: i32,
+    pub status: String,
+    pub created_at: Option<NaiveDateTime>,
+    pub updated_at: Option<NaiveDateTime>,
+}

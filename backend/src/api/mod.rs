@@ -11,3 +11,4 @@ pub mod site_api;
 pub mod site_backup_api;
 pub mod template_api;
 pub mod upstream_api;
+pub mod reverse_proxy_api;

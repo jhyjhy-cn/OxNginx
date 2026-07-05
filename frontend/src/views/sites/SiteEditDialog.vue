@@ -129,22 +129,40 @@
 
       <!-- 4. 反向代理 -->
       <el-tab-pane :label="$t('sites.tabProxy')" name="proxy">
-        <el-form label-width="80px">
-          <el-form-item :label="$t('sites.proxyPass')">
-            <el-input
-              v-model="editForm.proxy_pass"
-              placeholder="http://127.0.0.1:8080"
-              @change="debouncedSave"
-            />
-          </el-form-item>
-          <el-form-item :label="$t('sites.rootPath')">
-            <el-input
-              v-model="editForm.root_path"
-              placeholder="/opt/oxnginx/wwwroot"
-              @change="debouncedSave"
-            />
-          </el-form-item>
-        </el-form>
+        <div style="display: flex; gap: 8px; margin-bottom: 12px">
+          <el-button type="primary" size="small" @click="openProxyForm()">添加</el-button>
+          <el-button size="small" @click="fetchProxies">刷新</el-button>
+        </div>
+        <el-table :data="proxyList" style="width: 100%" v-loading="proxyLoading">
+          <el-table-column prop="name" label="名称" width="120" />
+          <el-table-column prop="proxy_dir" label="代理目录" width="120" />
+          <el-table-column prop="target_url" label="目标URL" min-width="180" show-overflow-tooltip />
+          <el-table-column label="缓存" width="100">
+            <template #default="{ row }">
+              <el-tag :type="row.cache === 1 ? 'success' : 'info'" size="small">
+                {{ row.cache === 1 ? '已开启' : '已关闭' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" width="100">
+            <template #default="{ row }">
+              <el-switch
+                :model-value="row.status === 'enabled'"
+                inline-prompt
+                active-text="启"
+                inactive-text="停"
+                size="small"
+                @change="(val: boolean) => toggleProxy(row, val)"
+              />
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="180" fixed="right">
+            <template #default="{ row }">
+              <el-button type="primary" link size="small" @click="openProxyForm(row)">编辑</el-button>
+              <el-button type="danger" link size="small" @click="deleteProxy(row)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
       </el-tab-pane>
 
       <!-- 5. 重定向 -->
@@ -288,6 +306,13 @@
       </el-tab-pane>
     </el-tabs>
   </OnDialog>
+
+  <ProxyFormDialog
+    v-model:visible="proxyFormVisible"
+    :site-id="props.siteId!"
+    :proxy="proxyFormTarget"
+    @saved="fetchProxies"
+  />
 </template>
 
 <script setup lang="ts">
@@ -297,8 +322,9 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { Delete } from "@element-plus/icons-vue";
 import api from "@/api";
 import OnDialog from "@/components/OnDialog/index.vue";
+import ProxyFormDialog from "./ProxyFormDialog.vue";
 import { monaco } from "@/utils/monaco-env";
-import type { DomainItem, RedirectRule, HotlinkCfg } from "./types";
+import type { DomainItem, RedirectRule, HotlinkCfg, ReverseProxy } from "./types";
 
 const { t } = useI18n();
 
@@ -413,6 +439,53 @@ const hotlink = reactive<HotlinkCfg>({
   return_code: 403,
 });
 
+// ---- 反向代理 ----
+const proxyList = ref<ReverseProxy[]>([]);
+const proxyLoading = ref(false);
+const proxyFormVisible = ref(false);
+const proxyFormTarget = ref<ReverseProxy | null>(null);
+
+async function fetchProxies() {
+  if (!props.siteId) return;
+  proxyLoading.value = true;
+  try {
+    const res = await api.get(`/api/sites/${props.siteId}/proxies`);
+    if (res.data.code === 0) {
+      proxyList.value = res.data.data || [];
+    }
+  } catch {
+    proxyList.value = [];
+  } finally {
+    proxyLoading.value = false;
+  }
+}
+
+function openProxyForm(proxy?: ReverseProxy) {
+  proxyFormTarget.value = proxy || null;
+  proxyFormVisible.value = true;
+}
+
+async function toggleProxy(proxy: ReverseProxy, enable: boolean) {
+  try {
+    await api.put(`/api/proxies/${proxy.id}`, { status: enable ? 'enabled' : 'disabled' });
+    ElMessage.success(enable ? '已启用' : '已禁用');
+    fetchProxies();
+  } catch (e: any) {
+    ElMessage.error(e.response?.data?.message || '操作失败');
+  }
+}
+
+async function deleteProxy(proxy: ReverseProxy) {
+  try {
+    await ElMessageBox.confirm(`确定删除反向代理「${proxy.name}」？`, '提示', { type: 'warning' });
+    await api.delete(`/api/proxies/${proxy.id}`);
+    ElMessage.success('删除成功');
+    fetchProxies();
+  } catch (e: any) {
+    if (e !== 'cancel') ElMessage.error(e.response?.data?.message || '删除失败');
+  }
+}
+
 // ---- 伪静态编辑器 ----
 const rewriteEditorRef = ref<HTMLElement>();
 const rewriteSaving = ref(false);
@@ -485,6 +558,9 @@ watch(
 
 // ---- 配置文件编辑器初始化 ----
 watch(activeTab, (tab) => {
+  if (tab === "proxy" && props.siteId) {
+    fetchProxies();
+  }
   if (tab === "config" && configEditorRef.value && props.siteId) {
     nextTick(() => {
       if (!configEditor) {

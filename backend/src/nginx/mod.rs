@@ -1,5 +1,5 @@
 use crate::dto::{CreateUpstreamRequest, NginxTestResult};
-use crate::model::{Site, Upstream, UpstreamServer};
+use crate::model::{Site, Upstream, UpstreamServer, ReverseProxy};
 use serde::Deserialize;
 
 /// 重定向规则
@@ -206,6 +206,132 @@ pub fn generate_site_config(site: &Site) -> String {
                 config.push_str("        proxy_set_header Connection \"upgrade\";\n");
                 config.push_str("    }\n");
             } else if let Some(root_path) = &site.root_path {
+                let root_path = root_path.replace('\\', "/");
+                config.push_str(&format!("\n    root {};\n", root_path));
+                config.push_str("    index index.html index.htm;\n");
+                config.push_str("\n    location = /index.html {\n");
+                config.push_str("        expires -1;\n");
+                config.push_str("    }\n");
+                config.push_str("\n    location / {\n");
+                config.push_str("        try_files $uri $uri/ =404;\n");
+                config.push_str("    }\n");
+            }
+            config.push_str("}\n\n");
+        }
+    }
+
+    config
+}
+
+/// 生成反向代理 location 块
+fn append_proxy_locations(config: &mut String, proxies: &[ReverseProxy], indent: &str) {
+    for proxy in proxies {
+        if proxy.status != "enabled" {
+            continue;
+        }
+        config.push_str(&format!("\n{}location {} {{\n", indent, proxy.proxy_dir));
+        config.push_str(&format!("{}    proxy_pass {};\n", indent, proxy.target_url));
+        config.push_str(&format!("{}    proxy_set_header Host $host;\n", indent));
+        config.push_str(&format!("{}    proxy_set_header X-Real-IP $remote_addr;\n", indent));
+        config.push_str(&format!("{}    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n", indent));
+        config.push_str(&format!("{}    proxy_set_header X-Forwarded-Proto $scheme;\n", indent));
+        config.push_str(&format!("{}    proxy_http_version 1.1;\n", indent));
+        config.push_str(&format!("{}    proxy_set_header Upgrade $http_upgrade;\n", indent));
+        config.push_str(&format!("{}    proxy_set_header Connection \"upgrade\";\n", indent));
+        if proxy.cache == 1 {
+            config.push_str(&format!("{}    proxy_cache_valid 200 302 10m;\n", indent));
+        }
+        config.push_str(&format!("{}}}\n", indent));
+    }
+}
+
+/// 生成带反向代理列表的站点配置
+pub fn generate_site_config_with_proxies(site: &Site, proxies: &[ReverseProxy]) -> String {
+    // 如果没有反向代理记录，回退到旧的单 proxy_pass 逻辑
+    if proxies.is_empty() {
+        return generate_site_config(site);
+    }
+
+    let mut config = String::new();
+
+    if site.ssl == 1 {
+        let (hosts, extra_ports) = parse_server_names(&site.server_name);
+        let server_name_clean = hosts.join(" ");
+        let main_port: u16 = site.listen.parse().unwrap_or(80);
+        let mut redirect_ports = vec![main_port];
+        for p in &extra_ports {
+            if *p != 443 && !redirect_ports.contains(p) {
+                redirect_ports.push(*p);
+            }
+        }
+
+        for port in &redirect_ports {
+            config.push_str("server {\n");
+            config.push_str(&format!("    listen {};\n", port));
+            config.push_str(&format!("    listen [::]:{};\n", port));
+            config.push_str(&format!("    server_name {};\n", server_name_clean));
+            config.push_str("    return 301 https://$host$request_uri;\n");
+            config.push_str("}\n\n");
+        }
+
+        let mut ssl_ports = vec![443u16];
+        for p in &extra_ports {
+            if *p != 443 && *p != main_port && !redirect_ports.contains(p) && !ssl_ports.contains(p) {
+                ssl_ports.push(*p);
+            }
+        }
+
+        for port in &ssl_ports {
+            config.push_str("server {\n");
+            config.push_str(&format!("    listen {} ssl;\n", port));
+            config.push_str(&format!("    listen [::]:{} ssl;\n", port));
+            config.push_str(&format!("    server_name {};\n", server_name_clean));
+            if let Some(cert_path) = &site.certificate_path {
+                config.push_str(&format!("    ssl_certificate {};\n", cert_path));
+            }
+            if let Some(key_path) = &site.key_path {
+                config.push_str(&format!("    ssl_certificate_key {};\n", key_path));
+            }
+            config.push_str("    ssl_protocols TLSv1.2 TLSv1.3;\n");
+            config.push_str("    ssl_ciphers HIGH:!aNULL:!MD5;\n");
+
+            append_common_directives(&mut config, site, "    ");
+            append_proxy_locations(&mut config, proxies, "    ");
+
+            if let Some(root_path) = &site.root_path {
+                let root_path = root_path.replace('\\', "/");
+                config.push_str(&format!("\n    root {};\n", root_path));
+                config.push_str("    index index.html index.htm;\n");
+                config.push_str("\n    location = /index.html {\n");
+                config.push_str("        expires -1;\n");
+                config.push_str("    }\n");
+                config.push_str("\n    location / {\n");
+                config.push_str("        try_files $uri $uri/ =404;\n");
+                config.push_str("    }\n");
+            }
+            config.push_str("}\n\n");
+        }
+    } else {
+        let (hosts, extra_ports) = parse_server_names(&site.server_name);
+        let server_name_clean = hosts.join(" ");
+        let main_port: u16 = site.listen.parse().unwrap_or(80);
+        let mut all_ports = vec![main_port];
+        for p in &extra_ports {
+            if !all_ports.contains(p) {
+                all_ports.push(*p);
+            }
+        }
+
+        for port in &all_ports {
+            config.push_str("server {\n");
+            config.push_str(&format!("    listen {};\n", port));
+            config.push_str(&format!("    listen [::]:{};\n", port));
+            config.push_str(&format!("    server_name {};\n", server_name_clean));
+
+            append_common_directives(&mut config, site, "    ");
+            append_proxy_locations(&mut config, proxies, "    ");
+
+            if let Some(root_path) = &site.root_path {
                 let root_path = root_path.replace('\\', "/");
                 config.push_str(&format!("\n    root {};\n", root_path));
                 config.push_str("    index index.html index.htm;\n");

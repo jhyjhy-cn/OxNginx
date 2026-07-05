@@ -130,6 +130,19 @@ impl Database {
                 note TEXT NOT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
+
+            CREATE TABLE IF NOT EXISTS reverse_proxies (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                site_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                proxy_dir TEXT NOT NULL DEFAULT '/',
+                target_url TEXT NOT NULL,
+                cache INTEGER NOT NULL DEFAULT 0,
+                status TEXT NOT NULL DEFAULT 'enabled',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE
+            );
             "#,
         )
         .execute(&self.pool)

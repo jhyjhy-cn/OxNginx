@@ -8,3 +8,4 @@ pub mod access_service;
 pub mod template_service;
 pub mod file_service;
 pub mod site_backup_service;
+pub mod reverse_proxy_service;

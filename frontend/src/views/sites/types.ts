@@ -51,3 +51,15 @@ export interface BackupFile {
   size: number
   created_at: string
 }
+
+export interface ReverseProxy {
+  id: number
+  site_id: number
+  name: string
+  proxy_dir: string
+  target_url: string
+  cache: number
+  status: string
+  created_at?: string
+  updated_at?: string
+}

@@ -31,6 +31,11 @@ pub fn build(state: AppState) -> Router {
         .route("/api/sites/batch/enable", post(api::site_api::batch_enable))
         .route("/api/sites/batch/disable", post(api::site_api::batch_disable))
         .route("/api/sites/batch/delete", post(api::site_api::batch_delete))
+        // 反向代理
+        .route("/api/sites/:id/proxies", get(api::reverse_proxy_api::list_proxies))
+        .route("/api/sites/:id/proxies", post(api::reverse_proxy_api::create_proxy))
+        .route("/api/proxies/:id", put(api::reverse_proxy_api::update_proxy))
+        .route("/api/proxies/:id", delete(api::reverse_proxy_api::delete_proxy))
         .route("/api/certificates", get(api::auth_api::list_certificates))
         .route("/api/certificate/apply", post(api::auth_api::apply_certificate))
         .route("/api/certificate/renew", post(api::auth_api::renew_certificate))
