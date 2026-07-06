@@ -3,6 +3,7 @@ use sysinfo::Disks;
 // use tracing::debug;
 
 use crate::AppState;
+use crate::util::cmd;
 
 /// 系统信息
 #[derive(Debug, Serialize)]
@@ -98,6 +99,6 @@ pub async fn get_system_info(state: &AppState) -> anyhow::Result<SystemInfo> {
 
 /// 获取主机名
 fn get_hostname() -> anyhow::Result<String> {
-    let output = std::process::Command::new("hostname").output()?;
+    let output = cmd::silent_command("hostname").output()?;
     Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }

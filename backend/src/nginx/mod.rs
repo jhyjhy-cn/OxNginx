@@ -1,5 +1,6 @@
 use crate::dto::{CreateUpstreamRequest, NginxTestResult};
 use crate::model::{Site, Upstream, UpstreamServer, ReverseProxy};
+use crate::util::cmd;
 use serde::Deserialize;
 
 /// 重定向规则（新版）
@@ -402,7 +403,6 @@ pub fn generate_site_config_with_proxies(site: &Site, proxies: &[ReverseProxy]) 
 
 /// 测试Nginx配置
 pub async fn test_config(nginx_bin: &str) -> NginxTestResult {
-    use tokio::process::Command;
 
     #[cfg(target_os = "linux")]
     {
@@ -413,7 +413,7 @@ pub async fn test_config(nginx_bin: &str) -> NginxTestResult {
                 message: "无法获取 nginx 安装目录".to_string(),
             },
         };
-        let output = Command::new(nginx_bin)
+        let output = cmd::silent_tokio_command(nginx_bin)
             .current_dir(&nginx_dir)
             .arg("-t")
             .output()
@@ -439,7 +439,7 @@ pub async fn test_config(nginx_bin: &str) -> NginxTestResult {
                 message: "无法获取 nginx 安装目录".to_string(),
             },
         };
-        let output = Command::new(nginx_bin)
+        let output = cmd::silent_tokio_command(nginx_bin)
             .current_dir(&nginx_dir)
             .arg("-t")
             .output()
@@ -468,12 +468,12 @@ pub async fn write_site_config(
 
     #[cfg(target_os = "linux")]
     {
-        use tokio::process::Command;
+        use cmd::silent_tokio_command;
 
         tokio::fs::create_dir_all(sites_enabled).await?;
         let tmp = "/tmp/.oxnginx_conf_tmp";
         tokio::fs::write(tmp, config).await?;
-        let output = Command::new("mv")
+        let output = cmd::silent_tokio_command("mv")
             .args([tmp, &config_path])
             .output()
             .await?;
@@ -498,9 +498,9 @@ pub async fn remove_site_config(sites_enabled: &str, site_name: &str) -> anyhow:
 
     #[cfg(target_os = "linux")]
     {
-        use tokio::process::Command;
+        use cmd::silent_tokio_command;
 
-        let _ = Command::new("rm")
+        let _ = cmd::silent_tokio_command("rm")
             .args(["-f", &config_path])
             .output()
             .await;
@@ -520,7 +520,7 @@ pub async fn remove_site_config(sites_enabled: &str, site_name: &str) -> anyhow:
 pub async fn ensure_sites_enabled_include(nginx_config: &str, sites_enabled: &str) -> anyhow::Result<()> {
     #[cfg(target_os = "linux")]
     {
-        use tokio::process::Command;
+        use cmd::silent_tokio_command;
 
         // 读取原文件（root 用户可直接读取）
         let content = tokio::fs::read_to_string(nginx_config).await?;
@@ -535,7 +535,7 @@ pub async fn ensure_sites_enabled_include(nginx_config: &str, sites_enabled: &st
             new_content.push_str("}\n");
             let tmp = "/tmp/.oxnginx_nginx_conf_tmp";
             tokio::fs::write(tmp, &new_content).await?;
-            let _ = Command::new("mv")
+            let _ = cmd::silent_tokio_command("mv")
                 .args([tmp, nginx_config])
                 .output()
                 .await;
@@ -585,7 +585,7 @@ pub async fn create_default_index(root_path: &str) -> anyhow::Result<()> {
 
     #[cfg(target_os = "linux")]
     {
-        use tokio::process::Command;
+        use cmd::silent_tokio_command;
         tokio::fs::create_dir_all(root_path).await?;
         let index_path = format!("{}/index.html", root_path);
         tokio::fs::write(&index_path, content).await?;
@@ -618,13 +618,12 @@ fn get_nginx_dir(nginx_bin: &str) -> Option<std::path::PathBuf> {
 
 /// 获取 Nginx 运行状态
 pub async fn get_nginx_status(nginx_bin: &str) -> NginxStatus {
-    use tokio::process::Command;
     use std::env::consts::OS;
 
     // tracing::debug!("[NginxStatus] 检测 nginx: bin={}, os={}", nginx_bin, OS);
 
     // 先检测 nginx 是否可执行
-    let version_check = Command::new(nginx_bin).arg("-v").output().await;
+    let version_check = cmd::silent_tokio_command(nginx_bin).arg("-v").output().await;
     let not_installed = version_check.is_err();
 
     // tracing::debug!("[NginxStatus] not_installed={}, version_check_err={}", not_installed, version_check.is_err());
@@ -653,7 +652,7 @@ pub async fn get_nginx_status(nginx_bin: &str) -> NginxStatus {
     // 检查进程是否存在（跨平台）
     let (pid, running) = if OS == "windows" {
         // Windows: 使用 tasklist 查找 nginx 进程
-        let output = Command::new("tasklist")
+        let output = cmd::silent_tokio_command("tasklist")
             .args(["/FI", "IMAGENAME eq nginx.exe", "/FO", "CSV", "/NH"])
             .output()
             .await;
@@ -675,7 +674,7 @@ pub async fn get_nginx_status(nginx_bin: &str) -> NginxStatus {
         }
     } else {
         // Linux: 使用 pgrep
-        let output = Command::new("pgrep")
+        let output = cmd::silent_tokio_command("pgrep")
             .args(["-x", "nginx"])
             .output()
             .await;
@@ -694,7 +693,7 @@ pub async fn get_nginx_status(nginx_bin: &str) -> NginxStatus {
     let uptime = if let Some(pid) = pid {
         if OS == "windows" {
             // Windows: 通过 wmic 获取进程启动时间
-            let output = Command::new("wmic")
+            let output = cmd::silent_tokio_command("wmic")
                 .args(["process", "where", &format!("ProcessId={}", pid), "get", "CreationDate", "/value"])
                 .output()
                 .await;
@@ -719,7 +718,7 @@ pub async fn get_nginx_status(nginx_bin: &str) -> NginxStatus {
                 _ => None,
             }
         } else {
-            let output = Command::new("ps")
+            let output = cmd::silent_tokio_command("ps")
                 .args(["-o", "etime=", "-p", &pid.to_string()])
                 .output()
                 .await;
@@ -746,7 +745,6 @@ pub async fn get_nginx_status(nginx_bin: &str) -> NginxStatus {
 
 /// 启动 Nginx
 pub async fn start_nginx(nginx_bin: &str, config_path: &str) -> anyhow::Result<bool> {
-    use tokio::process::Command;
 
     // 先检查是否已在运行
     let status = get_nginx_status(nginx_bin).await;
@@ -761,7 +759,7 @@ pub async fn start_nginx(nginx_bin: &str, config_path: &str) -> anyhow::Result<b
     tracing::info!("启动 Nginx: bin={}, conf={}", nginx_bin, config_path);
 
     // spawn 不等待进程结束（nginx 在 Windows 上以前台模式运行）
-    let child = Command::new(nginx_bin)
+    let child = cmd::silent_tokio_command(nginx_bin)
         .current_dir(&nginx_dir)
         .args(["-c", config_path])
         .spawn();
@@ -785,12 +783,11 @@ pub async fn start_nginx(nginx_bin: &str, config_path: &str) -> anyhow::Result<b
 
 /// 停止 Nginx
 pub async fn stop_nginx(nginx_bin: &str) -> anyhow::Result<bool> {
-    use tokio::process::Command;
 
     let nginx_dir = get_nginx_dir(nginx_bin)
         .ok_or_else(|| anyhow::anyhow!("无法获取 nginx 安装目录"))?;
     tracing::info!("停止 Nginx: bin={}", nginx_bin);
-    let output = Command::new(nginx_bin)
+    let output = cmd::silent_tokio_command(nginx_bin)
         .current_dir(&nginx_dir)
         .args(["-s", "stop"])
         .output()
@@ -800,12 +797,11 @@ pub async fn stop_nginx(nginx_bin: &str) -> anyhow::Result<bool> {
 
 /// 重载 Nginx 配置
 pub async fn reload_nginx(nginx_bin: &str) -> anyhow::Result<bool> {
-    use tokio::process::Command;
 
     let nginx_dir = get_nginx_dir(nginx_bin)
         .ok_or_else(|| anyhow::anyhow!("无法获取 nginx 安装目录"))?;
     tracing::info!("重载 Nginx 配置: bin={}", nginx_bin);
-    let output = Command::new(nginx_bin)
+    let output = cmd::silent_tokio_command(nginx_bin)
         .current_dir(&nginx_dir)
         .args(["-s", "reload"])
         .output()
@@ -822,7 +818,6 @@ pub async fn restart_nginx(nginx_bin: &str, config_path: &str) -> anyhow::Result
 
 /// 一键安装 Nginx（Windows/Linux）
 pub async fn install_nginx(install_dir: &str) -> anyhow::Result<NginxInstallResult> {
-    use tokio::process::Command;
     use std::env::consts::OS;
 
     let os = OS;
@@ -841,7 +836,7 @@ pub async fn install_nginx(install_dir: &str) -> anyhow::Result<NginxInstallResu
 
         // 下载
         tracing::info!("下载 Nginx {}...", nginx_version);
-        let output = Command::new("curl")
+        let output = cmd::silent_tokio_command("curl")
             .args(["-L", "-o", &zip_path, &download_url])
             .output()
             .await?;
@@ -856,7 +851,7 @@ pub async fn install_nginx(install_dir: &str) -> anyhow::Result<NginxInstallResu
             "Expand-Archive -Path '{}' -DestinationPath '{}' -Force",
             zip_path, install_dir
         );
-        let output = Command::new("powershell")
+        let output = cmd::silent_tokio_command("powershell")
             .args(["-Command", &ps_cmd])
             .output()
             .await?;
@@ -897,7 +892,7 @@ pub async fn install_nginx(install_dir: &str) -> anyhow::Result<NginxInstallResu
         tokio::fs::create_dir_all(tmp_dir).await?;
 
         tracing::info!("解压 nginx 预编译包...");
-        let output = Command::new("tar")
+        let output = cmd::silent_tokio_command("tar")
             .args(["-xzf", src_tar, "-C", tmp_dir])
             .output()
             .await?;

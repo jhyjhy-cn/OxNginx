@@ -1,3 +1,5 @@
+pub mod cmd;
+
 /// 读取日志文件最后N行
 pub async fn read_log_tail(log_path: &str, lines: usize) -> anyhow::Result<Vec<String>> {
     let content = tokio::fs::read_to_string(log_path).await?;

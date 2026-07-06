@@ -1,4 +1,4 @@
-use tokio::process::Command;
+use crate::util::cmd;
 
 /// 调用acme.sh安装证书到Nginx
 #[allow(dead_code)]
@@ -7,7 +7,7 @@ pub async fn install_cert(
     domain: &str,
     ssl_dir: &str,
 ) -> anyhow::Result<bool> {
-    let output = Command::new(acme_bin)
+    let output = cmd::silent_tokio_command(acme_bin)
         .args([
             "--install-cert",
             "-d",

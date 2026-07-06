@@ -4,6 +4,7 @@ use serde_json::json;
 
 use crate::dto::ApiResponse;
 use crate::AppState;
+use crate::util::cmd;
 
 /// 系统设置响应
 #[derive(Debug, serde::Serialize)]
@@ -213,13 +214,13 @@ pub async fn update_settings(
 
 /// 获取主机名
 fn get_hostname() -> anyhow::Result<String> {
-    let output = std::process::Command::new("hostname").output()?;
+    let output = cmd::silent_command("hostname").output()?;
     Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
 
 /// 获取 Nginx 版本
 async fn get_nginx_version(nginx_bin: &str) -> String {
-    let output = tokio::process::Command::new(nginx_bin)
+    let output = cmd::silent_tokio_command(nginx_bin)
         .arg("-v")
         .output()
         .await;

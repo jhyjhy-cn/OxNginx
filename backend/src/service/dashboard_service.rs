@@ -59,9 +59,9 @@ struct NginxInfo {
 
 /// 获取Nginx信息
 async fn get_nginx_info(nginx_bin: &str) -> NginxInfo {
-    use tokio::process::Command;
+    use crate::util::cmd;
 
-    let output = Command::new(nginx_bin)
+    let output = cmd::silent_tokio_command(nginx_bin)
         .arg("-v")
         .output()
         .await;

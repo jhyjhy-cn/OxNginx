@@ -1,12 +1,12 @@
 use crate::model::Certificate;
 use crate::AppState;
+use crate::util::cmd;
 use chrono::NaiveDateTime;
-use std::process::Command;
 
 /// 从证书文件读取过期时间
 pub async fn get_cert_expire_info(cert_path: &str) -> Option<NaiveDateTime> {
     // root 用户可直接调用 openssl
-    let output = Command::new("openssl")
+    let output = cmd::silent_command("openssl")
         .args(["x509", "-in", cert_path, "-noout", "-enddate"])
         .output()
         .ok()?;
@@ -36,13 +36,12 @@ pub async fn apply_cert(
     state: &AppState,
     domain: &str,
 ) -> anyhow::Result<Certificate> {
-    use tokio::process::Command;
 
     let config = state.get_config();
     let acme_bin = &config.acme.bin;
 
     // 调用acme.sh申请证书（root 用户直接调用）
-    let output = Command::new(acme_bin)
+    let output = cmd::silent_tokio_command(acme_bin)
         .args(["--issue", "-d", domain, "--standalone", "--force"])
         .output()
         .await?;
@@ -97,7 +96,6 @@ pub async fn apply_cert(
 
 /// 续期证书
 pub async fn renew_cert(state: &AppState, id: i64) -> anyhow::Result<bool> {
-    use tokio::process::Command;
 
     let cert = sqlx::query_as::<_, Certificate>("SELECT * FROM certificates WHERE id = ?")
         .bind(id)
@@ -110,7 +108,7 @@ pub async fn renew_cert(state: &AppState, id: i64) -> anyhow::Result<bool> {
     };
 
     let config = state.get_config();
-    let output = Command::new(&config.acme.bin)
+    let output = cmd::silent_tokio_command(&config.acme.bin)
         .args(["--renew", "-d", &cert.domain, "--force"])
         .output()
         .await?;
