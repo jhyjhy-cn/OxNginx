@@ -3,7 +3,7 @@
     <!-- 左侧内容区域 -->
     <div class="left-section">
       <div class="brand-logo">
-        <div class="logo-icon">N</div>
+        <img src="@/assets/imgs/logo.png" alt="OxNginx" class="logo-image" />
         <span>OxNginx</span>
       </div>
 
@@ -465,17 +465,14 @@ onUnmounted(() => {
   z-index: 20;
 }
 
-.logo-icon {
+.logo-image {
   width: 48px;
   height: 48px;
   border-radius: 8px;
+  object-fit: contain;
   background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  font-weight: 700;
+  padding: 4px;
 }
 
 .characters-area {

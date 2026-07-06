@@ -3,7 +3,7 @@
     <!-- 左侧菜单栏 -->
     <aside class="sidebar" :style="sidebarStyle">
       <div class="logo" :class="{ collapsed: settingsStore.sidebarCollapsed }">
-        <div class="logo-icon">⚡</div>
+        <img src="@/assets/imgs/logo.png" alt="OxNginx" class="logo-icon" />
         <span v-if="!settingsStore.sidebarCollapsed" class="logo-text">OxNginx</span>
       </div>
       <div class="menu-scroll">
@@ -135,12 +135,8 @@ defineEmits<{
 .logo-icon {
   width: 32px;
   height: 32px;
-  background: rgba(255, 255, 255, 0.2);
   border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
+  object-fit: contain;
   flex-shrink: 0;
 }
 

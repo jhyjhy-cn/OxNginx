@@ -44,10 +44,12 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
 
 const { t, locale } = useI18n()
+const router = useRouter()
 const authStore = useAuthStore()
 const settingsStore = useSettingsStore()
 
@@ -71,6 +73,7 @@ function handleLanguageChange(lang: 'zh-CN' | 'en-US') {
 function handleUserCommand(cmd: string) {
   if (cmd === 'logout') {
     authStore.logout()
+    router.push('/login')
   } else if (cmd === 'changeUsername') {
     emit('changeUsername')
   } else if (cmd === 'changePassword') {

@@ -3,6 +3,7 @@
     <!-- 侧边栏 -->
     <el-aside width="220px" class="aside">
       <div class="logo">
+        <img src="@/assets/imgs/logo.png" alt="OxNginx" class="logo-image" />
         <h2>OxNginx</h2>
       </div>
 
@@ -344,6 +345,14 @@ async function submitChangeUsername() {
 .logo h2 {
   margin: 0;
   font-size: 20px;
+}
+
+.logo-image {
+  width: 36px;
+  height: 36px;
+  margin-right: 10px;
+  border-radius: 6px;
+  object-fit: contain;
 }
 
 .sidebar-menu {
