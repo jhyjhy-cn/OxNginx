@@ -9,6 +9,7 @@ productName = "OxNginx"
 identifier = "cn.jhyjhy.oxnginx"
 beforePackagingCommand = "cargo build --release"
 outDir = "../build"
+icons = ["assets/icons/logo_256x256.ico"]
 resources = [
   { src = "../libs/nginx/windows/nginx-1.30.3.zip", target = "libs/nginx/nginx-1.30.3.zip" },
   { src = "../libs/nssm.exe", target = "nssm.exe" },
@@ -22,6 +23,8 @@ displayLanguageSelector = true
 languages = ["SimpChinese", "English"]
 # 自定义NSIS模板（修复卸载时清理运行时目录）
 template = "../scripts/installer.nsi"
+# 安装程序图标
+installer_icon = "assets/icons/logo_256x256.ico"
 
 [profile.release]
 # LTO (Link Time Optimization): 跨 crate 链接时优化，减小二进制体积
