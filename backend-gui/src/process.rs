@@ -35,7 +35,7 @@ impl BackendProcess {
             let exe_dir = std::env::current_exe()?
                 .parent()
                 .unwrap()
-                .to_path_buf(); // ox-nginx_1.1.0/
+                .to_path_buf(); // ox-nginx_1.0.0/
 
             exe_dir.join("server/panel/ox-nginx.exe")
         };

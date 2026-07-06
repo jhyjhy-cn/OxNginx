@@ -100,7 +100,8 @@ if (Test-Path "$LibsDir\nginx\windows\nginx-1.30.3.zip") {
 Write-Info "正在打包 zip..."
 $ZipPath = Join-Path $RootDir "build\ox-nginx_$Version.zip"
 if (Test-Path $ZipPath) { Remove-Item -Force $ZipPath }
-Compress-Archive -Path $OutDir -DestinationPath $ZipPath -Force
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+[System.IO.Compression.ZipFile]::CreateFromDirectory($OutDir, $ZipPath)
 
 # 清理临时目录
 Remove-Item -Recurse -Force $OutDir

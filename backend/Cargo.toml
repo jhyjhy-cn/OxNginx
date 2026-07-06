@@ -1,6 +1,6 @@
 [package]
 name = "ox-nginx"
-version = "1.1.0"
+version = "1.0.0"
 edition = "2021"
 description = "轻量级Nginx可视化管理面板"
 

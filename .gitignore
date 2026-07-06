@@ -5,6 +5,7 @@ backend/static/
 backend-gui/target/
 backend-gui/gen/
 backend-gui/bundle/
+backend-gui/updater.key
 
 # Node
 frontend/node_modules/
