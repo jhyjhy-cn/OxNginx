@@ -2,6 +2,9 @@
 backend/target/
 backend/*.db
 backend/static/
+backend-gui/target/
+backend-gui/gen/
+backend-gui/bundle/
 
 # Node
 frontend/node_modules/

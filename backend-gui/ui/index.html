@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OxNginx 状态</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 16px;
+        }
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ccc;
+        }
+        .status-dot.running { background: #22c55e; }
+        .status-dot.stopped { background: #ef4444; }
+        .status-text {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .info-row:last-child { border-bottom: none; }
+        .label { color: #666; }
+        .value { font-weight: 500; }
+        .value a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        .value a:hover { text-decoration: underline; }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .btn {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-primary:disabled {
+            background: #93c5fd;
+            cursor: not-allowed;
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-danger:disabled {
+            background: #fca5a5;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        .btn-secondary:hover { background: #d1d5db; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="status">
+            <div class="status-dot" id="statusDot"></div>
+            <span class="status-text" id="statusText">检测中...</span>
+        </div>
+
+        <div class="info-row">
+            <span class="label">面板地址</span>
+            <span class="value">
+                <a href="http://localhost:9000" id="panelUrl" target="_blank">http://localhost:9000</a>
+            </span>
+        </div>
+
+        <div class="info-row">
+            <span class="label">运行时间</span>
+            <span class="value" id="uptime">--</span>
+        </div>
+
+        <div class="info-row">
+            <span class="label">内存占用</span>
+            <span class="value" id="memory">--</span>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-primary" id="btnStart" onclick="startBackend()">启动服务</button>
+            <button class="btn btn-danger" id="btnStop" onclick="stopBackend()">停止服务</button>
+            <button class="btn btn-secondary" onclick="openPanel()">打开面板</button>
+        </div>
+    </div>
+
+    <script>
+        const { invoke } = window.__TAURI__.core;
+
+        async function checkStatus() {
+            try {
+                const status = await invoke('get_backend_status');
+                updateUI(status);
+            } catch (e) {
+                console.error('获取状态失败:', e);
+                updateUI({ running: false });
+            }
+        }
+
+        function updateUI(status) {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+            const btnStart = document.getElementById('btnStart');
+            const btnStop = document.getElementById('btnStop');
+
+            if (status.running) {
+                dot.className = 'status-dot running';
+                text.textContent = '运行中';
+                btnStart.disabled = true;
+                btnStop.disabled = false;
+            } else {
+                dot.className = 'status-dot stopped';
+                text.textContent = '已停止';
+                btnStart.disabled = false;
+                btnStop.disabled = true;
+            }
+
+            if (status.uptime) {
+                document.getElementById('uptime').textContent = status.uptime;
+            }
+            if (status.memory) {
+                document.getElementById('memory').textContent = status.memory;
+            }
+        }
+
+        async function startBackend() {
+            try {
+                await invoke('start_backend');
+                setTimeout(checkStatus, 500);
+            } catch (e) {
+                alert('启动失败: ' + e);
+            }
+        }
+
+        async function stopBackend() {
+            try {
+                await invoke('stop_backend');
+                setTimeout(checkStatus, 500);
+            } catch (e) {
+                alert('停止失败: ' + e);
+            }
+        }
+
+        function openPanel() {
+            window.open('http://localhost:9000', '_blank');
+        }
+
+        // 初始化
+        checkStatus();
+        // 每5秒刷新状态
+        setInterval(checkStatus, 5000);
+    </script>
+</body>
+</html>

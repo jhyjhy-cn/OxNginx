@@ -8,7 +8,6 @@ mod backup;
 mod config;
 mod database;
 mod dto;
-mod gui;
 mod middleware;
 mod model;
 mod nginx;
@@ -51,9 +50,7 @@ const BANNER: &str = r#"
 fn main() -> anyhow::Result<()> {
     // 解析命令行参数
     let args: Vec<String> = std::env::args().collect();
-    let headless = args.contains(&"--headless".to_string()) || args.contains(&"-h".to_string());
     let show_console = args.contains(&"--console".to_string()) || args.contains(&"-c".to_string());
-    let gui = !headless;
 
     // 如果指定了 --console，附加到父进程控制台（Windows）
     #[cfg(target_os = "windows")]
@@ -86,36 +83,30 @@ fn main() -> anyhow::Result<()> {
     startup::logging::init(&log_dir, &config.log.level, config.log.max_size_mb);
     tracing::info!("配置加载完成");
 
-    if gui {
-        // GUI模式：在后台线程启动服务，主线程运行GUI
-        tracing::info!("启动GUI模式");
-        gui::run_gui(config)?;
-    } else {
-        // 无头模式：直接运行服务（当前行为）
-        tracing::info!("启动无头模式 (使用 --headless 参数)");
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?;
+    // 运行服务
+    tracing::info!("启动 OxNginx 服务");
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
 
-        rt.block_on(async {
-            // 初始化数据库
-            let db = Database::new(&config.database.path).await?;
-            tracing::info!("数据库初始化完成");
+    rt.block_on(async {
+        // 初始化数据库
+        let db = Database::new(&config.database.path).await?;
+        tracing::info!("数据库初始化完成");
 
-            // 创建应用状态 & 构建路由
-            let state = AppState::new(db, config.clone());
-            let app = app::router::build(state);
+        // 创建应用状态 & 构建路由
+        let state = AppState::new(db, config.clone());
+        let app = app::router::build(state);
 
-            // 启动服务
-            let addr = format!("{}:{}", config.server.host, config.server.port);
-            let listener = tokio::net::TcpListener::bind(&addr).await?;
-            tracing::info!("OxNginx 启动于 http://{}", addr);
+        // 启动服务
+        let addr = format!("{}:{}", config.server.host, config.server.port);
+        let listener = tokio::net::TcpListener::bind(&addr).await?;
+        tracing::info!("OxNginx 启动于 http://{}", addr);
 
-            axum::serve(listener, app).await?;
+        axum::serve(listener, app).await?;
 
-            Ok::<(), anyhow::Error>(())
-        })?;
-    }
+        Ok::<(), anyhow::Error>(())
+    })?;
 
     Ok(())
 }

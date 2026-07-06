@@ -1,0 +1,25 @@
+[package]
+name = "ox-nginx-gui"
+version = "1.1.0"
+edition = "2021"
+description = "OxNginx GUI Manager (Tauri2)"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-ico"] }
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+open = "5"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+clipboard-win = "5"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]

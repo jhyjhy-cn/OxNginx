@@ -9,23 +9,6 @@ productName = "OxNginx"
 identifier = "cn.jhyjhy.oxnginx"
 beforePackagingCommand = "cargo build --release"
 outDir = "../build"
-icons = ["assets/icons/logo_256x256.ico"]
-resources = [
-  { src = "../libs/nginx/windows/nginx-1.30.3.zip", target = "libs/nginx/nginx-1.30.3.zip" },
-  { src = "../libs/nssm.exe", target = "nssm.exe" },
-  { src = "static", target = "static" },
-  { src = "assets", target = "assets" }
-]
-
-[package.metadata.packager.nsis]
-installMode = "both"
-# 语言选择器：安装时可选中文/英文
-displayLanguageSelector = true
-languages = ["SimpChinese", "English"]
-# 自定义NSIS模板（修复卸载时清理运行时目录）
-template = "../scripts/installer.nsi"
-# 安装程序图标
-installer_icon = "assets/icons/logo_256x256.ico"
 
 [profile.release]
 # LTO (Link Time Optimization): 跨 crate 链接时优化，减小二进制体积
@@ -84,25 +67,11 @@ zip = "2"
 # 文件压缩/解压（tar.gz）
 flate2 = "1"
 tar = "0.4"
-eframe = "0.29"
-tray-icon = "0.17"
-image = "0.25"
-clipboard-win = "5"
-open = "5"
 
 # Linux 用户/组名解析
 [target.'cfg(unix)'.dependencies]
 uzers = "0.12"
 
-# GUI (系统托盘 + 控制面板)
-eframe = "0.29"
-tray-icon = "0.17"
-image = "0.25"
-include_dir = "0.7"
-clipboard-win = "5"
-open = "5"
-
 # Windows API
 [target.'cfg(target_os = "windows")'.dependencies]
 winapi = { version = "0.3", features = ["winuser", "libloaderapi", "consoleapi"] }
-

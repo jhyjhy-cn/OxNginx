@@ -1,6 +1,6 @@
 ﻿# OxNginx Windows 打包脚本
 # 使用方法: .\scripts\build-win.ps1
-# 输出: build/ox-nginx-{version}-setup.exe (NSIS 安装包)
+# 输出: build/ox-nginx_{version}/
 
 $ErrorActionPreference = "Stop"
 
@@ -16,76 +16,106 @@ Write-Host ""
 Write-Host "OxNginx Windows 打包脚本 (v$Version)" -ForegroundColor Cyan
 Write-Host ""
 
-# ============ 构建前端 ============
-Write-Info "开始构建前端..."
-$feDir = Join-Path $RootDir "frontend"
-cmd /c "cd /d `"$feDir`" && pnpm run build"
-if ($LASTEXITCODE -ne 0) { Write-Err "前端构建失败" }
-
-# ============ 检查 cargo-packager ============
-function Test-CargoPackager {
-    # 方法1: 检查cargo packager命令是否可用
-    $result = cargo packager --version 2>&1
-    return $LASTEXITCODE -eq 0
+# ============ 清理之前的产物 ============
+Write-Info "清理之前的构建产物..."
+$OutDir = Join-Path $RootDir "build\ox-nginx_$Version"
+if (Test-Path $OutDir) {
+    try {
+        Remove-Item -Recurse -Force $OutDir -ErrorAction Stop
+        Write-Info "已清理 build\ox-nginx_$Version"
+    } catch {
+        Write-Warn "无法删除旧目录，将使用新目录名"
+        $OutDir = Join-Path $RootDir "build\ox-nginx_$Version_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+    }
 }
 
-if (-not (Test-CargoPackager)) {
-    Write-Warn "未检测到 cargo-packager，正在安装..."
-    cargo install cargo-packager --locked
-    if ($LASTEXITCODE -ne 0) { Write-Err "cargo-packager 安装失败" }
-    Write-Info "cargo-packager 安装完成"
-} else {
-    Write-Info "cargo-packager 已安装"
-}
-
-# ============ 准备 nssm.exe ============
-# 从版本目录拷贝 win64 版本到 libs/ 顶层，供 cargo-packager 打进 bundle
 $libsDir = Join-Path $RootDir "libs"
-$NssmSrc = Join-Path $libsDir "NSSM_v2.25\win64\nssm.exe"
-$NssmDst = Join-Path $libsDir "nssm.exe"
-if (Test-Path $NssmSrc) {
-    Copy-Item -Force $NssmSrc $NssmDst
-    Write-Info "已准备 nssm.exe"
-} else {
-    Write-Warn "未找到 $NssmSrc，将跳过服务注册"
-    Write-Warn "请从 https://nssm.cc/download 下载并解压到 libs\NSSM_v2.25\win64\"
-}
 
-# ============ 检查资源文件 ============
-if (-not (Test-Path "$libsDir\nginx\windows\nginx-1.30.3.zip")) {
-    Write-Err "未找到 libs\nginx\windows\nginx-1.30.3.zip"
-}
-if (-not (Test-Path "$libsDir\nssm.exe")) {
-    Write-Warn "未找到 libs\nssm.exe，将跳过服务注册"
-    Write-Warn "请从 https://nssm.cc 下载并放入 libs\ 目录"
-}
+# ============ 构建前端 ============
+Write-Info "正在构建前端..."
+$feDir = Join-Path $RootDir "frontend"
+Push-Location $feDir
+pnpm run build
+if ($LASTEXITCODE -ne 0) { Write-Err "前端构建失败" }
+Pop-Location
 
-# ============ cargo-packager 打包 ============
-Write-Info "正在使用 cargo-packager 打包 (NSIS)..."
+# ============ 构建 backend ============
+Write-Info "正在构建 backend..."
 Push-Location $BackendDir
 
-cargo packager --release --formats nsis 2>&1 | ForEach-Object {
-    if ($_ -match 'error') { Write-Host $_ -ForegroundColor Red }
-    else { Write-Host $_ }
-}
+$env:CARGO_TERM_COLOR = "never"
+cargo build --release
+if ($LASTEXITCODE -ne 0) { Write-Err "backend 构建失败" }
 
 Pop-Location
 
-# ============ 检查输出 ============
-$OutDir = Join-Path $RootDir "build"
-$NsisExe = Get-ChildItem -Path $OutDir -Filter "*.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+# ============ 复制输出文件 ============
+$BackendExe = Join-Path $BackendDir "target\release\ox-nginx.exe"
 
-if ($NsisExe) {
-    $Size = [math]::Round($NsisExe.Length / 1MB, 2)
+if (-not (Test-Path $BackendExe)) {
+    Write-Err "构建失败，未找到 $BackendExe"
+}
+
+# 创建目录结构
+$PanelDir = Join-Path $OutDir "server\panel"
+$NginxOutDir = Join-Path $OutDir "server\nginx"
+
+New-Item -ItemType Directory -Force -Path $PanelDir | Out-Null
+New-Item -ItemType Directory -Force -Path $NginxOutDir | Out-Null
+New-Item -ItemType Directory -Force -Path (Join-Path $OutDir "backup") | Out-Null
+New-Item -ItemType Directory -Force -Path (Join-Path $OutDir "ssl") | Out-Null
+New-Item -ItemType Directory -Force -Path (Join-Path $OutDir "wwwlogs") | Out-Null
+New-Item -ItemType Directory -Force -Path (Join-Path $OutDir "wwwroot") | Out-Null
+
+# 复制可执行文件到 server/panel/
+Copy-Item -Force $BackendExe $PanelDir
+Write-Info "已复制 ox-nginx.exe -> server/panel/"
+
+# 复制静态文件
+$StaticDir = Join-Path $BackendDir "static"
+if (Test-Path $StaticDir) {
+    Copy-Item -Recurse -Force $StaticDir $PanelDir
+    Write-Info "已复制 static/ -> server/panel/"
+}
+
+# 复制配置和数据目录（如果存在）
+$ConfigsDir = Join-Path $BackendDir "configs"
+$DatasDir = Join-Path $BackendDir "datas"
+if (Test-Path $ConfigsDir) {
+    Copy-Item -Recurse -Force $ConfigsDir $PanelDir
+}
+if (Test-Path $DatasDir) {
+    Copy-Item -Recurse -Force $DatasDir $PanelDir
+}
+
+# 复制 libs 到 server/panel/libs/
+if (Test-Path "$LibsDir\nginx\windows\nginx-1.30.3.zip") {
+    $NginxLibsDir = Join-Path $PanelDir "libs\nginx"
+    New-Item -ItemType Directory -Force -Path $NginxLibsDir | Out-Null
+    Copy-Item -Force "$LibsDir\nginx\windows\nginx-1.30.3.zip" $NginxLibsDir
+    Write-Info "已复制 nginx -> server/panel/libs/nginx/"
+}
+
+# ============ 检查输出 ============
+if (Test-Path "$PanelDir\ox-nginx.exe") {
+    $Size = [math]::Round((Get-Item "$PanelDir\ox-nginx.exe").Length / 1MB, 2)
     Write-Host ""
     Write-Host "==========================================" -ForegroundColor Green
-    Write-Host "  打包完成！" -ForegroundColor Green
+    Write-Host "  构建完成！" -ForegroundColor Green
     Write-Host "==========================================" -ForegroundColor Green
     Write-Host ""
-    Write-Host "  $($NsisExe.Name)  ${Size}MB" -ForegroundColor Cyan
+    Write-Host "  输出目录: build\ox-nginx_$Version" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "  请以管理员身份运行安装" -ForegroundColor Yellow
+    Write-Host "  目录结构:" -ForegroundColor Cyan
+    Write-Host "    ox-nginx_$Version/" -ForegroundColor White
+    Write-Host "    ├── backup/" -ForegroundColor White
+    Write-Host "    ├── server/" -ForegroundColor White
+    Write-Host "    │   ├── nginx/    (nginx)" -ForegroundColor White
+    Write-Host "    │   └── panel/    (ox-nginx.exe, static, libs)" -ForegroundColor White
+    Write-Host "    ├── ssl/" -ForegroundColor White
+    Write-Host "    ├── wwwlogs/" -ForegroundColor White
+    Write-Host "    └── wwwroot/" -ForegroundColor White
     Write-Host ""
 } else {
-    Write-Err "未在 build\ 目录中找到 NSIS 安装包"
+    Write-Err "构建失败"
 }
