@@ -12,7 +12,8 @@ use serde::Serialize;
 struct BackendStatus {
     running: bool,
     uptime: String,
-    memory: String,
+    gui_memory: String,
+    server_memory: String,
 }
 
 #[tauri::command]
@@ -22,8 +23,14 @@ fn get_backend_status() -> BackendStatus {
     BackendStatus {
         running,
         uptime: if running { "运行中" } else { "未运行" }.to_string(),
-        memory: if running { "~5MB" } else { "--" }.to_string(),
+        gui_memory: process::get_gui_memory(),
+        server_memory: if running { process::get_backend_memory() } else { "--".to_string() },
     }
+}
+
+#[tauri::command]
+fn open_url(url: String) {
+    let _ = open::that(&url);
 }
 
 #[tauri::command]
@@ -46,7 +53,7 @@ fn main() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![get_backend_status, start_backend, stop_backend])
+        .invoke_handler(tauri::generate_handler![get_backend_status, start_backend, stop_backend, open_url])
         .setup(move |app| {
             // 创建系统托盘
             tray::create_tray(app.handle())?;

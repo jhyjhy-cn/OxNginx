@@ -131,6 +131,65 @@ impl BackendProcess {
     }
 }
 
+/// 获取指定进程的工作集内存 (字节)
+#[cfg(target_os = "windows")]
+fn get_process_memory(pid: u32) -> Option<u64> {
+    use std::mem;
+    use windows_sys::Win32::System::ProcessStatus::{GetProcessMemoryInfo, PROCESS_MEMORY_COUNTERS};
+
+    unsafe {
+        let handle = windows_sys::Win32::System::Threading::OpenProcess(
+            windows_sys::Win32::System::Threading::PROCESS_QUERY_INFORMATION
+                | windows_sys::Win32::System::Threading::PROCESS_VM_READ,
+            0,
+            pid,
+        );
+        if handle.is_null() {
+            return None;
+        }
+        let mut pmc: PROCESS_MEMORY_COUNTERS = mem::zeroed();
+        pmc.cb = mem::size_of::<PROCESS_MEMORY_COUNTERS>() as u32;
+        let ok = GetProcessMemoryInfo(handle, &mut pmc, pmc.cb);
+        windows_sys::Win32::Foundation::CloseHandle(handle);
+        if ok == 0 {
+            return None;
+        }
+        Some(pmc.WorkingSetSize as u64)
+    }
+}
+
+/// 格式化内存大小
+fn format_memory(bytes: u64) -> String {
+    if bytes >= 1024 * 1024 {
+        format!("{:.1}MB", bytes as f64 / 1024.0 / 1024.0)
+    } else {
+        format!("{:.0}KB", bytes as f64 / 1024.0)
+    }
+}
+
+/// 获取 GUI 进程自身内存
+pub fn get_gui_memory() -> String {
+    let pid = std::process::id();
+    match get_process_memory(pid) {
+        Some(bytes) => format_memory(bytes),
+        None => "--".to_string(),
+    }
+}
+
+/// 获取 backend 子进程内存
+pub fn get_backend_memory() -> String {
+    let process = get_process().lock().unwrap();
+    if let Some(child) = &process.child {
+        let pid = child.id();
+        match get_process_memory(pid) {
+            Some(bytes) => format_memory(bytes),
+            None => "--".to_string(),
+        }
+    } else {
+        "--".to_string()
+    }
+}
+
 /// 全局 backend 进程
 static BACKEND_PROCESS: OnceLock<Mutex<BackendProcess>> = OnceLock::new();
 
