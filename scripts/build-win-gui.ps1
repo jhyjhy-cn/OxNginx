@@ -19,8 +19,12 @@ Write-Host ""
 
 # ============ 检查 tauri-cli ============
 function Test-TauriCli {
-    $result = cargo tauri --version 2>&1
-    return $LASTEXITCODE -eq 0
+    try {
+        $null = cargo tauri --version 2>&1
+        return $LASTEXITCODE -eq 0
+    } catch {
+        return $false
+    }
 }
 
 if (-not (Test-TauriCli)) {
@@ -41,19 +45,25 @@ if ($LASTEXITCODE -ne 0) { Write-Err "backend 打包失败" }
 # ============ 步骤2: 构建 GUI ============
 Write-Info "步骤2/3: 构建 GUI..."
 
-# 先复制 backend 文件到 backend-gui/bundle 目录
-$BackendOutDir = Join-Path $BuildDir "ox-nginx_$Version"
+# 先解压 backend zip 到 backend-gui/bundle 目录
+$BackendZip = Join-Path $BuildDir "ox-nginx_$Version.zip"
 $BundleDir = Join-Path $GuiDir "bundle"
 
 if (Test-Path $BundleDir) {
     Remove-Item -Recurse -Force $BundleDir
 }
-New-Item -ItemType Directory -Force -Path $BundleDir | Out-Null
 
-# 复制 backend 输出到 bundle 目录
-if (Test-Path $BackendOutDir) {
-    Copy-Item -Recurse -Force "$BackendOutDir\*" $BundleDir
-    Write-Info "已复制 backend 文件到 bundle目录"
+if (Test-Path $BackendZip) {
+    Expand-Archive -Path $BackendZip -DestinationPath $BundleDir -Force
+    # zip 里有一层 ox-nginx_xxx 目录，把内容提到 bundle 根
+    $InnerDir = Get-ChildItem -Path $BundleDir -Directory | Select-Object -First 1
+    if ($InnerDir) {
+        Move-Item -Force "$($InnerDir.FullName)\*" $BundleDir
+        Remove-Item -Recurse -Force $InnerDir.FullName
+    }
+    Write-Info "已解压 backend 到 bundle 目录"
+} else {
+    Write-Err "未找到 $BackendZip，请先运行 build-win.ps1"
 }
 
 Push-Location $GuiDir
@@ -68,34 +78,17 @@ Pop-Location
 Write-Info "步骤3/3: 整合安装包..."
 
 $GuiNsisExe = Get-ChildItem -Path "$GuiDir\target\release\bundle\nsis\*setup*.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
-
-# 复制 NSIS 安装包到 build目录，重命名为标准名称
 if ($GuiNsisExe) {
     $SetupExe = Join-Path $BuildDir "ox-nginx-gui_$Version`_setup.exe"
     Copy-Item -Force $GuiNsisExe.FullName $SetupExe
     Write-Info "已生成安装包: ox-nginx-gui_$Version`_setup.exe"
 } else {
-    Write-Warn "未找到 NSIS 安装包"
+    Write-Err "未找到 NSIS 安装包"
 }
 
-# 创建整合目录
-$FinalDir = Join-Path $BuildDir "ox-nginx-gui_$Version"
-if (Test-Path $FinalDir) {
-    Remove-Item -Recurse -Force $FinalDir -ErrorAction SilentlyContinue
-}
-New-Item -ItemType Directory -Force -Path $FinalDir | Out-Null
-
-# 复制 GUI exe
-$GuiExe = Join-Path $GuiDir "target\release\ox-nginx-gui.exe"
-if (Test-Path $GuiExe) {
-    Copy-Item -Force $GuiExe $FinalDir
-}
-
-# 复制 backend 输出目录内容
-if (Test-Path $BackendOutDir) {
-    Copy-Item -Recurse -Force "$BackendOutDir\*" $FinalDir
-    Write-Info "已复制 backend 文件到整合目录"
-}
+# 清理中间产物
+Remove-Item -Recurse -Force $BundleDir -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $BuildDir "ox-nginx_$Version.zip") -ErrorAction SilentlyContinue
 
 # ============ 检查输出 ============
 $SetupExe = Join-Path $BuildDir "ox-nginx-gui_$Version`_setup.exe"
@@ -107,14 +100,6 @@ if (Test-Path $SetupExe) {
     Write-Host "==========================================" -ForegroundColor Green
     Write-Host ""
     Write-Host "  安装包: build\ox-nginx-gui_$Version`_setup.exe  ${Size}MB" -ForegroundColor Cyan
-    Write-Host ""
-} elseif (Test-Path $FinalDir) {
-    Write-Host ""
-    Write-Host "==========================================" -ForegroundColor Green
-    Write-Host "  GUI 构建完成（无安装包）" -ForegroundColor Green
-    Write-Host "==========================================" -ForegroundColor Green
-    Write-Host ""
-    Write-Host "  输出目录: build\ox-nginx-gui_$Version" -ForegroundColor Cyan
     Write-Host ""
 } else {
     Write-Err "打包失败"

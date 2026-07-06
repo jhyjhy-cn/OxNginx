@@ -96,26 +96,20 @@ if (Test-Path "$LibsDir\nginx\windows\nginx-1.30.3.zip") {
     Write-Info "已复制 nginx -> server/panel/libs/nginx/"
 }
 
-# ============ 检查输出 ============
-if (Test-Path "$PanelDir\ox-nginx.exe") {
-    $Size = [math]::Round((Get-Item "$PanelDir\ox-nginx.exe").Length / 1MB, 2)
-    Write-Host ""
-    Write-Host "==========================================" -ForegroundColor Green
-    Write-Host "  构建完成！" -ForegroundColor Green
-    Write-Host "==========================================" -ForegroundColor Green
-    Write-Host ""
-    Write-Host "  输出目录: build\ox-nginx_$Version" -ForegroundColor Cyan
-    Write-Host ""
-    Write-Host "  目录结构:" -ForegroundColor Cyan
-    Write-Host "    ox-nginx_$Version/" -ForegroundColor White
-    Write-Host "    ├── backup/" -ForegroundColor White
-    Write-Host "    ├── server/" -ForegroundColor White
-    Write-Host "    │   ├── nginx/    (nginx)" -ForegroundColor White
-    Write-Host "    │   └── panel/    (ox-nginx.exe, static, libs)" -ForegroundColor White
-    Write-Host "    ├── ssl/" -ForegroundColor White
-    Write-Host "    ├── wwwlogs/" -ForegroundColor White
-    Write-Host "    └── wwwroot/" -ForegroundColor White
-    Write-Host ""
-} else {
-    Write-Err "构建失败"
-}
+# ============ 打包 zip ============
+Write-Info "正在打包 zip..."
+$ZipPath = Join-Path $RootDir "build\ox-nginx_$Version.zip"
+if (Test-Path $ZipPath) { Remove-Item -Force $ZipPath }
+Compress-Archive -Path $OutDir -DestinationPath $ZipPath -Force
+
+# 清理临时目录
+Remove-Item -Recurse -Force $OutDir
+
+$Size = [math]::Round((Get-Item $ZipPath).Length / 1MB, 2)
+Write-Host ""
+Write-Host "==========================================" -ForegroundColor Green
+Write-Host "  构建完成！" -ForegroundColor Green
+Write-Host "==========================================" -ForegroundColor Green
+Write-Host ""
+Write-Host "  输出: build\ox-nginx_$Version.zip  ${Size}MB" -ForegroundColor Cyan
+Write-Host ""
