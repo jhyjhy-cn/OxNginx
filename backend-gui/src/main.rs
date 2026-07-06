@@ -56,6 +56,7 @@ fn main() {
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![get_backend_status, start_backend, stop_backend, open_url])
         .setup(move |app| {
             // 创建系统托盘

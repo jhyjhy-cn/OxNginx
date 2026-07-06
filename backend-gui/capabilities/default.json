@@ -9,6 +9,10 @@
     "autostart:allow-disable",
     "autostart:allow-is-enabled",
     "updater:allow-check",
-    "updater:allow-install"
+    "updater:allow-download",
+    "updater:allow-install",
+    "updater:allow-download-and-install",
+    "process:allow-restart",
+    "process:allow-exit"
   ]
 }

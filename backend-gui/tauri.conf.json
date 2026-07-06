@@ -15,9 +15,9 @@
       {
         "title": "OxNginx",
         "width": 550,
-        "height": 550,
+        "height": 600,
         "minWidth": 550,
-        "minHeight": 550,
+        "minHeight": 600,
         "center": true,
         "decorations": true,
         "resizable": false,
@@ -59,3 +59,8 @@
     }
   }
 }
+
+
+
+
+

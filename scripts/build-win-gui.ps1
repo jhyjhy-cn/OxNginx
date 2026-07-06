@@ -122,19 +122,22 @@ if ($Sign) {
     $ZipFileName = if ($NsisZip) { $NsisZip.Name } else { "ox-nginx-gui_${Version}_x64-setup.nsis.zip" }
     $DownloadUrl = "https://github.com/jhyjhy-cn/OxNginx/releases/download/v$Version/$ZipFileName"
 
-    # 生成 latest.json
-    $LatestJson = @{
-        version  = $Version
-        notes    = "OxNginx v$Version"
-        pub_date = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
-        platforms = @{
-            "windows-x86_64" = @{
-                signature = $SigContent
-                url       = $DownloadUrl
-            }
-        }
-    } | ConvertTo-Json -Depth 4
-    $LatestJson | Set-Content -Path (Join-Path $BuildDir "latest.json") -Encoding UTF8
+    # 生成 latest.json（手写 JSON 保持格式整洁）
+    $LatestJson = @"
+{
+  "version": "$Version",
+  "notes": "OxNginx v$Version",
+  "pub_date": "$(Get-Date -Format 'yyyy-MM-ddTHH:mm:ssZ')",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "$SigContent",
+      "url": "$DownloadUrl"
+    }
+  }
+}
+"@
+    $Utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllText((Join-Path $BuildDir "latest.json"), $LatestJson, $Utf8NoBom)
     Write-Info "已生成签名产物和 latest.json"
 }
 
