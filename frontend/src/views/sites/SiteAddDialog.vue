@@ -8,7 +8,7 @@
         <el-input
           v-model="form.server_name"
           type="textarea"
-          :autosize="{ minRows: 3, maxRows: 8 }"
+          :autosize="{ minRows: 6, maxRows: 8 }"
           :placeholder="domainPlaceholder"
           @input="onDomainsInput"
         />

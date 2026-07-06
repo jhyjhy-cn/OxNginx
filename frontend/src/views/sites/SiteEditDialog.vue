@@ -14,7 +14,7 @@
               <el-input
                 v-model="domainInput"
                 type="textarea"
-                :autosize="{ minRows: 2, maxRows: 6 }"
+                :autosize="{ minRows: 6, maxRows: 8 }"
                 :placeholder="domainPlaceholder"
                 style="flex: 1"
               />
