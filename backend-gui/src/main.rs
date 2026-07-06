@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod logging;
 mod process;
 mod tray;
 
@@ -37,13 +38,7 @@ fn stop_backend() {
 
 fn main() {
     // 初始化日志
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::from_default_env()
-                .add_directive(tracing::Level::INFO.into()),
-        )
-        .init();
-
+    logging::init();
     tracing::info!("OxNginx GUI 启动中...");
 
     // backend 进程状态
