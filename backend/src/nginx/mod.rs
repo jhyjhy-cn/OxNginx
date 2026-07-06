@@ -2,14 +2,29 @@ use crate::dto::{CreateUpstreamRequest, NginxTestResult};
 use crate::model::{Site, Upstream, UpstreamServer, ReverseProxy};
 use serde::Deserialize;
 
-/// 重定向规则
+/// 重定向规则（新版）
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct RedirectRule {
-    domain: String,
-    target: String,
     #[serde(default)]
-    redirect_type: u16, // 301 or 302
+    enabled: bool,
+    #[serde(default)]
+    keep_params: bool,
+    #[serde(default = "default_redirect_type")]
+    redirect_type: String,  // "type" 或 "path"
+    #[serde(default = "default_redirect_method")]
+    redirect_method: u16,   // 301 或 302
+    #[serde(default)]
+    domains: Vec<String>,
+    #[serde(default)]
+    target_url: String,
+    #[serde(default = "default_status")]
+    status: String,         // "enabled" 或 "disabled"
 }
+
+fn default_redirect_type() -> String { "type".to_string() }
+fn default_redirect_method() -> u16 { 301 }
+fn default_status() -> String { "enabled".to_string() }
 
 /// 防盗链配置
 #[derive(Debug, Deserialize)]
@@ -76,12 +91,48 @@ fn append_common_directives(config: &mut String, site: &Site, indent: &str) {
 
     // 重定向规则（作为额外 location 块）
     if let Some(ref json) = site.redirect_rules {
+        // 尝试解析新版格式
         if let Ok(rules) = serde_json::from_str::<Vec<RedirectRule>>(json) {
             for rule in &rules {
-                let code = if rule.redirect_type == 302 { 302 } else { 301 };
-                config.push_str(&format!("\n{}location {} {{\n", indent, rule.domain));
-                config.push_str(&format!("{}    return {} {};\n", indent, code, rule.target));
-                config.push_str(&format!("{}}}\n", indent));
+                if rule.status != "enabled" || rule.target_url.is_empty() {
+                    continue;
+                }
+                let code = rule.redirect_method;
+                let target = if rule.keep_params {
+                    format!("{}$args", rule.target_url)
+                } else {
+                    rule.target_url.clone()
+                };
+                for domain in &rule.domains {
+                    if rule.redirect_type == "path" {
+                        // 路径类型：domain 是源路径
+                        config.push_str(&format!("\n{}location {} {{\n", indent, domain));
+                    } else {
+                        // 域名类型：domain 是域名，用 if 判断 $host
+                        // 去掉端口，因为 $host 不包含端口
+                        let host = domain.split(':').next().unwrap_or(domain);
+                        config.push_str(&format!("\n{}if ($host = {}) {{\n", indent, host));
+                    }
+                    config.push_str(&format!("{}    return {} {};\n", indent, code, target));
+                    config.push_str(&format!("{}}}\n", indent));
+                }
+            }
+        } else {
+            // 兼容旧格式
+            #[derive(Debug, Deserialize)]
+            struct LegacyRedirectRule {
+                domain: String,
+                target: String,
+                #[serde(default)]
+                redirect_type: u16,
+            }
+            if let Ok(rules) = serde_json::from_str::<Vec<LegacyRedirectRule>>(json) {
+                for rule in &rules {
+                    let code = if rule.redirect_type == 302 { 302 } else { 301 };
+                    config.push_str(&format!("\n{}location {} {{\n", indent, rule.domain));
+                    config.push_str(&format!("{}    return {} {};\n", indent, code, rule.target));
+                    config.push_str(&format!("{}}}\n", indent));
+                }
             }
         }
     }
