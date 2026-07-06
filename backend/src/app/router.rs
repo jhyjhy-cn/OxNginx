@@ -104,8 +104,16 @@ pub fn build(state: AppState) -> Router {
         .layer(from_fn_with_state(state.clone(), middleware::auth_middleware));
 
     // 静态文件服务（前端 SPA）
-    let static_service = ServeDir::new("static")
-        .not_found_service(ServeFile::new("static/index.html"));
+    // 使用 exe 所在目录下的 static 目录
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+        .unwrap_or_else(|| std::path::PathBuf::from("."));
+    let static_dir = exe_dir.join("static");
+    tracing::info!("静态文件目录: {}", static_dir.display());
+
+    let static_service = ServeDir::new(&static_dir)
+        .not_found_service(ServeFile::new(static_dir.join("index.html")));
 
     public_routes
         .merge(protected_routes)
