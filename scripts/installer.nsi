@@ -626,6 +626,7 @@ Section Uninstall
   ; 清理可能残留的父目录
   RMDir /r "$INSTDIR\libs"
   RMDir /r "$INSTDIR\static"
+  RMDir /r "$INSTDIR\assets"
   RMDir "$INSTDIR"
 
   ; Remove start menu shortcut

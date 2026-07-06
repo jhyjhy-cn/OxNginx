@@ -1,3 +1,6 @@
+// Windows: 隐藏控制台（仅在release版本生效）
+#![cfg_attr(all(target_os = "windows", not(debug_assertions)), windows_subsystem = "windows")]
+
 mod api;
 mod app;
 mod auth;
@@ -5,6 +8,7 @@ mod backup;
 mod config;
 mod database;
 mod dto;
+mod gui;
 mod middleware;
 mod model;
 mod nginx;
@@ -40,11 +44,26 @@ const BANNER: &str = r#"
 //      ========`-.____`-.___\_____/___.-`____.-'========         //
 //                           `=---='                              //
 //      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^        //
-//             佛祖保佑       永不宕机      永无BUG                   //
+//             佛祖保佑       永不宕机      永无BUG                 //
 ////////////////////////////////////////////////////////////////////
 "#;
 
 fn main() -> anyhow::Result<()> {
+    // 解析命令行参数
+    let args: Vec<String> = std::env::args().collect();
+    let headless = args.contains(&"--headless".to_string()) || args.contains(&"-h".to_string());
+    let show_console = args.contains(&"--console".to_string()) || args.contains(&"-c".to_string());
+    let gui = !headless;
+
+    // 如果指定了 --console，附加到父进程控制台（Windows）
+    #[cfg(target_os = "windows")]
+    if show_console {
+        unsafe {
+            use winapi::um::consoleapi::AllocConsole;
+            AllocConsole();
+        }
+    }
+
     println!("{}", BANNER);
 
     // 首次运行自动初始化（cargo-packager 安装后）
@@ -52,11 +71,6 @@ fn main() -> anyhow::Result<()> {
         .parent().map(|p| p.to_path_buf())
         .unwrap_or_else(|| std::path::PathBuf::from("."));
     startup::setup::first_run_setup(&exe_dir)?;
-
-    // 单线程 runtime，大幅降低内存占用（<10MB vs multi-thread 28MB+）
-    let rt = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?;
 
     // 先加载配置（首次运行若无配置则自动生成默认配置）
     let config_path = std::env::var("CONFIG_PATH")
@@ -72,24 +86,36 @@ fn main() -> anyhow::Result<()> {
     startup::logging::init(&log_dir, &config.log.level, config.log.max_size_mb);
     tracing::info!("配置加载完成");
 
-    rt.block_on(async {
-        // 初始化数据库
-        let db = Database::new(&config.database.path).await?;
-        tracing::info!("数据库初始化完成");
+    if gui {
+        // GUI模式：在后台线程启动服务，主线程运行GUI
+        tracing::info!("启动GUI模式");
+        gui::run_gui(config)?;
+    } else {
+        // 无头模式：直接运行服务（当前行为）
+        tracing::info!("启动无头模式 (使用 --headless 参数)");
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
 
-        // 创建应用状态 & 构建路由
-        let state = AppState::new(db, config.clone());
-        let app = app::router::build(state);
+        rt.block_on(async {
+            // 初始化数据库
+            let db = Database::new(&config.database.path).await?;
+            tracing::info!("数据库初始化完成");
 
-        // 启动服务
-        let addr = format!("{}:{}", config.server.host, config.server.port);
-        let listener = tokio::net::TcpListener::bind(&addr).await?;
-        tracing::info!("OxNginx 启动于 http://{}", addr);
+            // 创建应用状态 & 构建路由
+            let state = AppState::new(db, config.clone());
+            let app = app::router::build(state);
 
-        axum::serve(listener, app).await?;
+            // 启动服务
+            let addr = format!("{}:{}", config.server.host, config.server.port);
+            let listener = tokio::net::TcpListener::bind(&addr).await?;
+            tracing::info!("OxNginx 启动于 http://{}", addr);
 
-        Ok::<(), anyhow::Error>(())
-    })?;
+            axum::serve(listener, app).await?;
+
+            Ok::<(), anyhow::Error>(())
+        })?;
+    }
 
     Ok(())
 }

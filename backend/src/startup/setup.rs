@@ -152,20 +152,31 @@ max_size_mb = 10
             println!("  [3/3] 注册服务...");
             let svc_name = "OxNginx";
             let exe_path = exe_dir.join("ox-nginx.exe");
-            let _ = std::process::Command::new(&nssm).args(["stop", svc_name]).output();
-            let _ = std::process::Command::new(&nssm).args(["remove", svc_name, "confirm"]).output();
-            let _ = std::process::Command::new(&nssm).args(["install", svc_name, exe_path.to_str().unwrap_or("")]).output();
-            let _ = std::process::Command::new(&nssm).args(["set", svc_name, "AppDirectory", exe_dir.to_str().unwrap_or("")]).output();
-            let _ = std::process::Command::new(&nssm).args(["set", svc_name, "DisplayName", "OxNginx"]).output();
-            let _ = std::process::Command::new(&nssm).args(["set", svc_name, "Start", "SERVICE_AUTO_START"]).output();
+
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+            let run_nssm = |args: &[&str]| {
+                let _ = std::process::Command::new(&nssm)
+                    .args(args)
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .output();
+            };
+
+            run_nssm(&["stop", svc_name]);
+            run_nssm(&["remove", svc_name, "confirm"]);
+            run_nssm(&["install", svc_name, exe_path.to_str().unwrap_or("")]);
+            run_nssm(&["set", svc_name, "AppDirectory", exe_dir.to_str().unwrap_or("")]);
+            run_nssm(&["set", svc_name, "DisplayName", "OxNginx"]);
+            run_nssm(&["set", svc_name, "Start", "SERVICE_AUTO_START"]);
             let env = format!("CONFIG_PATH={}", config_path);
-            let _ = std::process::Command::new(&nssm).args(["set", svc_name, "AppEnvironmentExtra", &env, "RUST_LOG=info"]).output();
+            run_nssm(&["set", svc_name, "AppEnvironmentExtra", &env, "RUST_LOG=info"]);
             let log = base_root.join("wwwlogs").join("panel").join("nssm.log").to_string_lossy().to_string();
-            let _ = std::process::Command::new(&nssm).args(["set", svc_name, "AppStdout", &log]).output();
-            let _ = std::process::Command::new(&nssm).args(["set", svc_name, "AppStderr", &log]).output();
-            let _ = std::process::Command::new(&nssm).args(["set", svc_name, "AppRotateFiles", "1"]).output();
-            let _ = std::process::Command::new(&nssm).args(["set", svc_name, "AppRotateBytes", "10485760"]).output();
-            let _ = std::process::Command::new(&nssm).args(["start", svc_name]).output();
+            run_nssm(&["set", svc_name, "AppStdout", &log]);
+            run_nssm(&["set", svc_name, "AppStderr", &log]);
+            run_nssm(&["set", svc_name, "AppRotateFiles", "1"]);
+            run_nssm(&["set", svc_name, "AppRotateBytes", "10485760"]);
+            run_nssm(&["start", svc_name]);
             println!("  [3/3] 服务已注册并启动");
         }
     }

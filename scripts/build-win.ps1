@@ -24,7 +24,9 @@ if ($LASTEXITCODE -ne 0) { Write-Err "前端构建失败" }
 
 # ============ 检查 cargo-packager ============
 function Test-CargoPackager {
-    cargo --list 2>&1 | Select-String -Pattern "^\\s*packager\\s*$" -Quiet
+    # 方法1: 检查cargo packager命令是否可用
+    $result = cargo packager --version 2>&1
+    return $LASTEXITCODE -eq 0
 }
 
 if (-not (Test-CargoPackager)) {
