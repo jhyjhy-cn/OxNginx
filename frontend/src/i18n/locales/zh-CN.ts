@@ -490,6 +490,9 @@ export default {
     cmdNamePh: '例如: 查看端口',
     cmdContent: '命令',
     cmdContentPh: '例如: netstat -tlnp',
+    ctxCopy: '复制',
+    ctxPaste: '粘贴',
+    ctxSelectAll: '全选',
   },
 
   // 标签页

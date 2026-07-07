@@ -1,7 +1,7 @@
 <template>
   <div class="terminal-page">
     <!-- 终端区域 -->
-    <div class="terminal-main">
+    <div class="terminal-main" @contextmenu.prevent="onContextMenu">
       <div ref="terminalRef" class="terminal-container" />
       <div class="terminal-float">
         <el-select v-model="currentShell" size="small" @change="reconnect" style="width: 140px">
@@ -10,6 +10,15 @@
         </el-select>
       </div>
     </div>
+
+    <!-- 右键菜单 -->
+    <Teleport to="body">
+      <div v-if="ctxMenu.show" class="term-ctx-menu" :style="{ left: ctxMenu.x + 'px', top: ctxMenu.y + 'px' }">
+        <div v-if="ctxMenu.hasSelection" class="term-ctx-item" @click="ctxCopy">{{ t('terminal.ctxCopy') }}</div>
+        <div class="term-ctx-item" @click="ctxPaste">{{ t('terminal.ctxPaste') }}</div>
+        <div class="term-ctx-item" @click="ctxSelectAll">{{ t('terminal.ctxSelectAll') }}</div>
+      </div>
+    </Teleport>
 
     <!-- 常用命令侧栏 -->
     <div class="cmd-sidebar">
@@ -62,6 +71,35 @@ const { t } = useI18n()
 const authStore = useAuthStore()
 const terminalRef = ref<HTMLElement>()
 const currentShell = ref('powershell')
+
+// 右键菜单
+const ctxMenu = ref({ show: false, x: 0, y: 0, hasSelection: false })
+
+function onContextMenu(e: MouseEvent) {
+  const hasSelection = !!terminal?.hasSelection()
+  ctxMenu.value = { show: true, x: e.clientX, y: e.clientY, hasSelection }
+  const close = () => { ctxMenu.value.show = false; document.removeEventListener('click', close) }
+  setTimeout(() => document.addEventListener('click', close), 0)
+}
+
+function ctxCopy() {
+  if (terminal?.hasSelection()) {
+    navigator.clipboard.writeText(terminal.getSelection()!)
+  }
+}
+
+async function ctxPaste() {
+  const text = await navigator.clipboard.readText()
+  if (text && ws?.readyState === WebSocket.OPEN) {
+    ws.send(text)
+  }
+  terminal?.focus()
+}
+
+function ctxSelectAll() {
+  terminal?.selectAll()
+  terminal?.focus()
+}
 
 // 常用命令
 interface CmdItem { name: string; cmd: string }
@@ -281,5 +319,28 @@ onBeforeUnmount(() => {
 
 .cmd-item:hover .cmd-del {
   opacity: 1;
+}
+
+/* 右键菜单 */
+.term-ctx-menu {
+  position: fixed;
+  z-index: 9999;
+  min-width: 120px;
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 4px;
+  padding: 4px 0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+.term-ctx-item {
+  padding: 6px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--el-text-color-primary);
+}
+
+.term-ctx-item:hover {
+  background: var(--el-fill-color-light);
 }
 </style>

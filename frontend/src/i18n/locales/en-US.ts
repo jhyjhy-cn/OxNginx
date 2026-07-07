@@ -471,6 +471,9 @@ export default {
     cmdNamePh: 'e.g. Check ports',
     cmdContent: 'Command',
     cmdContentPh: 'e.g. netstat -tlnp',
+    ctxCopy: 'Copy',
+    ctxPaste: 'Paste',
+    ctxSelectAll: 'Select All',
   },
 
   tabs: {
