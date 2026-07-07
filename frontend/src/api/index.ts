@@ -34,6 +34,8 @@ api.interceptors.response.use(
       const authStore = useAuthStore()
       authStore.logout()
       router.push('/login')
+    } else if (error.response?.status === 403) {
+      router.push('/403')
     }
     return Promise.reject(error)
   }

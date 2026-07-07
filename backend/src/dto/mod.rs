@@ -66,6 +66,9 @@ pub struct LoginRequest {
 pub struct LoginResponse {
     pub token: String,
     pub username: String,
+    pub roles: Vec<String>,
+    pub permissions: Vec<String>,
+    pub menus: Vec<MenuNode>,
 }
 
 /// 修改密码请求
@@ -269,5 +272,112 @@ pub struct UpdateTemplateRequest {
     pub description: Option<String>,
     pub config: Option<String>,
     pub variables: Option<String>,
+}
+
+// ============== RBAC DTOs ==============
+
+/// 菜单节点（含 children）
+#[derive(Debug, Serialize, Clone)]
+pub struct MenuNode {
+    pub id: i64,
+    pub parent_id: Option<i64>,
+    pub name: String,
+    pub title: String,
+    pub icon: Option<String>,
+    pub path: Option<String>,
+    pub component: Option<String>,
+    #[serde(rename = "type")]
+    pub menu_type: String,
+    pub permission: Option<String>,
+    pub sort: i32,
+    pub children: Vec<MenuNode>,
+}
+
+/// 当前用户 RBAC 信息（/api/rbac/me）
+#[derive(Debug, Serialize)]
+pub struct RbacInfo {
+    pub roles: Vec<String>,
+    pub permissions: Vec<String>,
+    pub menus: Vec<MenuNode>,
+}
+
+/// 创建/更新用户请求
+#[derive(Debug, Deserialize)]
+pub struct UpsertUserRequest {
+    pub username: String,
+    pub password: Option<String>,
+    pub dept_id: Option<i64>,
+    pub post_id: Option<i64>,
+    pub role_ids: Option<Vec<i64>>,
+    pub disabled: Option<i32>,
+}
+
+/// 重置密码请求
+#[derive(Debug, Deserialize)]
+pub struct ResetPasswordRequest {
+    pub new_password: String,
+}
+
+/// 创建/更新角色
+#[derive(Debug, Deserialize)]
+pub struct UpsertRoleRequest {
+    pub code: String,
+    pub name: String,
+    pub remark: Option<String>,
+    pub status: Option<String>,
+    pub menu_ids: Option<Vec<i64>>,
+}
+
+/// 创建/更新部门
+#[derive(Debug, Deserialize)]
+pub struct UpsertDeptRequest {
+    pub name: String,
+    pub parent_id: Option<i64>,
+    pub sort: Option<i32>,
+}
+
+/// 创建/更新岗位
+#[derive(Debug, Deserialize)]
+pub struct UpsertPostRequest {
+    pub code: String,
+    pub name: String,
+    pub sort: Option<i32>,
+}
+
+/// 创建/更新菜单
+#[derive(Debug, Deserialize)]
+pub struct UpsertMenuRequest {
+    pub name: String,
+    pub title: String,
+    pub parent_id: Option<i64>,
+    pub icon: Option<String>,
+    pub path: Option<String>,
+    pub component: Option<String>,
+    #[serde(rename = "type")]
+    pub menu_type: String,
+    pub permission: Option<String>,
+    pub sort: Option<i32>,
+}
+
+/// 角色绑定菜单
+#[derive(Debug, Deserialize)]
+pub struct SetRoleMenusRequest {
+    pub menu_ids: Vec<i64>,
+}
+
+// ============== 国际化 DTOs ==============
+
+/// i18n 翻译条目（响应用）
+#[derive(Debug, Serialize, Deserialize)]
+pub struct I18nKv {
+    pub key: String,
+    pub value: String,
+}
+
+/// 批量 upsert i18n 请求
+#[derive(Debug, Deserialize)]
+pub struct UpsertI18nRequest {
+    pub locale: String,
+    pub entries: Vec<I18nKv>,
 }
 

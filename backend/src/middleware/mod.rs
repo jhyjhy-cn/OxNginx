@@ -54,3 +54,21 @@ pub async fn auth_middleware(
         Err(_) => Err(StatusCode::UNAUTHORIZED),
     }
 }
+
+/// ponytail: username=='admin' 短路；非 admin 查 DB 验证 super_admin 角色
+/// 需挂在本中间件 *之后*，因为依赖 auth_middleware 注入的 Claims
+pub async fn require_admin(
+    state: axum::extract::State<AppState>,
+    request: Request,
+    next: Next,
+) -> Result<Response, StatusCode> {
+    let claims = request.extensions().get::<auth::Claims>().cloned();
+    let Some(c) = claims else { return Err(StatusCode::UNAUTHORIZED) };
+    if c.sub == "admin" {
+        return Ok(next.run(request).await);
+    }
+    match crate::service::rbac_service::user_is_super_admin(&state.db.pool(), &c.sub).await {
+        Ok(true) => Ok(next.run(request).await),
+        _ => Err(StatusCode::FORBIDDEN),
+    }
+}

@@ -16,11 +16,7 @@
           @click="settingsStore.setLayoutMode(opt.value)"
         >
           <div class="layout-preview" :class="'preview-' + opt.value">
-            <template v-if="opt.value === 'sidebar-double'">
-              <div class="pv-aside"></div>
-              <div class="pv-body"><div class="pv-header"></div><div class="pv-content"></div></div>
-            </template>
-            <template v-else-if="opt.value === 'sidebar-tree'">
+            <template v-if="opt.value === 'sidebar-tree'">
               <div class="pv-aside pv-aside-narrow"></div>
               <div class="pv-body"><div class="pv-header"></div><div class="pv-content"></div></div>
             </template>
@@ -113,7 +109,6 @@ const { t, locale } = useI18n()
 const settingsStore = useSettingsStore()
 
 const layoutOptions: { value: LayoutMode; label: string }[] = [
-  { value: 'sidebar-double', label: 'theme.sidebarDouble' },
   { value: 'sidebar-tree', label: 'theme.sidebarTree' },
   { value: 'top-tree', label: 'theme.topTree' },
 ]

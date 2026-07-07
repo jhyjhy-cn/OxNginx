@@ -50,7 +50,6 @@ import { ElMessage } from 'element-plus'
 import { useSettingsStore } from '@/stores/settings'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/api/index'
-import SidebarDoubleLayout from './SidebarDoubleLayout.vue'
 import SidebarTreeLayout from './SidebarTreeLayout.vue'
 import TopTreeLayout from './TopTreeLayout.vue'
 import ThemeDrawer from './ThemeDrawer.vue'
@@ -61,11 +60,7 @@ const authStore = useAuthStore()
 
 // 根据 layoutMode 动态选择布局组件
 const activeLayout = computed(() => {
-  switch (settingsStore.layoutMode) {
-    case 'sidebar-tree': return SidebarTreeLayout
-    case 'top-tree': return TopTreeLayout
-    default: return SidebarDoubleLayout
-  }
+  return settingsStore.layoutMode === 'top-tree' ? TopTreeLayout : SidebarTreeLayout
 })
 
 // 主题抽屉

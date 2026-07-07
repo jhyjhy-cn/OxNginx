@@ -8,16 +8,20 @@
       </div>
       <div class="menu-scroll">
         <ul class="menu-list">
-          <li
-            v-for="item in flatMenuItems"
-            :key="item.path"
-            class="menu-item"
-            :class="{ active: route.path === item.path || (item.path !== '/dashboard' && item.path !== '/settings' && route.path.startsWith(item.path)) }"
-            @click="router.push(item.path)"
-          >
-            <el-icon :size="18"><component :is="item.icon" /></el-icon>
-            <span v-if="!settingsStore.sidebarCollapsed" class="menu-text">{{ t(item.title) }}</span>
-          </li>
+          <template v-for="item in flatMenus" :key="item.path || item.title">
+            <li v-if="item.isGroup" class="menu-group-header">
+              <span v-if="!settingsStore.sidebarCollapsed">{{ t(item.title) }}</span>
+            </li>
+            <li
+              v-else
+              class="menu-item"
+              :class="{ active: route.path === item.path || (item.path !== '/dashboard' && item.path !== '/settings' && route.path.startsWith(item.path)) }"
+              @click="router.push(item.path)"
+            >
+              <el-icon :size="18"><component :is="item.icon" /></el-icon>
+              <span v-if="!settingsStore.sidebarCollapsed" class="menu-text">{{ t(item.title) }}</span>
+            </li>
+          </template>
         </ul>
       </div>
 
@@ -70,7 +74,8 @@ import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useSettingsStore } from '@/stores/settings'
 import { useSidebarTheme } from '@/composables/useSidebarTheme'
-import { flatMenuItems } from '@/config/menu'
+import { useAuthStore, type MenuNode } from '@/stores/auth'
+import { tabIconMap } from '@/config/menu'
 import TopBarRight from '@/layouts/components/TopBarRight.vue'
 import TabBar from '@/layouts/components/TabBar.vue'
 
@@ -78,7 +83,32 @@ const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
 const settingsStore = useSettingsStore()
+const authStore = useAuthStore()
 const { sidebarBg, menuTextColor, menuActiveTextColor, menuActiveBg, borderColor } = useSidebarTheme()
+
+// ponytail: 后端菜单是树形,前端渲染拍扁;M 类型渲染为分组标题,C 类型渲染为菜单项
+const flatMenus = computed(() => {
+  type FlatItem = { path: string; title: string; icon: string; isGroup: boolean }
+  const out: FlatItem[] = []
+  const walk = (nodes: MenuNode[]) => {
+    for (const n of nodes) {
+      if (n.type === 'M' && n.children?.length) {
+        // M 类型目录：渲染为分组标题,然后展开子项
+        out.push({ path: '', title: n.title, icon: n.icon || '', isGroup: true })
+        walk(n.children)
+      } else if (n.type === 'C' && n.path) {
+        out.push({
+          path: n.path,
+          title: n.title,
+          icon: n.icon || tabIconMap[n.path] || 'Menu',
+          isGroup: false,
+        })
+      }
+    }
+  }
+  walk(authStore.menus)
+  return out
+})
 
 const collapsedWidth = 64
 const expandedWidth = 200
@@ -201,6 +231,31 @@ defineEmits<{
 
 .menu-item.active .menu-text {
   color: v-bind(menuActiveTextColor);
+}
+
+/* M 类型目录分组标题 */
+.menu-group-header {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 20px 0 16px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: v-bind(menuTextColor);
+  opacity: 0.6;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar-collapsed .menu-group-header {
+  height: 8px;
+  padding: 0;
+}
+
+.sidebar-collapsed .menu-group-header span {
+  display: none;
 }
 
 /* 折叠按钮 */

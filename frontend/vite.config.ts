@@ -45,7 +45,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: '../backend/static',
+    outDir: '../backend/target/debug/static',
     emptyOutDir: true,
     target: 'baseline-widely-available',
     chunkSizeWarningLimit: 4000,

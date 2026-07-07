@@ -14,26 +14,26 @@
         router
         :collapse-transition="false"
       >
-        <!-- 仪表盘 -->
-        <el-menu-item :index="flatMenuItems[0].path">
-          <el-icon><component :is="flatMenuItems[0].icon" /></el-icon>
-          <template #title>{{ t(flatMenuItems[0].title) }}</template>
-        </el-menu-item>
-        <!-- 分组菜单 -->
-        <el-sub-menu v-for="group in groupedMenuItems" :key="group.index" :index="group.index">
-          <template #title>
-            <el-icon><component :is="group.icon" /></el-icon>
-            <span>{{ t(group.title) }}</span>
-          </template>
-          <el-menu-item v-for="child in group.children" :key="child.path" :index="child.path">
-            {{ t(child.title) }}
+        <template v-for="node in authStore.menus" :key="node.id">
+          <!-- M 类型:目录,渲染子菜单 -->
+          <el-sub-menu v-if="node.type === 'M' && node.children?.length" :index="node.id.toString()">
+            <template #title>
+              <el-icon v-if="node.icon"><component :is="node.icon" /></el-icon>
+              <span>{{ t(node.title) }}</span>
+            </template>
+            <template v-for="child in node.children" :key="child.id">
+              <el-menu-item v-if="child.type === 'C' && child.path" :index="child.path">
+                <el-icon v-if="child.icon"><component :is="child.icon" /></el-icon>
+                <template #title>{{ t(child.title) }}</template>
+              </el-menu-item>
+            </template>
+          </el-sub-menu>
+          <!-- C 类型:菜单项,直接渲染 -->
+          <el-menu-item v-else-if="node.type === 'C' && node.path" :index="node.path">
+            <el-icon v-if="node.icon"><component :is="node.icon" /></el-icon>
+            <template #title>{{ t(node.title) }}</template>
           </el-menu-item>
-        </el-sub-menu>
-        <!-- 设置 -->
-        <el-menu-item :index="settingsItem.path">
-          <el-icon><component :is="settingsItem.icon" /></el-icon>
-          <template #title>{{ t(settingsItem.title) }}</template>
-        </el-menu-item>
+        </template>
       </el-menu>
 
       <div class="collapse-btn" @click="settingsStore.toggleSidebar()">
@@ -75,13 +75,13 @@ import TopBarRight from './components/TopBarRight.vue'
 import TabBar from './components/TabBar.vue'
 import { useSidebarTheme } from '@/composables/useSidebarTheme'
 import { useSettingsStore } from '@/stores/settings'
-import { flatMenuItems, groupedMenuItems } from '@/config/menu'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const { t } = useI18n()
 const settingsStore = useSettingsStore()
+const authStore = useAuthStore()
 const { sidebarBg, menuTextColor, menuActiveTextColor, menuActiveBg, borderColor } = useSidebarTheme()
-const settingsItem = flatMenuItems[flatMenuItems.length - 1]
 
 defineEmits<{
   openThemeDrawer: []
@@ -96,8 +96,7 @@ defineEmits<{
   overflow: hidden;
 }
 .sidebar {
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
   transition: width .3s;
   display: flex;
   flex-direction: column;
@@ -122,10 +121,6 @@ defineEmits<{
   gap: 0;
 }
 .collapse-btn {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
   height: 40px;
   display: flex;
   align-items: center;
@@ -133,6 +128,7 @@ defineEmits<{
   cursor: pointer;
   border-top: 1px solid hsla(0,0%,100%,.1);
   background: inherit;
+  flex-shrink: 0;
 }
 .collapse-btn:hover {
   background: hsla(0,0%,100%,.05);
@@ -162,6 +158,11 @@ defineEmits<{
 
 :deep(.el-menu) {
   border-right: none;
+  flex: 1;
+  overflow-y: auto;
+}
+:deep(.el-menu::-webkit-scrollbar) {
+  width: 0;
 }
 :deep(.el-menu--collapse .el-sub-menu__title span),
 :deep(.el-menu--collapse .el-sub-menu__title .el-sub-menu__icon-arrow) {

@@ -103,6 +103,31 @@ pub fn build(state: AppState) -> Router {
         .route("/api/files/note", post(api::file_api::save_note))
         .route("/api/files/size", post(api::file_api::calc_size))
         .route("/api/files/download", get(api::file_api::download_file))
+        // RBAC me（任意登录用户可用）
+        .route("/api/rbac/me", get(api::rbac_api::me))
+        .route("/api/rbac/i18n/messages", get(api::rbac_api::get_i18n_messages))
+        .layer(from_fn_with_state(state.clone(), middleware::auth_middleware));
+
+    // 管理员路由（需 super_admin / username=='admin'）
+    let admin_routes = Router::new()
+        .route("/api/rbac/users", get(api::rbac_api::list_users).post(api::rbac_api::create_user))
+        .route("/api/rbac/users/:id", put(api::rbac_api::update_user).delete(api::rbac_api::delete_user))
+        .route("/api/rbac/users/:id/reset-password", post(api::rbac_api::reset_password))
+        .route("/api/rbac/roles", get(api::rbac_api::list_roles).post(api::rbac_api::create_role))
+        .route("/api/rbac/roles/:id", put(api::rbac_api::update_role).delete(api::rbac_api::delete_role))
+        .route("/api/rbac/roles/:id/menus", put(api::rbac_api::set_role_menus))
+        .route("/api/rbac/depts", get(api::rbac_api::list_depts).post(api::rbac_api::create_dept))
+        .route("/api/rbac/depts/:id", put(api::rbac_api::update_dept).delete(api::rbac_api::delete_dept))
+        .route("/api/rbac/posts", get(api::rbac_api::list_posts).post(api::rbac_api::create_post))
+        .route("/api/rbac/posts/:id", put(api::rbac_api::update_post).delete(api::rbac_api::delete_post))
+        .route("/api/rbac/menus", get(api::rbac_api::list_menus).post(api::rbac_api::create_menu))
+        .route("/api/rbac/menus/batch-delete", post(api::rbac_api::batch_delete_menus))
+        .route("/api/rbac/menus/:id", put(api::rbac_api::update_menu).delete(api::rbac_api::delete_menu))
+        // 国际化
+        .route("/api/rbac/i18n/locales", get(api::rbac_api::list_i18n_locales))
+        .route("/api/rbac/i18n", get(api::rbac_api::list_i18n).post(api::rbac_api::upsert_i18n))
+        .route("/api/rbac/i18n/:id", delete(api::rbac_api::delete_i18n))
+        .layer(from_fn_with_state(state.clone(), middleware::require_admin))
         .layer(from_fn_with_state(state.clone(), middleware::auth_middleware));
 
     // 静态文件服务（前端 SPA）
@@ -119,6 +144,7 @@ pub fn build(state: AppState) -> Router {
 
     public_routes
         .merge(protected_routes)
+        .merge(admin_routes)
         .layer(axum::middleware::from_fn(middleware::logging_middleware))
         .layer(CorsLayer::permissive())
         .fallback_service(static_service)

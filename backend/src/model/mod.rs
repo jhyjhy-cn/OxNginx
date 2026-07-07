@@ -7,6 +7,10 @@ pub struct User {
     pub id: i64,
     pub username: String,
     pub password: String,
+    pub dept_id: Option<i64>,
+    pub post_id: Option<i64>,
+    pub disabled: i32,
+    pub status: Option<String>,
     pub created_at: Option<NaiveDateTime>,
     pub updated_at: Option<NaiveDateTime>,
 }
@@ -118,6 +122,75 @@ pub struct ReverseProxy {
     pub target_url: String,
     pub cache: i32,
     pub status: String,
+    pub created_at: Option<NaiveDateTime>,
+    pub updated_at: Option<NaiveDateTime>,
+}
+
+// ============== RBAC 模型 ==============
+
+/// 角色
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct Role {
+    pub id: i64,
+    pub code: String,
+    pub name: String,
+    pub remark: Option<String>,
+    pub status: String,
+    pub created_at: Option<NaiveDateTime>,
+    pub updated_at: Option<NaiveDateTime>,
+}
+
+/// 部门
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct Dept {
+    pub id: i64,
+    pub parent_id: Option<i64>,
+    pub name: String,
+    pub sort: i32,
+    pub status: String,
+    pub created_at: Option<NaiveDateTime>,
+    pub updated_at: Option<NaiveDateTime>,
+}
+
+/// 岗位
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct Post {
+    pub id: i64,
+    pub code: String,
+    pub name: String,
+    pub sort: i32,
+    pub status: String,
+    pub created_at: Option<NaiveDateTime>,
+    pub updated_at: Option<NaiveDateTime>,
+}
+
+/// 菜单/按钮（type: M=目录 C=菜单 F=按钮）
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow, Clone)]
+pub struct Menu {
+    pub id: i64,
+    pub parent_id: Option<i64>,
+    pub name: String,
+    pub title: String,
+    pub icon: Option<String>,
+    pub path: Option<String>,
+    pub component: Option<String>,
+    #[sqlx(rename = "type")]
+    #[serde(rename = "type")]
+    pub menu_type: String,
+    pub permission: Option<String>,
+    pub sort: i32,
+    pub status: String,
+    pub created_at: Option<NaiveDateTime>,
+    pub updated_at: Option<NaiveDateTime>,
+}
+
+/// 国际化翻译条目
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow, Clone)]
+pub struct I18nEntry {
+    pub id: i64,
+    pub locale: String,
+    pub key: String,
+    pub value: String,
     pub created_at: Option<NaiveDateTime>,
     pub updated_at: Option<NaiveDateTime>,
 }

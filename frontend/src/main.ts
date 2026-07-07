@@ -10,7 +10,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 import App from './App.vue'
 import router from './router'
-import i18n from './i18n'
+import i18n, { restoreLocale } from './i18n'
 import { useSettingsStore } from './stores/settings'
 import OnIconPlugin from './components/OnIcon'
 
@@ -33,5 +33,6 @@ app.use(i18n)
 // 从持久化 store 恢复主题设置到 DOM
 const settingsStore = useSettingsStore()
 settingsStore.initTheme()
+restoreLocale()
 
 app.mount('#app')

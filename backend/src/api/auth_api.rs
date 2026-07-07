@@ -43,10 +43,25 @@ pub async fn login(
         &config.auth.jwt_secret,
         config.auth.jwt_expires_hours,
     ) {
-        Ok(token) => Json(json!(ApiResponse::success(LoginResponse {
-            token,
-            username: user.username,
-        }))),
+        Ok(token) => {
+            // ponytail: 登录即拿 RBAC 信息，省一次 /me 请求
+            let (roles, permissions, menus) = match crate::service::rbac_service::get_rbac_info(
+                state.db.pool(),
+                &user.username,
+            )
+            .await
+            {
+                Ok(v) => v,
+                Err(_) => (vec![], vec![], vec![]),
+            };
+            Json(json!(ApiResponse::success(LoginResponse {
+                token,
+                username: user.username,
+                roles,
+                permissions,
+                menus,
+            })))
+        }
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("生成token失败: {}", e)))),
     }
 }
@@ -179,10 +194,24 @@ pub async fn change_username(
                 config.auth.jwt_expires_hours,
             );
             match token {
-                Ok(token) => Json(json!(ApiResponse::success(LoginResponse {
-                    token,
-                    username: req.new_username,
-                }))),
+                Ok(token) => {
+                    let (roles, permissions, menus) = match crate::service::rbac_service::get_rbac_info(
+                        state.db.pool(),
+                        &req.new_username,
+                    )
+                    .await
+                    {
+                        Ok(v) => v,
+                        Err(_) => (vec![], vec![], vec![]),
+                    };
+                    Json(json!(ApiResponse::success(LoginResponse {
+                        token,
+                        username: req.new_username,
+                        roles,
+                        permissions,
+                        menus,
+                    })))
+                }
                 Err(e) => Json(json!(ApiResponse::<()>::error(format!("生成token失败: {}", e)))),
             }
         }
@@ -235,7 +264,11 @@ pub async fn setup(
         .await;
 
     match result {
-        Ok(_) => Json(json!(ApiResponse::success("管理员账户创建成功"))),
+        Ok(_) => {
+            // ponytail: 首用户自动绑 super_admin 角色
+            let _ = crate::database::seed::run(state.db.pool()).await;
+            Json(json!(ApiResponse::success("管理员账户创建成功")))
+        }
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("创建用户失败: {}", e)))),
     }
 }

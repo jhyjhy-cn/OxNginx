@@ -219,6 +219,7 @@ import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
+import { setupDynamicRoutes } from '@/router'
 import { ElMessage } from 'element-plus'
 import { View, Hide, Moon, Sunny } from '@element-plus/icons-vue'
 import { useSettingsStore } from '@/stores/settings'
@@ -380,6 +381,7 @@ async function handleLogin() {
   try {
     await authStore.login(form.username, form.password)
     ElMessage.success(t('login.loginSuccess'))
+    setupDynamicRoutes()
     router.push('/')
   } catch (error: any) {
     ElMessage.error(error.message || t('login.loginFailed'))

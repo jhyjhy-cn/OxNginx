@@ -7,6 +7,7 @@ pub mod dashboard_ws;
 pub mod file_api;
 pub mod log_api;
 pub mod nginx_api;
+pub mod rbac_api;
 pub mod reverse_proxy_api;
 pub mod settings_api;
 pub mod site_api;

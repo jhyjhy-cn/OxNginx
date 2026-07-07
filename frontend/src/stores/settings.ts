@@ -2,13 +2,13 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { toggleDarkWithAnimation } from '@/utils/theme-transition'
 
-export type LayoutMode = 'sidebar-double' | 'sidebar-tree' | 'top-tree'
+export type LayoutMode = 'sidebar-tree' | 'top-tree'
 
 export const useSettingsStore = defineStore('settings', () => {
   const locale = ref<'zh-CN' | 'en-US'>('zh-CN')
   const themeColor = ref('#409EFF')
   const darkMode = ref(false)
-  const layoutMode = ref<LayoutMode>('sidebar-double')
+  const layoutMode = ref<LayoutMode>('sidebar-tree')
   const showTabs = ref(true)
   const showTabIcons = ref(true)
   const sidebarCollapsed = ref(false)

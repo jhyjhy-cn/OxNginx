@@ -30,7 +30,7 @@
           @click="navigateTo(element)"
           @contextmenu.prevent="onContextMenu($event, element, 0)"
         >
-          <el-icon v-if="settingsStore.showTabIcons" :size="12"><component :is="tabIconMap[element.path]" /></el-icon>
+          <el-icon v-if="settingsStore.showTabIcons" :size="12"><component :is="getTabIcon(element.path)" /></el-icon>
           <span class="tab-title">{{ t(element.title) }}</span>
           <el-icon
             class="tab-close"
@@ -88,12 +88,30 @@ import { useI18n } from 'vue-i18n'
 import draggable from 'vuedraggable'
 import { useTabStore, type TabItem } from '@/stores/tabs'
 import { useSettingsStore } from '@/stores/settings'
+import { useAuthStore, type MenuNode } from '@/stores/auth'
 import { tabIconMap } from '@/config/menu'
 
 const router = useRouter()
 const { t } = useI18n()
 const tabStore = useTabStore()
 const settingsStore = useSettingsStore()
+const authStore = useAuthStore()
+
+// ponytail: 静态 tabIconMap 作兜底,动态菜单优先
+function getTabIcon(path: string): string {
+  if (tabIconMap[path]) return tabIconMap[path]
+  const walk = (nodes: MenuNode[]): string => {
+    for (const n of nodes) {
+      if (n.path === path && n.icon) return n.icon
+      if (n.children?.length) {
+        const found = walk(n.children)
+        if (found) return found
+      }
+    }
+    return ''
+  }
+  return walk(authStore.menus) || 'Document'
+}
 
 // ========== 路由监听：自动添加标签页 ==========
 const unwatch = router.afterEach((to) => {

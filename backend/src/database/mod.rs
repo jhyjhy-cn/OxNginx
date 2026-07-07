@@ -1,6 +1,9 @@
 use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 use std::path::Path;
 
+pub mod seed;
+pub mod seed_i18n;
+
 /// 数据库封装
 #[derive(Clone)]
 pub struct Database {
@@ -21,8 +24,9 @@ impl Database {
             .connect(&url)
             .await?;
 
-        let db = Self { pool };
+        let db = Self { pool: pool.clone() };
         db.init_tables().await?;
+        seed::run(&pool).await?;
 
         Ok(db)
     }
@@ -55,6 +59,10 @@ impl Database {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT NOT NULL UNIQUE,
                 password TEXT NOT NULL,
+                dept_id INTEGER,
+                post_id INTEGER,
+                disabled INTEGER NOT NULL DEFAULT 0,
+                status TEXT NOT NULL DEFAULT 'enabled',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
@@ -163,6 +171,77 @@ impl Database {
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (site_id) REFERENCES sys_sites(id) ON DELETE CASCADE
             );
+
+            -- ===== RBAC =====
+            CREATE TABLE IF NOT EXISTS sys_roles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                code TEXT NOT NULL UNIQUE,
+                name TEXT NOT NULL,
+                remark TEXT,
+                status TEXT NOT NULL DEFAULT 'enabled',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS sys_depts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                parent_id INTEGER,
+                name TEXT NOT NULL,
+                sort INTEGER NOT NULL DEFAULT 0,
+                status TEXT NOT NULL DEFAULT 'enabled',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS sys_posts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                code TEXT NOT NULL UNIQUE,
+                name TEXT NOT NULL,
+                sort INTEGER NOT NULL DEFAULT 0,
+                status TEXT NOT NULL DEFAULT 'enabled',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS sys_menus (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                parent_id INTEGER,
+                name TEXT NOT NULL,
+                title TEXT NOT NULL,
+                icon TEXT,
+                path TEXT,
+                component TEXT,
+                type TEXT NOT NULL,
+                permission TEXT,
+                sort INTEGER NOT NULL DEFAULT 0,
+                status TEXT NOT NULL DEFAULT 'enabled',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS sys_user_roles (
+                user_id INTEGER NOT NULL,
+                role_id INTEGER NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_id, role_id)
+            );
+
+            CREATE TABLE IF NOT EXISTS sys_role_menus (
+                role_id INTEGER NOT NULL,
+                menu_id INTEGER NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (role_id, menu_id)
+            );
+
+            CREATE TABLE IF NOT EXISTS sys_i18n (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                locale TEXT NOT NULL,
+                key TEXT NOT NULL,
+                value TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(locale, key)
+            );
             "#,
         )
         .execute(&self.pool)
@@ -188,6 +267,22 @@ impl Database {
             .execute(&self.pool)
             .await;
         let _ = sqlx::query("ALTER TABLE sys_sites ADD COLUMN log_error_path TEXT")
+            .execute(&self.pool)
+            .await;
+
+        // 兼容旧库：sys_users 加 RBAC 列
+        let _ = sqlx::query("ALTER TABLE sys_users ADD COLUMN dept_id INTEGER")
+            .execute(&self.pool)
+            .await;
+        let _ = sqlx::query("ALTER TABLE sys_users ADD COLUMN post_id INTEGER")
+            .execute(&self.pool)
+            .await;
+        let _ = sqlx::query("ALTER TABLE sys_users ADD COLUMN disabled INTEGER NOT NULL DEFAULT 0")
+            .execute(&self.pool)
+            .await;
+
+        // 兼容旧库：sys_menus 加 component 列
+        let _ = sqlx::query("ALTER TABLE sys_menus ADD COLUMN component TEXT")
             .execute(&self.pool)
             .await;
 
