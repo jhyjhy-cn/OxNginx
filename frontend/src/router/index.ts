@@ -91,6 +91,10 @@ router.beforeEach(async (to) => {
       await authStore.fetchRbacInfo()
     }
     setupDynamicRoutes()
+    // ponytail: 刷新时 addRoute 对当前导航不可见, 重试一次
+    if (to.matched.length === 0) {
+      return { path: to.fullPath, query: to.query, hash: to.hash }
+    }
   }
 
   await authStore.fetchI18n()
