@@ -31,3 +31,6 @@ release/
 *.pdb
 build/
 wwwlogs/
+
+# Vibe Coding
+.playwright-mcp/
