@@ -1,27 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore, type MenuNode } from '@/stores/auth'
 
-// 组件路径 → 懒加载
-const componentMap: Record<string, () => Promise<any>> = {
-  Dashboard: () => import('@/views/Dashboard.vue'),
-  'sites/index': () => import('@/views/sites/index.vue'),
-  SSL: () => import('@/views/SSL.vue'),
-  Templates: () => import('@/views/Templates.vue'),
-  Upstreams: () => import('@/views/Upstreams.vue'),
-  Logs: () => import('@/views/Logs.vue'),
-  'files/index': () => import('@/views/files/index.vue'),
-  Terminal: () => import('@/views/Terminal.vue'),
-  Settings: () => import('@/views/Settings.vue'),
-  RbacUsers: () => import('@/views/sys/users/index.vue'),
-  RbacRoles: () => import('@/views/sys/roles/index.vue'),
-  RbacRoleMenus: () => import('@/views/sys/role-menus/index.vue'),
-  RbacMenus: () => import('@/views/sys/menus/index.vue'),
-  RbacDepts: () => import('@/views/sys/depts/index.vue'),
-  RbacPosts: () => import('@/views/sys/posts/index.vue'),
-  RbacI18n: () => import('@/views/sys/i18n/index.vue'),
-  RbacDicts: () => import('@/views/sys/dicts/index.vue'),
-  SiteDetail: () => import('@/views/SiteDetail.vue'),
-}
+// 自动扫描所有 views 下的 .vue 文件, key 格式: ../views/dashboard/index.vue
+const modules = import.meta.glob('../views/**/*.vue')
 
 const router = createRouter({
   history: createWebHistory(),
@@ -29,12 +10,12 @@ const router = createRouter({
     {
       path: '/login',
       name: 'Login',
-      component: () => import('@/views/Login.vue'),
+      component: modules['../views/login/index.vue'],
     },
     {
       path: '/403',
       name: 'Forbidden',
-      component: () => import('@/views/Forbidden.vue'),
+      component: modules['../views/forbidden/index.vue'],
       meta: { title: 'forbidden.title' },
     },
     {
@@ -47,12 +28,16 @@ const router = createRouter({
   ],
 })
 
+function loadComponent(component: string) {
+  return modules[`../views/${component}.vue`]
+}
+
 /** ponytail: 从菜单数组注册动态路由 */
 function addRoutesFromMenus(menus: MenuNode[]) {
   const walk = (nodes: MenuNode[]) => {
     for (const n of nodes) {
       if (n.type === 'C' && n.path && n.component) {
-        const loader = componentMap[n.component]
+        const loader = loadComponent(n.component)
         if (loader) {
           const path = n.path.replace(/^\//, '')
           if (!router.hasRoute(n.name)) {

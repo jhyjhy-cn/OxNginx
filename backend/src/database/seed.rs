@@ -4,18 +4,18 @@ use super::seed_i18n::seed_i18n;
 
 /// 默认菜单种子（权威源）
 /// 字段: (parent_name, name, title_i18n, icon, path, type, permission, component)
-/// component: 前端视图文件名（views/ 下,无后缀）,用于动态路由
+/// component: 前端视图文件路径（相对于 views/, 如 dashboard/index → ../views/dashboard/index.vue）
 const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     // 顶层菜单
-    ("", "仪表盘",   "menu.dashboard", "House",       "/dashboard",  "C", "sys:dashboard:view", "Dashboard"),
+    ("", "仪表盘",   "menu.dashboard", "House",       "/dashboard",  "C", "sys:dashboard:view", "dashboard/index"),
     ("", "站点管理", "menu.sites",     "Connection",  "/sites",      "C", "sys:site:view",      "sites/index"),
-    ("", "SSL证书",  "menu.ssl",       "Lock",        "/ssl",        "C", "sys:ssl:view",       "SSL"),
-    ("", "配置模板", "menu.templates", "Document",    "/templates",  "C", "sys:template:view",  "Templates"),
-    ("", "负载均衡", "menu.upstreams", "Share",       "/upstreams",  "C", "sys:upstream:view",  "Upstreams"),
-    ("", "日志",     "menu.logs",      "DocumentCopy","/logs",       "C", "sys:log:view",       "Logs"),
+    ("", "SSL证书",  "menu.ssl",       "Lock",        "/ssl",        "C", "sys:ssl:view",       "ssl/index"),
+    ("", "配置模板", "menu.templates", "Document",    "/templates",  "C", "sys:template:view",  "templates/index"),
+    ("", "负载均衡", "menu.upstreams", "Share",       "/upstreams",  "C", "sys:upstream:view",  "upstreams/index"),
+    ("", "日志",     "menu.logs",      "DocumentCopy","/logs",       "C", "sys:log:view",       "logs/index"),
     ("", "文件管理", "menu.files",     "Folder",      "/files",      "C", "sys:file:view",      "files/index"),
-    ("", "终端",     "menu.terminal",  "Monitor",     "/terminal",   "C", "sys:terminal:view",  "Terminal"),
-    ("", "设置",     "menu.settings",  "Setting",     "/settings",   "C", "sys:config:view",    "Settings"),
+    ("", "终端",     "menu.terminal",  "Monitor",     "/terminal",   "C", "sys:terminal:view",  "terminal/index"),
+    ("", "设置",     "menu.settings",  "Setting",     "/settings",   "C", "sys:config:view",    "settings/index"),
 
     // 按钮权限（挂在 站点管理 菜单下）
     ("站点管理", "新增站点",   "menu.siteAdd",    "", "", "F", "sys:site:add",    ""),
@@ -32,13 +32,13 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
 
     // RBAC 管理（权限管理一级菜单下）
     ("",         "权限管理",   "menu.rbacManagement", "UserFilled", "",                 "M", "",                ""),
-    ("权限管理", "用户管理",   "menu.rbacUsers",      "UserFilled",           "/settings/rbac/users", "C", "sys:user:manage", "RbacUsers"),
-    ("权限管理", "角色管理",   "menu.rbacRoles",      "UserFilled",           "/settings/rbac/roles", "C", "sys:role:manage", "RbacRoles"),
-    ("权限管理", "菜单管理",   "menu.rbacMenus",      "Menu",           "/settings/rbac/menus", "C", "sys:menu:manage", "RbacMenus"),
-    ("权限管理", "部门管理",   "menu.rbacDepts",      "OfficeBuilding",  "/settings/rbac/depts", "C", "sys:user:manage", "RbacDepts"),
-    ("权限管理", "岗位管理",   "menu.rbacPosts",      "Postcard",        "/settings/rbac/posts", "C", "sys:user:manage", "RbacPosts"),
-    ("权限管理", "国际化管理", "menu.rbacI18n",       "MapLocation",       "/settings/rbac/i18n",  "C", "sys:config:view", "RbacI18n"),
-    ("权限管理", "字典管理",   "menu.rbacDicts",       "Grid",              "/settings/rbac/dicts", "C", "sys:config:view", "RbacDicts"),
+    ("权限管理", "用户管理",   "menu.rbacUsers",      "UserFilled",      "/settings/rbac/users", "C", "sys:user:manage", "sys/users/index"),
+    ("权限管理", "角色管理",   "menu.rbacRoles",      "UserFilled",      "/settings/rbac/roles", "C", "sys:role:manage", "sys/roles/index"),
+    ("权限管理", "菜单管理",   "menu.rbacMenus",      "Menu",            "/settings/rbac/menus", "C", "sys:menu:manage", "sys/menus/index"),
+    ("权限管理", "部门管理",   "menu.rbacDepts",      "OfficeBuilding",  "/settings/rbac/depts", "C", "sys:user:manage", "sys/depts/index"),
+    ("权限管理", "岗位管理",   "menu.rbacPosts",      "Postcard",        "/settings/rbac/posts", "C", "sys:user:manage", "sys/posts/index"),
+    ("权限管理", "国际化管理", "menu.rbacI18n",       "MapLocation",     "/settings/rbac/i18n",  "C", "sys:config:view", "sys/i18n/index"),
+    ("权限管理", "字典管理",   "menu.rbacDicts",      "Grid",            "/settings/rbac/dicts", "C", "sys:config:view", "sys/dicts/index"),
 ];
 
 /// 启动种子：菜单 + super_admin 角色 + admin 用户绑定 + i18n
