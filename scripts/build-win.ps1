@@ -31,6 +31,13 @@ if (Test-Path $OutDir) {
 
 $libsDir = Join-Path $RootDir "libs"
 
+# 检测平台架构
+if ([System.Environment]::Is64BitOperatingSystem) {
+    $Arch = "x64"
+} else {
+    $Arch = "x86"
+}
+
 # ============ 构建前端 ============
 Write-Info "正在构建前端..."
 $feDir = Join-Path $RootDir "frontend"
@@ -98,7 +105,7 @@ if (Test-Path "$LibsDir\nginx\windows\nginx-1.30.3.zip") {
 
 # ============ 打包 zip ============
 Write-Info "正在打包 zip..."
-$ZipPath = Join-Path $RootDir "build\ox-nginx_$Version.zip"
+$ZipPath = Join-Path $RootDir "build\ox-nginx_${Version}_${Arch}.zip"
 if (Test-Path $ZipPath) { Remove-Item -Force $ZipPath }
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 [System.IO.Compression.ZipFile]::CreateFromDirectory($OutDir, $ZipPath)
@@ -112,5 +119,5 @@ Write-Host "==========================================" -ForegroundColor Green
 Write-Host "  构建完成！" -ForegroundColor Green
 Write-Host "==========================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "  输出: build\ox-nginx_$Version.zip  ${Size}MB" -ForegroundColor Cyan
+Write-Host "  输出: build\ox-nginx_${Version}_${Arch}.zip  ${Size}MB" -ForegroundColor Cyan
 Write-Host ""

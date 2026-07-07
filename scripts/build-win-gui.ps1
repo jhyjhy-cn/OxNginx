@@ -14,6 +14,13 @@ $GuiDir = Join-Path $RootDir "backend-gui"
 $BuildDir = Join-Path $RootDir "build"
 $KeyFile = Join-Path $GuiDir "updater.key"
 
+# 检测平台架构
+if ([System.Environment]::Is64BitOperatingSystem) {
+    $Arch = "x64"
+} else {
+    $Arch = "x86"
+}
+
 function Write-Info { param($msg) Write-Host "[✓] $msg" -ForegroundColor Green }
 function Write-Warn { param($msg) Write-Host "[!] $msg" -ForegroundColor Yellow }
 function Write-Err  { param($msg) Write-Host "[✗] $msg" -ForegroundColor Red; exit 1 }
@@ -21,6 +28,13 @@ function Write-Err  { param($msg) Write-Host "[✗] $msg" -ForegroundColor Red; 
 Write-Host ""
 Write-Host "OxNginx GUI 打包脚本 (v$Version)" -ForegroundColor Cyan
 Write-Host ""
+
+# ============ 清理之前的产物 ============
+Write-Info "清理之前的构建产物..."
+Remove-Item -Force (Join-Path $BuildDir "OxNginx_*-setup.exe") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $BuildDir "OxNginx_*-setup.nsis.zip") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $BuildDir "OxNginx_*-setup.nsis.zip.sig") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $BuildDir "latest.json") -ErrorAction SilentlyContinue
 
 # ============ 检查 tauri-cli ============
 function Test-TauriCli {
@@ -51,7 +65,7 @@ if ($LASTEXITCODE -ne 0) { Write-Err "backend 打包失败" }
 Write-Info "步骤2/3: 构建 GUI..."
 
 # 先解压 backend zip 到 backend-gui/bundle 目录
-$BackendZip = Join-Path $BuildDir "ox-nginx_$Version.zip"
+$BackendZip = Join-Path $BuildDir "ox-nginx_${Version}_${Arch}.zip"
 $BundleDir = Join-Path $GuiDir "bundle"
 
 if (Test-Path $BundleDir) {
@@ -84,7 +98,8 @@ if ($Sign) {
 }
 
 cargo tauri build
-if ($LASTEXITCODE -ne 0) { Write-Err "GUI 构建失败" }
+# 非签名模式下，Tauri 因缺少私钥会报错，但安装包已生成，忽略此错误
+if ($LASTEXITCODE -ne 0 -and $Sign) { Write-Err "GUI 构建失败" }
 
 # 清理签名环境变量
 $env:TAURI_SIGNING_PRIVATE_KEY = $null
@@ -98,16 +113,16 @@ Write-Info "步骤3/3: 整合安装包..."
 
 $GuiNsisExe = Get-ChildItem -Path "$GuiDir\target\release\bundle\nsis\*setup*.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($GuiNsisExe) {
-    $SetupExe = Join-Path $BuildDir "ox-nginx-gui_$Version`_setup.exe"
+    $SetupExe = Join-Path $BuildDir "OxNginx_${Version}_${Arch}-setup.exe"
     Copy-Item -Force $GuiNsisExe.FullName $SetupExe
-    Write-Info "已生成安装包: ox-nginx-gui_$Version`_setup.exe"
+    Write-Info "已生成安装包: OxNginx_${Version}_${Arch}-setup.exe"
 } else {
     Write-Err "未找到 NSIS 安装包"
 }
 
 # 清理中间产物
 Remove-Item -Recurse -Force $BundleDir -ErrorAction SilentlyContinue
-Remove-Item -Force (Join-Path $BuildDir "ox-nginx_$Version.zip") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $BuildDir "ox-nginx_${Version}_${Arch}.zip") -ErrorAction SilentlyContinue
 
 # ============ 签名产物 ============
 if ($Sign) {
@@ -119,7 +134,7 @@ if ($Sign) {
 
     # 读取签名
     $SigContent = if ($NsisSig) { (Get-Content $NsisSig.FullName -Raw).Trim() } else { "" }
-    $ZipFileName = if ($NsisZip) { $NsisZip.Name } else { "ox-nginx-gui_${Version}_x64-setup.nsis.zip" }
+    $ZipFileName = if ($NsisZip) { $NsisZip.Name } else { "OxNginx_${Version}_${Arch}-setup.nsis.zip" }
     $DownloadUrl = "https://github.com/jhyjhy-cn/OxNginx/releases/download/v$Version/$ZipFileName"
 
     # 生成 latest.json（手写 JSON 保持格式整洁）
@@ -142,7 +157,7 @@ if ($Sign) {
 }
 
 # ============ 检查输出 ============
-$SetupExe = Join-Path $BuildDir "ox-nginx-gui_$Version`_setup.exe"
+$SetupExe = Join-Path $BuildDir "OxNginx_${Version}_${Arch}-setup.exe"
 if (Test-Path $SetupExe) {
     $Size = [math]::Round((Get-Item $SetupExe).Length / 1MB, 2)
     Write-Host ""
@@ -150,9 +165,9 @@ if (Test-Path $SetupExe) {
     Write-Host "  GUI 打包完成！" -ForegroundColor Green
     Write-Host "==========================================" -ForegroundColor Green
     Write-Host ""
-    Write-Host "  安装包: build\ox-nginx-gui_$Version`_setup.exe  ${Size}MB" -ForegroundColor Cyan
+    Write-Host "  安装包: build\OxNginx_${Version}_${Arch}-setup.exe  ${Size}MB" -ForegroundColor Cyan
     if ($Sign) {
-        Write-Host "  签名包: build\ox-nginx-gui_$Version*_x64-setup.nsis.zip" -ForegroundColor Cyan
+        Write-Host "  签名包: build\OxNginx_${Version}_${Arch}-setup.nsis.zip" -ForegroundColor Cyan
         Write-Host "  更新清单: build\latest.json" -ForegroundColor Cyan
         Write-Host ""
         Write-Host "  发布时上传这3个文件到 GitHub Release" -ForegroundColor Yellow
