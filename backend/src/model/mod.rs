@@ -10,7 +10,6 @@ pub struct User {
     pub dept_id: Option<i64>,
     pub post_id: Option<i64>,
     pub disabled: i32,
-    pub status: Option<String>,
     pub created_at: Option<NaiveDateTime>,
     pub updated_at: Option<NaiveDateTime>,
 }

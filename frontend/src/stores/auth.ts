@@ -42,6 +42,7 @@ export const useAuthStore = defineStore('auth', () => {
   const menus = ref<MenuNode[]>(loadJSON<MenuNode[]>(LS.menus, []))
 
   const isAuthenticated = computed(() => !!token.value)
+  let i18nLoaded = false  // ponytail: 防止刷新页面时重复拉 i18n
   // ponytail: super_admin 硬编码短路；前端只走 username==='admin' 一条线
   const isSuperAdmin = computed(
     () => username.value === 'admin' || roles.value.includes('super_admin'),
@@ -100,7 +101,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function fetchI18n() {
     // 从 DB 拉全量翻译（所有语言），合并到 vue-i18n
-    if (!token.value) return
+    if (!token.value || i18nLoaded) return
     try {
       const { data } = await api.get('/api/rbac/i18n')  // 不传 locale，返回全量
       if (data.code !== 0 || !data.data) return
@@ -114,6 +115,7 @@ export const useAuthStore = defineStore('auth', () => {
       for (const [locale, flat] of Object.entries(grouped)) {
         mergeI18nMessages(locale, flat)
       }
+      i18nLoaded = true
     } catch {}
   }
 
@@ -123,6 +125,7 @@ export const useAuthStore = defineStore('auth', () => {
     roles.value = []
     permissions.value = []
     menus.value = []
+    i18nLoaded = false
     localStorage.removeItem(LS.token)
     localStorage.removeItem(LS.username)
     localStorage.removeItem(LS.roles)

@@ -24,6 +24,7 @@ pub async fn login(
             return Json(json!(ApiResponse::<()>::error("用户名或密码错误")));
         }
         Err(e) => {
+            tracing::error!("数据库错误: {}", e);
             return Json(json!(ApiResponse::<()>::error(format!("数据库错误: {}", e))));
         }
     };
