@@ -4,7 +4,7 @@
       "args": [
         "run",
         "--directory",
-        "D:\\Code\\jhyjhy.cn\\MCP\\sqlite-mcp",
+        "D:\\jhy\\Work\\jhyjhy.cn\\MCP\\sqlite-mcp",
         "sqlite-mcp-server"
       ],
       "command": "uv"

@@ -5,7 +5,7 @@ use crate::AppState;
 /// 获取所有配置模板
 pub async fn get_all_templates(state: &AppState) -> anyhow::Result<Vec<Template>> {
     let templates = sqlx::query_as::<_, Template>(
-        "SELECT * FROM templates ORDER BY created_at DESC"
+        "SELECT * FROM sys_templates ORDER BY created_at DESC"
     )
     .fetch_all(state.db.pool())
     .await?;
@@ -15,7 +15,7 @@ pub async fn get_all_templates(state: &AppState) -> anyhow::Result<Vec<Template>
 /// 获取单个配置模板
 pub async fn get_template(state: &AppState, id: i64) -> anyhow::Result<Option<Template>> {
     let template = sqlx::query_as::<_, Template>(
-        "SELECT * FROM templates WHERE id = ?"
+        "SELECT * FROM sys_templates WHERE id = ?"
     )
     .bind(id)
     .fetch_optional(state.db.pool())
@@ -30,7 +30,7 @@ pub async fn create_template(
 ) -> anyhow::Result<Template> {
     let template = sqlx::query_as::<_, Template>(
         r#"
-        INSERT INTO templates (name, description, config, variables)
+        INSERT INTO sys_templates (name, description, config, variables)
         VALUES (?, ?, ?, ?)
         RETURNING *
         "#,
@@ -64,7 +64,7 @@ pub async fn update_template(
 
     let template = sqlx::query_as::<_, Template>(
         r#"
-        UPDATE templates
+        UPDATE sys_templates
         SET name = ?, description = ?, config = ?, variables = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         RETURNING *
@@ -83,7 +83,7 @@ pub async fn update_template(
 
 /// 删除配置模板
 pub async fn delete_template(state: &AppState, id: i64) -> anyhow::Result<bool> {
-    let result = sqlx::query("DELETE FROM templates WHERE id = ?")
+    let result = sqlx::query("DELETE FROM sys_templates WHERE id = ?")
         .bind(id)
         .execute(state.db.pool())
         .await?;

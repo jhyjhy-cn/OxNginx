@@ -106,7 +106,7 @@ pub async fn delete_proxy(
 }
 
 async fn get_proxy_site_id(state: &AppState, proxy_id: i64) -> Option<i64> {
-    sqlx::query_scalar::<_, i64>("SELECT site_id FROM reverse_proxies WHERE id = ?")
+    sqlx::query_scalar::<_, i64>("SELECT site_id FROM sys_reverse_proxies WHERE id = ?")
         .bind(proxy_id)
         .fetch_optional(state.db.pool())
         .await

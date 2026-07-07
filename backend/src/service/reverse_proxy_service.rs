@@ -4,7 +4,7 @@ use crate::AppState;
 /// 按站点列出反向代理
 pub async fn list_by_site(state: &AppState, site_id: i64) -> anyhow::Result<Vec<ReverseProxy>> {
     let proxies = sqlx::query_as::<_, ReverseProxy>(
-        "SELECT * FROM reverse_proxies WHERE site_id = ? ORDER BY id ASC",
+        "SELECT * FROM sys_reverse_proxies WHERE site_id = ? ORDER BY id ASC",
     )
     .bind(site_id)
     .fetch_all(state.db.pool())
@@ -23,7 +23,7 @@ pub async fn create(
 ) -> anyhow::Result<ReverseProxy> {
     let proxy = sqlx::query_as::<_, ReverseProxy>(
         r#"
-        INSERT INTO reverse_proxies (site_id, name, proxy_dir, target_url, cache)
+        INSERT INTO sys_reverse_proxies (site_id, name, proxy_dir, target_url, cache)
         VALUES (?, ?, ?, ?, ?)
         RETURNING *
         "#,
@@ -48,7 +48,7 @@ pub async fn update(
     cache: Option<i32>,
     status: Option<&str>,
 ) -> anyhow::Result<Option<ReverseProxy>> {
-    let existing = sqlx::query_as::<_, ReverseProxy>("SELECT * FROM reverse_proxies WHERE id = ?")
+    let existing = sqlx::query_as::<_, ReverseProxy>("SELECT * FROM sys_reverse_proxies WHERE id = ?")
         .bind(id)
         .fetch_optional(state.db.pool())
         .await?;
@@ -65,7 +65,7 @@ pub async fn update(
 
     let proxy = sqlx::query_as::<_, ReverseProxy>(
         r#"
-        UPDATE reverse_proxies
+        UPDATE sys_reverse_proxies
         SET name = ?, proxy_dir = ?, target_url = ?, cache = ?, status = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         RETURNING *
@@ -84,7 +84,7 @@ pub async fn update(
 
 /// 删除反向代理
 pub async fn delete(state: &AppState, id: i64) -> anyhow::Result<bool> {
-    let result = sqlx::query("DELETE FROM reverse_proxies WHERE id = ?")
+    let result = sqlx::query("DELETE FROM sys_reverse_proxies WHERE id = ?")
         .bind(id)
         .execute(state.db.pool())
         .await?;

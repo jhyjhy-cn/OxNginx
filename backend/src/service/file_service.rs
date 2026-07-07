@@ -120,7 +120,7 @@ pub async fn get_notes(state: &AppState, paths: &[String]) -> Result<Vec<(String
     // 构建 IN 查询
     let placeholders: Vec<&str> = paths.iter().map(|_| "?").collect();
     let sql = format!(
-        "SELECT path, note FROM file_notes WHERE path IN ({})",
+        "SELECT path, note FROM sys_file_notes WHERE path IN ({})",
         placeholders.join(",")
     );
     let mut query = sqlx::query(&sql);
@@ -139,7 +139,7 @@ pub async fn get_notes(state: &AppState, paths: &[String]) -> Result<Vec<(String
 
 /// 保存文件备注
 pub async fn save_note(state: &AppState, path: &str, note: &str) -> Result<()> {
-    sqlx::query("INSERT OR REPLACE INTO file_notes (path, note) VALUES (?, ?)")
+    sqlx::query("INSERT OR REPLACE INTO sys_file_notes (path, note) VALUES (?, ?)")
         .bind(path)
         .bind(note)
         .execute(state.db.pool())
@@ -149,7 +149,7 @@ pub async fn save_note(state: &AppState, path: &str, note: &str) -> Result<()> {
 
 /// 删除文件备注
 pub async fn delete_note(state: &AppState, path: &str) -> Result<()> {
-    sqlx::query("DELETE FROM file_notes WHERE path = ?")
+    sqlx::query("DELETE FROM sys_file_notes WHERE path = ?")
         .bind(path)
         .execute(state.db.pool())
         .await?;

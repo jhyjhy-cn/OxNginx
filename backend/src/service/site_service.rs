@@ -4,7 +4,7 @@ use crate::AppState;
 
 /// 获取所有站点
 pub async fn get_all_sites(state: &AppState) -> anyhow::Result<Vec<Site>> {
-    let sites = sqlx::query_as::<_, Site>("SELECT * FROM sites ORDER BY created_at DESC")
+    let sites = sqlx::query_as::<_, Site>("SELECT * FROM sys_sites ORDER BY created_at DESC")
         .fetch_all(state.db.pool())
         .await?;
     Ok(sites)
@@ -36,7 +36,7 @@ impl Site {
 
 /// 获取单个站点
 pub async fn get_site(state: &AppState, id: i64) -> anyhow::Result<Option<Site>> {
-    let site = sqlx::query_as::<_, Site>("SELECT * FROM sites WHERE id = ?")
+    let site = sqlx::query_as::<_, Site>("SELECT * FROM sys_sites WHERE id = ?")
         .bind(id)
         .fetch_optional(state.db.pool())
         .await?;
@@ -48,7 +48,7 @@ pub async fn create_site(state: &AppState, req: CreateSiteRequest) -> anyhow::Re
     let ssl_value = if req.ssl { 1 } else { 0 };
     let result = sqlx::query_as::<_, Site>(
         r#"
-        INSERT INTO sites (name, server_name, listen, ssl, certificate_path, key_path, proxy_pass, root_path, remark, expire_time, rewrite_rules, redirect_rules, hotlink_config, log_access_path, log_error_path)
+        INSERT INTO sys_sites (name, server_name, listen, ssl, certificate_path, key_path, proxy_pass, root_path, remark, expire_time, rewrite_rules, redirect_rules, hotlink_config, log_access_path, log_error_path)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING *
         "#,
@@ -110,7 +110,7 @@ pub async fn update_site(
 
     let site = sqlx::query_as::<_, Site>(
         r#"
-        UPDATE sites
+        UPDATE sys_sites
         SET name = ?, server_name = ?, listen = ?, ssl = ?, certificate_path = ?, key_path = ?, proxy_pass = ?, root_path = ?, remark = ?, expire_time = ?, rewrite_rules = ?, redirect_rules = ?, hotlink_config = ?, log_access_path = ?, log_error_path = ?, status = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         RETURNING *
@@ -141,7 +141,7 @@ pub async fn update_site(
 
 /// 删除站点
 pub async fn delete_site(state: &AppState, id: i64) -> anyhow::Result<bool> {
-    let result = sqlx::query("DELETE FROM sites WHERE id = ?")
+    let result = sqlx::query("DELETE FROM sys_sites WHERE id = ?")
         .bind(id)
         .execute(state.db.pool())
         .await?;

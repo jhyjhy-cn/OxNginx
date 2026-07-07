@@ -25,7 +25,7 @@ pub async fn get_cert_expire_info(cert_path: &str) -> Option<NaiveDateTime> {
 /// 获取所有证书
 pub async fn get_all_certs(state: &AppState) -> anyhow::Result<Vec<Certificate>> {
     let certs =
-        sqlx::query_as::<_, Certificate>("SELECT * FROM certificates ORDER BY created_at DESC")
+        sqlx::query_as::<_, Certificate>("SELECT * FROM sys_certificates ORDER BY created_at DESC")
             .fetch_all(state.db.pool())
             .await?;
     Ok(certs)
@@ -58,14 +58,14 @@ pub async fn apply_cert(
 
     // 先查是否已有该域名的证书记录，有则更新路径后返回
     if let Some(existing) = sqlx::query_as::<_, Certificate>(
-        "SELECT * FROM certificates WHERE domain = ?",
+        "SELECT * FROM sys_certificates WHERE domain = ?",
     )
     .bind(domain)
     .fetch_optional(state.db.pool())
     .await?
     {
         // 更新为正确的 _ecc 路径
-        sqlx::query("UPDATE certificates SET cert_path = ?, key_path = ? WHERE id = ?")
+        sqlx::query("UPDATE sys_certificates SET cert_path = ?, key_path = ? WHERE id = ?")
             .bind(&cert_path)
             .bind(&key_path)
             .bind(existing.id)
@@ -80,7 +80,7 @@ pub async fn apply_cert(
     // 保存到数据库
     let cert = sqlx::query_as::<_, Certificate>(
         r#"
-        INSERT INTO certificates (domain, issuer, cert_path, key_path, auto_renew)
+        INSERT INTO sys_certificates (domain, issuer, cert_path, key_path, auto_renew)
         VALUES (?, 'Let''s Encrypt', ?, ?, 1)
         RETURNING *
         "#,
@@ -97,7 +97,7 @@ pub async fn apply_cert(
 /// 续期证书
 pub async fn renew_cert(state: &AppState, id: i64) -> anyhow::Result<bool> {
 
-    let cert = sqlx::query_as::<_, Certificate>("SELECT * FROM certificates WHERE id = ?")
+    let cert = sqlx::query_as::<_, Certificate>("SELECT * FROM sys_certificates WHERE id = ?")
         .bind(id)
         .fetch_optional(state.db.pool())
         .await?;

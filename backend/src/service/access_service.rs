@@ -5,7 +5,7 @@ use crate::AppState;
 /// 获取所有访问控制规则
 pub async fn get_all_rules(state: &AppState) -> anyhow::Result<Vec<AccessRule>> {
     let rules = sqlx::query_as::<_, AccessRule>(
-        "SELECT * FROM access_rules ORDER BY created_at DESC"
+        "SELECT * FROM sys_access_rules ORDER BY created_at DESC"
     )
     .fetch_all(state.db.pool())
     .await?;
@@ -15,7 +15,7 @@ pub async fn get_all_rules(state: &AppState) -> anyhow::Result<Vec<AccessRule>> 
 /// 获取单个访问控制规则
 pub async fn get_rule(state: &AppState, id: i64) -> anyhow::Result<Option<AccessRule>> {
     let rule = sqlx::query_as::<_, AccessRule>(
-        "SELECT * FROM access_rules WHERE id = ?"
+        "SELECT * FROM sys_access_rules WHERE id = ?"
     )
     .bind(id)
     .fetch_optional(state.db.pool())
@@ -30,7 +30,7 @@ pub async fn create_rule(
 ) -> anyhow::Result<AccessRule> {
     let rule = sqlx::query_as::<_, AccessRule>(
         r#"
-        INSERT INTO access_rules (site_id, rule_type, value, description)
+        INSERT INTO sys_access_rules (site_id, rule_type, value, description)
         VALUES (?, ?, ?, ?)
         RETURNING *
         "#,
@@ -65,7 +65,7 @@ pub async fn update_rule(
 
     let rule = sqlx::query_as::<_, AccessRule>(
         r#"
-        UPDATE access_rules
+        UPDATE sys_access_rules
         SET site_id = ?, rule_type = ?, value = ?, description = ?, status = ?
         WHERE id = ?
         RETURNING *
@@ -85,7 +85,7 @@ pub async fn update_rule(
 
 /// 删除访问控制规则
 pub async fn delete_rule(state: &AppState, id: i64) -> anyhow::Result<bool> {
-    let result = sqlx::query("DELETE FROM access_rules WHERE id = ?")
+    let result = sqlx::query("DELETE FROM sys_access_rules WHERE id = ?")
         .bind(id)
         .execute(state.db.pool())
         .await?;

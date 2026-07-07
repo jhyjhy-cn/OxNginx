@@ -12,7 +12,7 @@ pub async fn login(
 ) -> Json<serde_json::Value> {
     // 查询用户
     let user = sqlx::query_as::<_, crate::model::User>(
-        "SELECT * FROM users WHERE username = ?",
+        "SELECT * FROM sys_users WHERE username = ?",
     )
     .bind(&req.username)
     .fetch_optional(state.db.pool())
@@ -75,7 +75,7 @@ pub async fn change_password(
 
     // 查询当前用户
     let user = sqlx::query_as::<_, crate::model::User>(
-        "SELECT * FROM users WHERE username = ?",
+        "SELECT * FROM sys_users WHERE username = ?",
     )
     .bind(&claims.sub)
     .fetch_optional(state.db.pool())
@@ -99,7 +99,7 @@ pub async fn change_password(
         Err(e) => return Json(json!(ApiResponse::<()>::error(format!("密码哈希失败: {}", e)))),
     };
 
-    match sqlx::query("UPDATE users SET password = ? WHERE username = ?")
+    match sqlx::query("UPDATE sys_users SET password = ? WHERE username = ?")
         .bind(&hashed)
         .bind(&claims.sub)
         .execute(state.db.pool())
@@ -134,7 +134,7 @@ pub async fn change_username(
 
     // 查询当前用户
     let user = sqlx::query_as::<_, crate::model::User>(
-        "SELECT * FROM users WHERE username = ?",
+        "SELECT * FROM sys_users WHERE username = ?",
     )
     .bind(&claims.sub)
     .fetch_optional(state.db.pool())
@@ -153,7 +153,7 @@ pub async fn change_username(
     }
 
     // 检查新用户名是否已存在
-    let exists: bool = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM users WHERE username = ?")
+    let exists: bool = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM sys_users WHERE username = ?")
         .bind(&req.new_username)
         .fetch_one(state.db.pool())
         .await
@@ -165,7 +165,7 @@ pub async fn change_username(
     }
 
     // 更新用户名
-    match sqlx::query("UPDATE users SET username = ? WHERE username = ?")
+    match sqlx::query("UPDATE sys_users SET username = ? WHERE username = ?")
         .bind(&req.new_username)
         .bind(&claims.sub)
         .execute(state.db.pool())
@@ -194,7 +194,7 @@ pub async fn change_username(
 pub async fn setup_status(
     State(state): State<AppState>,
 ) -> Json<serde_json::Value> {
-    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users")
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sys_users")
         .fetch_one(state.db.pool())
         .await
         .unwrap_or(0);
@@ -210,7 +210,7 @@ pub async fn setup(
     Json(req): Json<LoginRequest>,
 ) -> Json<serde_json::Value> {
     // 检查是否已有用户
-    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users")
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sys_users")
         .fetch_one(state.db.pool())
         .await
         .unwrap_or(0);
@@ -228,7 +228,7 @@ pub async fn setup(
     };
 
     // 创建用户
-    let result = sqlx::query("INSERT INTO users (username, password) VALUES (?, ?)")
+    let result = sqlx::query("INSERT INTO sys_users (username, password) VALUES (?, ?)")
         .bind(&req.username)
         .bind(&hashed_password)
         .execute(state.db.pool())
@@ -268,7 +268,7 @@ pub async fn renew_certificate(
 ) -> Json<serde_json::Value> {
     // 根据域名查找证书
     let cert = sqlx::query_as::<_, crate::model::Certificate>(
-        "SELECT * FROM certificates WHERE domain = ?"
+        "SELECT * FROM sys_certificates WHERE domain = ?"
     )
     .bind(&req.domain)
     .fetch_optional(state.db.pool())

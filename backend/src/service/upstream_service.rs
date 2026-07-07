@@ -5,7 +5,7 @@ use crate::AppState;
 /// 获取所有上游服务器
 pub async fn get_all_upstreams(state: &AppState) -> anyhow::Result<Vec<Upstream>> {
     let upstreams = sqlx::query_as::<_, Upstream>(
-        "SELECT * FROM upstreams ORDER BY created_at DESC"
+        "SELECT * FROM sys_upstreams ORDER BY created_at DESC"
     )
     .fetch_all(state.db.pool())
     .await?;
@@ -15,7 +15,7 @@ pub async fn get_all_upstreams(state: &AppState) -> anyhow::Result<Vec<Upstream>
 /// 获取单个上游服务器
 pub async fn get_upstream(state: &AppState, id: i64) -> anyhow::Result<Option<Upstream>> {
     let upstream = sqlx::query_as::<_, Upstream>(
-        "SELECT * FROM upstreams WHERE id = ?"
+        "SELECT * FROM sys_upstreams WHERE id = ?"
     )
     .bind(id)
     .fetch_optional(state.db.pool())
@@ -31,7 +31,7 @@ pub async fn get_upstream_with_servers(
     let upstream = get_upstream(state, id).await?;
     if let Some(upstream) = upstream {
         let servers = sqlx::query_as::<_, UpstreamServer>(
-            "SELECT * FROM upstream_servers WHERE upstream_id = ? ORDER BY id"
+            "SELECT * FROM sys_upstream_servers WHERE upstream_id = ? ORDER BY id"
         )
         .bind(id)
         .fetch_all(state.db.pool())
@@ -50,7 +50,7 @@ pub async fn create_upstream(
     // 创建上游服务器
     let upstream = sqlx::query_as::<_, Upstream>(
         r#"
-        INSERT INTO upstreams (name, method, keepalive)
+        INSERT INTO sys_upstreams (name, method, keepalive)
         VALUES (?, ?, ?)
         RETURNING *
         "#,
@@ -66,7 +66,7 @@ pub async fn create_upstream(
     for server_req in &req.servers {
         let server = sqlx::query_as::<_, UpstreamServer>(
             r#"
-            INSERT INTO upstream_servers (upstream_id, address, weight, max_fails, fail_timeout, backup)
+            INSERT INTO sys_upstream_servers (upstream_id, address, weight, max_fails, fail_timeout, backup)
             VALUES (?, ?, ?, ?, ?, ?)
             RETURNING *
             "#,
@@ -105,7 +105,7 @@ pub async fn update_upstream(
     // 更新上游服务器
     let upstream = sqlx::query_as::<_, Upstream>(
         r#"
-        UPDATE upstreams
+        UPDATE sys_upstreams
         SET name = ?, method = ?, keepalive = ?, status = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         RETURNING *
@@ -123,7 +123,7 @@ pub async fn update_upstream(
         // 如果提供了新的服务器列表，更新它
         if let Some(server_reqs) = req.servers {
             // 删除旧的服务器节点
-            sqlx::query("DELETE FROM upstream_servers WHERE upstream_id = ?")
+            sqlx::query("DELETE FROM sys_upstream_servers WHERE upstream_id = ?")
                 .bind(id)
                 .execute(state.db.pool())
                 .await?;
@@ -133,7 +133,7 @@ pub async fn update_upstream(
             for server_req in &server_reqs {
                 let server = sqlx::query_as::<_, UpstreamServer>(
                     r#"
-                    INSERT INTO upstream_servers (upstream_id, address, weight, max_fails, fail_timeout, backup)
+                    INSERT INTO sys_upstream_servers (upstream_id, address, weight, max_fails, fail_timeout, backup)
                     VALUES (?, ?, ?, ?, ?, ?)
                     RETURNING *
                     "#,
@@ -153,7 +153,7 @@ pub async fn update_upstream(
         } else {
             // 获取现有的服务器节点
             let servers = sqlx::query_as::<_, UpstreamServer>(
-                "SELECT * FROM upstream_servers WHERE upstream_id = ? ORDER BY id"
+                "SELECT * FROM sys_upstream_servers WHERE upstream_id = ? ORDER BY id"
             )
             .bind(id)
             .fetch_all(state.db.pool())
@@ -168,7 +168,7 @@ pub async fn update_upstream(
 
 /// 删除上游服务器
 pub async fn delete_upstream(state: &AppState, id: i64) -> anyhow::Result<bool> {
-    let result = sqlx::query("DELETE FROM upstreams WHERE id = ?")
+    let result = sqlx::query("DELETE FROM sys_upstreams WHERE id = ?")
         .bind(id)
         .execute(state.db.pool())
         .await?;

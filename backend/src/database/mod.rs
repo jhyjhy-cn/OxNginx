@@ -29,9 +29,29 @@ impl Database {
 
     /// 初始化数据库表
     async fn init_tables(&self) -> anyhow::Result<()> {
+        // ponytail: sys_ 前缀；旧库无前缀则一次性 RENAME，平滑迁移
+        for old in [
+            "users", "sites", "certificates", "backups",
+            "upstreams", "upstream_servers", "access_rules",
+            "templates", "file_notes", "reverse_proxies",
+        ] {
+            let new = format!("sys_{}", old);
+            let exists_new: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name = ?"
+            )
+            .bind(&new)
+            .fetch_one(&self.pool)
+            .await?;
+            if exists_new == 0 {
+                let _ = sqlx::query(&format!("ALTER TABLE {} RENAME TO {}", old, new))
+                    .execute(&self.pool)
+                    .await;
+            }
+        }
+
         sqlx::query(
             r#"
-            CREATE TABLE IF NOT EXISTS users (
+            CREATE TABLE IF NOT EXISTS sys_users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT NOT NULL UNIQUE,
                 password TEXT NOT NULL,
@@ -39,7 +59,7 @@ impl Database {
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
 
-            CREATE TABLE IF NOT EXISTS sites (
+            CREATE TABLE IF NOT EXISTS sys_sites (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 server_name TEXT NOT NULL,
@@ -62,7 +82,7 @@ impl Database {
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
 
-            CREATE TABLE IF NOT EXISTS certificates (
+            CREATE TABLE IF NOT EXISTS sys_certificates (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 domain TEXT NOT NULL UNIQUE,
                 issuer TEXT,
@@ -73,16 +93,16 @@ impl Database {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
 
-            CREATE TABLE IF NOT EXISTS backups (
+            CREATE TABLE IF NOT EXISTS sys_backups (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 site_id INTEGER,
                 version INTEGER NOT NULL DEFAULT 1,
                 config TEXT NOT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (site_id) REFERENCES sites(id)
+                FOREIGN KEY (site_id) REFERENCES sys_sites(id)
             );
 
-            CREATE TABLE IF NOT EXISTS upstreams (
+            CREATE TABLE IF NOT EXISTS sys_upstreams (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL UNIQUE,
                 method TEXT NOT NULL DEFAULT 'round_robin',
@@ -92,7 +112,7 @@ impl Database {
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
 
-            CREATE TABLE IF NOT EXISTS upstream_servers (
+            CREATE TABLE IF NOT EXISTS sys_upstream_servers (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 upstream_id INTEGER NOT NULL,
                 address TEXT NOT NULL,
@@ -101,10 +121,10 @@ impl Database {
                 fail_timeout TEXT DEFAULT '30s',
                 backup INTEGER DEFAULT 0,
                 status TEXT NOT NULL DEFAULT 'enabled',
-                FOREIGN KEY (upstream_id) REFERENCES upstreams(id) ON DELETE CASCADE
+                FOREIGN KEY (upstream_id) REFERENCES sys_upstreams(id) ON DELETE CASCADE
             );
 
-            CREATE TABLE IF NOT EXISTS access_rules (
+            CREATE TABLE IF NOT EXISTS sys_access_rules (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 site_id INTEGER,
                 rule_type TEXT NOT NULL,
@@ -112,10 +132,10 @@ impl Database {
                 description TEXT,
                 status TEXT NOT NULL DEFAULT 'enabled',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE
+                FOREIGN KEY (site_id) REFERENCES sys_sites(id) ON DELETE CASCADE
             );
 
-            CREATE TABLE IF NOT EXISTS templates (
+            CREATE TABLE IF NOT EXISTS sys_templates (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL UNIQUE,
                 description TEXT,
@@ -125,13 +145,13 @@ impl Database {
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
 
-            CREATE TABLE IF NOT EXISTS file_notes (
+            CREATE TABLE IF NOT EXISTS sys_file_notes (
                 path TEXT PRIMARY KEY,
                 note TEXT NOT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
 
-            CREATE TABLE IF NOT EXISTS reverse_proxies (
+            CREATE TABLE IF NOT EXISTS sys_reverse_proxies (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 site_id INTEGER NOT NULL,
                 name TEXT NOT NULL,
@@ -141,33 +161,33 @@ impl Database {
                 status TEXT NOT NULL DEFAULT 'enabled',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE
+                FOREIGN KEY (site_id) REFERENCES sys_sites(id) ON DELETE CASCADE
             );
             "#,
         )
         .execute(&self.pool)
         .await?;
 
-        // 兼容旧库：sites 表加 remark 列（已存在则忽略）
-        let _ = sqlx::query("ALTER TABLE sites ADD COLUMN remark TEXT")
+        // 兼容旧库：sys_sites 表加 remark 列（已存在则忽略）
+        let _ = sqlx::query("ALTER TABLE sys_sites ADD COLUMN remark TEXT")
             .execute(&self.pool)
             .await;
-        let _ = sqlx::query("ALTER TABLE sites ADD COLUMN expire_time DATETIME")
+        let _ = sqlx::query("ALTER TABLE sys_sites ADD COLUMN expire_time DATETIME")
             .execute(&self.pool)
             .await;
-        let _ = sqlx::query("ALTER TABLE sites ADD COLUMN rewrite_rules TEXT")
+        let _ = sqlx::query("ALTER TABLE sys_sites ADD COLUMN rewrite_rules TEXT")
             .execute(&self.pool)
             .await;
-        let _ = sqlx::query("ALTER TABLE sites ADD COLUMN redirect_rules TEXT")
+        let _ = sqlx::query("ALTER TABLE sys_sites ADD COLUMN redirect_rules TEXT")
             .execute(&self.pool)
             .await;
-        let _ = sqlx::query("ALTER TABLE sites ADD COLUMN hotlink_config TEXT")
+        let _ = sqlx::query("ALTER TABLE sys_sites ADD COLUMN hotlink_config TEXT")
             .execute(&self.pool)
             .await;
-        let _ = sqlx::query("ALTER TABLE sites ADD COLUMN log_access_path TEXT")
+        let _ = sqlx::query("ALTER TABLE sys_sites ADD COLUMN log_access_path TEXT")
             .execute(&self.pool)
             .await;
-        let _ = sqlx::query("ALTER TABLE sites ADD COLUMN log_error_path TEXT")
+        let _ = sqlx::query("ALTER TABLE sys_sites ADD COLUMN log_error_path TEXT")
             .execute(&self.pool)
             .await;
 
