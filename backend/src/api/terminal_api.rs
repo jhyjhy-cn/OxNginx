@@ -12,11 +12,24 @@ use serde::Deserialize;
 use crate::auth;
 use crate::AppState;
 
+/// 找到 \x1b[2J（清屏）序列之后的位置，用于过滤 ConPTY 初始清屏
+fn find_after_clear_screen(data: &[u8]) -> Option<usize> {
+    // 匹配 \x1b[2J（CSI 2 J = erase display）
+    for i in 0..data.len().saturating_sub(3) {
+        if data[i] == 0x1b && data[i + 1] == b'[' && data[i + 2] == b'2' && data[i + 3] == b'J'
+        {
+            return Some(i + 4);
+        }
+    }
+    None
+}
+
 #[derive(Deserialize)]
 pub struct TerminalQuery {
     token: String,
     cols: Option<u16>,
     rows: Option<u16>,
+    shell: Option<String>,
 }
 
 pub async fn terminal_ws(
@@ -32,13 +45,14 @@ pub async fn terminal_ws(
             .unwrap();
     }
 
-    ws.on_upgrade(move |socket| handle_socket(socket, query.cols, query.rows))
+    ws.on_upgrade(move |socket| handle_socket(socket, query.cols, query.rows, query.shell))
 }
 
-async fn handle_socket(socket: WebSocket, cols: Option<u16>, rows: Option<u16>) {
+async fn handle_socket(socket: WebSocket, cols: Option<u16>, rows: Option<u16>, shell: Option<String>) {
     let cols = cols.unwrap_or(80);
     let rows = rows.unwrap_or(24);
-    tracing::info!("终端 WebSocket 已连接, cols={}, rows={}", cols, rows);
+    let shell = shell.unwrap_or_else(|| "powershell".to_string());
+    tracing::info!("终端 WebSocket 已连接, cols={}, rows={}, shell={}", cols, rows, shell);
 
     let pty_system = NativePtySystem::default();
     let pty = match pty_system.openpty(PtySize {
@@ -55,9 +69,21 @@ async fn handle_socket(socket: WebSocket, cols: Option<u16>, rows: Option<u16>) 
     };
 
     #[cfg(target_os = "windows")]
-    let mut cmd = CommandBuilder::new("powershell.exe");
+    let mut cmd = match shell.as_str() {
+        "cmd" => {
+            let mut c = CommandBuilder::new("cmd.exe");
+            c.args(["/K", "chcp 65001 >nul"]);
+            c
+        }
+        _ => {
+            CommandBuilder::new("powershell.exe")
+        }
+    };
     #[cfg(not(target_os = "windows"))]
-    let mut cmd = CommandBuilder::new("/bin/sh");
+    let mut cmd = match shell.as_str() {
+        "bash" => CommandBuilder::new("/bin/bash"),
+        _ => CommandBuilder::new("/bin/sh"),
+    };
 
     cmd.env("TERM", "xterm-256color");
 
@@ -75,45 +101,46 @@ async fn handle_socket(socket: WebSocket, cols: Option<u16>, rows: Option<u16>) 
 
     let (mut ws_sender, mut ws_receiver) = socket.split();
 
-    // PTY reader → WebSocket（阻塞读，用 spawn_blocking 桥接到 tokio）
+    // PTY reader → WebSocket
     let (tx, mut rx) = tokio::sync::mpsc::channel::<Vec<u8>>(64);
     tokio::task::spawn_blocking(move || {
         use std::io::Read;
         let mut reader = reader;
         let mut buf = vec![0u8; 4096];
+        let mut first_read = true;
         loop {
             match reader.read(&mut buf) {
-                Ok(0) => {
-                    tracing::info!("PTY reader EOF");
-                    break;
-                }
+                Ok(0) => break,
                 Ok(n) => {
-                    tracing::debug!("PTY 读取 {} 字节", n);
-                    if tx.blocking_send(buf[..n].to_vec()).is_err() {
+                    let mut data = &buf[..n];
+                    // 过滤 ConPTY 初始清屏序列，保留 banner 内容
+                    if first_read {
+                        first_read = false;
+                        if let Some(pos) = find_after_clear_screen(data) {
+                            data = &data[pos..];
+                            if data.is_empty() {
+                                continue;
+                            }
+                        }
+                    }
+                    if tx.blocking_send(data.to_vec()).is_err() {
                         break;
                     }
                 }
-                Err(e) => {
-                    tracing::error!("PTY 读取错误: {}", e);
-                    break;
-                }
+                Err(_) => break,
             }
         }
     });
 
-    // 转发 PTY 输出到 WebSocket
     let send_task = tokio::spawn(async move {
         while let Some(data) = rx.recv().await {
-            tracing::debug!("转发 {} 字节到 WebSocket", data.len());
             if ws_sender.send(Message::Binary(data)).await.is_err() {
-                tracing::warn!("WebSocket 发送失败");
                 break;
             }
         }
-        tracing::info!("PTY→WS 转发结束");
     });
 
-    // WebSocket → PTY writer（处理输入和 resize）
+    // WebSocket → PTY writer
     let writer = tokio::sync::Mutex::new(writer);
     let recv_task = tokio::spawn(async move {
         while let Some(Ok(msg)) = ws_receiver.next().await {
@@ -125,7 +152,6 @@ async fn handle_socket(socket: WebSocket, cols: Option<u16>, rows: Option<u16>) 
                             {
                                 let new_cols = size["cols"].as_u64().unwrap_or(80) as u16;
                                 let new_rows = size["rows"].as_u64().unwrap_or(24) as u16;
-                                tracing::info!("终端 resize: {}x{}", new_cols, new_rows);
                                 let _ = pty.master.resize(PtySize {
                                     rows: new_rows,
                                     cols: new_cols,
@@ -135,7 +161,6 @@ async fn handle_socket(socket: WebSocket, cols: Option<u16>, rows: Option<u16>) 
                             }
                         }
                     } else {
-                        tracing::debug!("WS 收到输入: {} 字节", text.len());
                         let mut writer = writer.lock().await;
                         use std::io::Write;
                         let _ = writer.write_all(text.as_bytes());
@@ -143,20 +168,15 @@ async fn handle_socket(socket: WebSocket, cols: Option<u16>, rows: Option<u16>) 
                     }
                 }
                 Message::Binary(data) => {
-                    tracing::debug!("WS 收到二进制输入: {} 字节", data.len());
                     let mut writer = writer.lock().await;
                     use std::io::Write;
                     let _ = writer.write_all(&data);
                     let _ = writer.flush();
                 }
-                Message::Close(_) => {
-                    tracing::info!("终端 WebSocket 关闭");
-                    break;
-                }
+                Message::Close(_) => break,
                 _ => {}
             }
         }
-        tracing::info!("WS→PTY 转发结束");
     });
 
     tokio::select! {

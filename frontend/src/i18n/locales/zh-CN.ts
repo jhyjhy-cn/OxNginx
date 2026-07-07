@@ -483,6 +483,13 @@ export default {
     connected: '终端已连接',
     disconnected: '终端已断开',
     error: '连接错误',
+    quickCmd: '常用命令',
+    noCmd: '暂无命令',
+    addCmd: '添加命令',
+    cmdName: '名称',
+    cmdNamePh: '例如: 查看端口',
+    cmdContent: '命令',
+    cmdContentPh: '例如: netstat -tlnp',
   },
 
   // 标签页

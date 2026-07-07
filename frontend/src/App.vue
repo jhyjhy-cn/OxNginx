@@ -16,9 +16,17 @@ const epLocale = computed(() => locale.value === 'zh-CN' ? zhCn : en)
 </script>
 
 <style>
+@font-face {
+  font-family: 'Maple Mono NF CN';
+  src: url('/fonts/MapleMono-NF-CN-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --el-bg-color-page: #f3f5f8;
-  --font-mono: 'Maple Mono NF CN', 'Maple Mono', Consolas, 'Courier New', monospace;
+  --font-mono: 'Maple Mono NF CN', Consolas, 'Courier New', monospace;
 }
 
 * {

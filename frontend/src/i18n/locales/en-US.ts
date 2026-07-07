@@ -464,6 +464,13 @@ export default {
     connected: 'Terminal connected',
     disconnected: 'Terminal disconnected',
     error: 'Connection error',
+    quickCmd: 'Quick Commands',
+    noCmd: 'No commands',
+    addCmd: 'Add Command',
+    cmdName: 'Name',
+    cmdNamePh: 'e.g. Check ports',
+    cmdContent: 'Command',
+    cmdContentPh: 'e.g. netstat -tlnp',
   },
 
   tabs: {
