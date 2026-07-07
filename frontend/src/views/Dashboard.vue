@@ -237,23 +237,16 @@ const loading = reactive({
   install: false,
 })
 
-let refreshTimer: ReturnType<typeof setInterval> | null = null
 let ws: WebSocket | null = null
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 let reconnectDelay = 1000
 
 onMounted(() => {
   fetchSystemInfo()
-  fetchNginxStatus()
-  fetchDashboard()
   connectWs()
 })
 
 onUnmounted(() => {
-  if (refreshTimer) {
-    clearInterval(refreshTimer)
-    refreshTimer = null
-  }
   if (reconnectTimer) {
     clearTimeout(reconnectTimer)
     reconnectTimer = null
@@ -270,11 +263,7 @@ function connectWs() {
     try {
       const msg = JSON.parse(e.data)
       if (msg.nginx) nginxStatus.value = msg.nginx
-      if (msg.stats) {
-        // 保留字段兼容，stats 不含 nginx_version/worker_count/active_connections
-        stats.value = { ...stats.value, ...msg.stats }
-      }
-      // 收到数据，重置重连延迟
+      if (msg.stats) stats.value = { ...stats.value, ...msg.stats }
       reconnectDelay = 1000
     } catch (err) {
       console.error('Dashboard WS 解析失败:', err)
@@ -282,7 +271,6 @@ function connectWs() {
   }
 
   ws.onclose = () => {
-    // 指数退避重连，max 30s
     reconnectTimer = setTimeout(connectWs, reconnectDelay)
     reconnectDelay = Math.min(reconnectDelay * 2, 30000)
   }
@@ -290,28 +278,6 @@ function connectWs() {
   ws.onerror = () => ws?.close()
 }
 
-
-async function fetchNginxStatus() {
-  try {
-    const response = await api.get('/api/nginx/status')
-    if (response.data.code === 0) {
-      nginxStatus.value = response.data.data
-    }
-  } catch (error) {
-    console.error('获取Nginx状态失败:', error)
-  }
-}
-
-async function fetchDashboard() {
-  try {
-    const response = await api.get('/api/dashboard')
-    if (response.data.code === 0) {
-      stats.value = response.data.data
-    }
-  } catch (error) {
-    console.error('获取仪表盘数据失败:', error)
-  }
-}
 
 async function fetchSystemInfo() {
   try {
@@ -325,10 +291,6 @@ async function fetchSystemInfo() {
   } catch (error) {
     console.error('获取系统信息失败:', error)
   }
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 async function toggleNginx() {
@@ -349,8 +311,6 @@ async function toggleNginx() {
         ElMessage.error(response.data.message || t('dashboard.startFailed'))
       }
     }
-    await delay(800)
-    await fetchNginxStatus()
   } catch (error: any) {
     ElMessage.error(error.response?.data?.message || t('dashboard.operationFailed'))
   } finally {
@@ -367,8 +327,6 @@ async function restartNginx() {
     } else {
       ElMessage.error(response.data.message || t('dashboard.restartFailed'))
     }
-    await delay(800)
-    await fetchNginxStatus()
   } catch (error: any) {
     ElMessage.error(error.response?.data?.message || t('dashboard.restartFailed'))
   } finally {
@@ -385,8 +343,6 @@ async function reloadConfig() {
     } else {
       ElMessage.error(response.data.message || t('dashboard.reloadFailed'))
     }
-    await delay(500)
-    await fetchNginxStatus()
   } catch (error: any) {
     ElMessage.error(error.response?.data?.message || t('dashboard.reloadFailed'))
   } finally {
@@ -422,9 +378,6 @@ async function installNginx() {
     const response = await api.post('/api/nginx/install', null, { timeout: 300000 })
     if (response.data.code === 0) {
       ElMessage.success(t('dashboard.installSuccess'))
-      await delay(1000)
-      await fetchNginxStatus()
-      await fetchDashboard()
     } else {
       ElMessage.error(response.data.message || t('dashboard.installFailed'))
     }

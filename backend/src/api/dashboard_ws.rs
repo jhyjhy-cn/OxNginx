@@ -78,6 +78,12 @@ pub fn start_push_task(state: AppState) {
     });
 }
 
+/// 操作 Nginx 后手动触发立即推送
+pub async fn trigger_push(state: &AppState) {
+    let data = collect_dashboard_data(state).await;
+    let _ = state.dashboard_tx.send(data);
+}
+
 async fn collect_dashboard_data(state: &AppState) -> String {
     use crate::service::dashboard_service;
     use crate::nginx;

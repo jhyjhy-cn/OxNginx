@@ -28,13 +28,20 @@ pub async fn reload(
     }
 
     // 重载
-    match crate::nginx::reload_nginx(&config.nginx.bin).await {
-        Ok(true) => Json(json!(ApiResponse::success(NginxTestResult {
+    let result = match crate::nginx::reload_nginx(&config.nginx.bin).await {
+        Ok(true) => Ok(NginxTestResult {
             success: true,
             message: "Nginx重载成功".into(),
-        }))),
-        Ok(false) => Json(json!(ApiResponse::<()>::error("Nginx重载失败"))),
-        Err(e) => Json(json!(ApiResponse::<()>::error(format!("Nginx重载失败: {}", e)))),
+        }),
+        Ok(false) => Err("Nginx重载失败".to_string()),
+        Err(e) => Err(format!("Nginx重载失败: {}", e)),
+    };
+
+    crate::api::dashboard_ws::trigger_push(&state).await;
+
+    match result {
+        Ok(r) => Json(json!(ApiResponse::success(r))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(e))),
     }
 }
 
@@ -52,13 +59,20 @@ pub async fn start(
     State(state): State<AppState>,
 ) -> Json<serde_json::Value> {
     let config = state.get_config();
-    match crate::nginx::start_nginx(&config.nginx.bin, &config.nginx.config).await {
-        Ok(true) => Json(json!(ApiResponse::success(NginxTestResult {
+    let result = match crate::nginx::start_nginx(&config.nginx.bin, &config.nginx.config).await {
+        Ok(true) => Ok(NginxTestResult {
             success: true,
             message: "Nginx启动成功".into(),
-        }))),
-        Ok(false) => Json(json!(ApiResponse::<()>::error("Nginx启动失败"))),
-        Err(e) => Json(json!(ApiResponse::<()>::error(format!("Nginx启动失败: {}", e)))),
+        }),
+        Ok(false) => Err("Nginx启动失败".to_string()),
+        Err(e) => Err(format!("Nginx启动失败: {}", e)),
+    };
+
+    crate::api::dashboard_ws::trigger_push(&state).await;
+
+    match result {
+        Ok(r) => Json(json!(ApiResponse::success(r))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(e))),
     }
 }
 
@@ -67,13 +81,20 @@ pub async fn stop(
     State(state): State<AppState>,
 ) -> Json<serde_json::Value> {
     let config = state.get_config();
-    match crate::nginx::stop_nginx(&config.nginx.bin).await {
-        Ok(true) => Json(json!(ApiResponse::success(NginxTestResult {
+    let result = match crate::nginx::stop_nginx(&config.nginx.bin).await {
+        Ok(true) => Ok(NginxTestResult {
             success: true,
             message: "Nginx已停止".into(),
-        }))),
-        Ok(false) => Json(json!(ApiResponse::<()>::error("Nginx停止失败"))),
-        Err(e) => Json(json!(ApiResponse::<()>::error(format!("Nginx停止失败: {}", e)))),
+        }),
+        Ok(false) => Err("Nginx停止失败".to_string()),
+        Err(e) => Err(format!("Nginx停止失败: {}", e)),
+    };
+
+    crate::api::dashboard_ws::trigger_push(&state).await;
+
+    match result {
+        Ok(r) => Json(json!(ApiResponse::success(r))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(e))),
     }
 }
 
@@ -91,13 +112,20 @@ pub async fn restart(
         ))));
     }
 
-    match crate::nginx::restart_nginx(&config.nginx.bin, &config.nginx.config).await {
-        Ok(true) => Json(json!(ApiResponse::success(NginxTestResult {
+    let result = match crate::nginx::restart_nginx(&config.nginx.bin, &config.nginx.config).await {
+        Ok(true) => Ok(NginxTestResult {
             success: true,
             message: "Nginx重启成功".into(),
-        }))),
-        Ok(false) => Json(json!(ApiResponse::<()>::error("Nginx重启失败"))),
-        Err(e) => Json(json!(ApiResponse::<()>::error(format!("Nginx重启失败: {}", e)))),
+        }),
+        Ok(false) => Err("Nginx重启失败".to_string()),
+        Err(e) => Err(format!("Nginx重启失败: {}", e)),
+    };
+
+    crate::api::dashboard_ws::trigger_push(&state).await;
+
+    match result {
+        Ok(r) => Json(json!(ApiResponse::success(r))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(e))),
     }
 }
 
@@ -157,6 +185,8 @@ pub async fn install(
                     tracing::error!("重新加载配置失败: {}", e);
                 }
             }
+
+            crate::api::dashboard_ws::trigger_push(&state).await;
 
             Json(json!(ApiResponse::success(serde_json::json!({
                 "message": "Nginx 安装成功",
