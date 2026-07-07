@@ -9,7 +9,7 @@ use futures_util::{SinkExt, StreamExt};
 use portable_pty::{CommandBuilder, NativePtySystem, PtySize, PtySystem};
 use serde::Deserialize;
 
-use crate::auth;
+use crate::service::token_service;
 use crate::AppState;
 
 /// 找到 \x1b[2J（清屏）序列之后的位置，用于过滤 ConPTY 初始清屏
@@ -37,8 +37,7 @@ pub async fn terminal_ws(
     State(state): State<AppState>,
     Query(query): Query<TerminalQuery>,
 ) -> impl IntoResponse {
-    let config = state.get_config();
-    if auth::verify_token(&query.token, &config.auth.jwt_secret).is_err() {
+    if token_service::verify_token(state.db.pool(), &query.token).await.is_err() {
         return axum::http::Response::builder()
             .status(401)
             .body("Unauthorized".into())

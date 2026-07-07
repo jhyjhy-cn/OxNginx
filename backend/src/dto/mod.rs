@@ -381,3 +381,33 @@ pub struct UpsertI18nRequest {
     pub entries: Vec<I18nKv>,
 }
 
+// ============== 字典 DTOs ==============
+
+/// 创建/更新字典
+#[derive(Debug, Deserialize)]
+pub struct UpsertDictRequest {
+    pub name: String,
+    pub code: String,
+    pub description: Option<String>,
+}
+
+/// 创建/更新字典项
+#[derive(Debug, Deserialize)]
+pub struct UpsertDictItemRequest {
+    pub label: String,
+    pub value: String,
+    pub sort: Option<i32>,
+    pub status: Option<String>,
+}
+
+/// 字典+明细响应
+#[derive(Debug, Serialize)]
+pub struct DictWithItems {
+    pub id: i64,
+    pub name: String,
+    pub code: String,
+    pub description: Option<String>,
+    pub status: String,
+    pub items: Vec<crate::model::DictItem>,
+}
+

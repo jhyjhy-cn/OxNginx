@@ -36,9 +36,9 @@ futures-util = "0.3"
 sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "chrono"] }
 
 # 认证
-jsonwebtoken = "9"
 argon2 = "0.5"
 rand = "0.8"
+hex = "0.4"
 
 # 配置
 toml = "0.8"

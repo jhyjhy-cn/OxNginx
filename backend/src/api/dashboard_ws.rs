@@ -8,7 +8,7 @@ use axum::{
 use futures_util::{SinkExt, StreamExt};
 use serde::Deserialize;
 
-use crate::auth;
+use crate::service::token_service;
 use crate::AppState;
 
 #[derive(Deserialize)]
@@ -21,8 +21,7 @@ pub async fn dashboard_ws(
     State(state): State<AppState>,
     Query(query): Query<DashboardQuery>,
 ) -> impl IntoResponse {
-    let config = state.get_config();
-    if auth::verify_token(&query.token, &config.auth.jwt_secret).is_err() {
+    if token_service::verify_token(state.db.pool(), &query.token).await.is_err() {
         return axum::http::Response::builder()
             .status(401)
             .body("Unauthorized".into())

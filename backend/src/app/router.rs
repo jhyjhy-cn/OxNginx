@@ -15,6 +15,7 @@ pub fn build(state: AppState) -> Router {
     // 公开路由（无需认证）
     let public_routes = Router::new()
         .route("/api/login", post(api::auth_api::login))
+        .route("/api/logout", post(api::auth_api::logout))
         .route("/api/setup", post(api::auth_api::setup))
         .route("/api/setup/status", get(api::auth_api::setup_status))
         .route("/api/terminal/ws", get(api::terminal_api::terminal_ws))
@@ -127,6 +128,11 @@ pub fn build(state: AppState) -> Router {
         .route("/api/rbac/i18n/locales", get(api::rbac_api::list_i18n_locales))
         .route("/api/rbac/i18n", get(api::rbac_api::list_i18n).post(api::rbac_api::upsert_i18n))
         .route("/api/rbac/i18n/:id", delete(api::rbac_api::delete_i18n))
+        // 字典
+        .route("/api/rbac/dicts", get(api::rbac_api::list_dicts).post(api::rbac_api::create_dict))
+        .route("/api/rbac/dicts/:id", get(api::rbac_api::get_dict).put(api::rbac_api::update_dict).delete(api::rbac_api::delete_dict))
+        .route("/api/rbac/dicts/:dict_id/items", post(api::rbac_api::create_dict_item))
+        .route("/api/rbac/dict-items/:id", put(api::rbac_api::update_dict_item).delete(api::rbac_api::delete_dict_item))
         .layer(from_fn_with_state(state.clone(), middleware::require_admin))
         .layer(from_fn_with_state(state.clone(), middleware::auth_middleware));
 

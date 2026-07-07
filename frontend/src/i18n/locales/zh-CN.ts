@@ -29,6 +29,7 @@ export default {
     operationFailed: '操作失败',
     warning: '警告',
     download: '下载',
+    close: '关闭',
   },
 
   menu: {
@@ -57,6 +58,7 @@ export default {
     rbacDepts: '部门管理',
     rbacPosts: '岗位管理',
     rbacI18n: '国际化管理',
+    rbacDicts: '字典管理',
   },
 
   forbidden: {

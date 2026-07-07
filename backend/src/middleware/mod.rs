@@ -5,7 +5,6 @@ use axum::{
     response::Response,
 };
 
-use crate::auth;
 use crate::AppState;
 
 /// 请求日志中间件
@@ -28,7 +27,14 @@ pub async fn logging_middleware(request: Request, next: Next) -> Response {
     response
 }
 
-/// JWT认证中间件
+/// Token 信息（从中间件注入到请求上下文）
+#[derive(Clone, Debug)]
+pub struct TokenInfo {
+    pub username: String,
+    pub user_id: i64,
+}
+
+/// Token 认证中间件（查数据库验证 token）
 pub async fn auth_middleware(
     state: axum::extract::State<AppState>,
     request: Request,
@@ -37,37 +43,44 @@ pub async fn auth_middleware(
     let auth_header = request
         .headers()
         .get(header::AUTHORIZATION)
-        .and_then(|value| value.to_str().ok());
+        .and_then(|v| v.to_str().ok());
 
-    let token = match auth_header {
-        Some(header) if header.starts_with("Bearer ") => &header[7..],
+    let token_str = match auth_header {
+        Some(h) if h.starts_with("Bearer ") => &h[7..],
         _ => return Err(StatusCode::UNAUTHORIZED),
     };
 
-    let config = state.get_config();
-    match auth::verify_token(token, &config.auth.jwt_secret) {
-        Ok(claims) => {
+    // 查数据库验证 token
+    match crate::service::token_service::verify_token_full(state.db.pool(), token_str).await {
+        Ok(Some(token)) => {
             let mut request = request;
-            request.extensions_mut().insert(claims);
+            request.extensions_mut().insert(TokenInfo {
+                username: token.username,
+                user_id: token.user_id,
+            });
             Ok(next.run(request).await)
         }
+        Ok(None) => Err(StatusCode::UNAUTHORIZED),
         Err(_) => Err(StatusCode::UNAUTHORIZED),
     }
 }
 
-/// ponytail: username=='admin' 短路；非 admin 查 DB 验证 super_admin 角色
-/// 需挂在本中间件 *之后*，因为依赖 auth_middleware 注入的 Claims
+/// 管理员认证中间件（需 auth_middleware 之后使用）
 pub async fn require_admin(
     state: axum::extract::State<AppState>,
     request: Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
-    let claims = request.extensions().get::<auth::Claims>().cloned();
-    let Some(c) = claims else { return Err(StatusCode::UNAUTHORIZED) };
-    if c.sub == "admin" {
+    let token_info = request.extensions().get::<TokenInfo>().cloned();
+    let Some(info) = token_info else { return Err(StatusCode::UNAUTHORIZED) };
+
+    // admin 用户直接通过
+    if info.username == "admin" {
         return Ok(next.run(request).await);
     }
-    match crate::service::rbac_service::user_is_super_admin(&state.db.pool(), &c.sub).await {
+
+    // 其他用户查数据库验证 super_admin 角色
+    match crate::service::rbac_service::user_is_super_admin(&state.db.pool(), &info.username).await {
         Ok(true) => Ok(next.run(request).await),
         _ => Err(StatusCode::FORBIDDEN),
     }

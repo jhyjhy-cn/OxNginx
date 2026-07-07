@@ -242,6 +242,38 @@ impl Database {
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(locale, key)
             );
+
+            CREATE TABLE IF NOT EXISTS sys_dict (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                code TEXT NOT NULL UNIQUE,
+                description TEXT,
+                status TEXT NOT NULL DEFAULT 'enabled',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS sys_dict_item (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                dict_id INTEGER NOT NULL,
+                label TEXT NOT NULL,
+                value TEXT NOT NULL,
+                sort INTEGER NOT NULL DEFAULT 0,
+                status TEXT NOT NULL DEFAULT 'enabled',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (dict_id) REFERENCES sys_dict(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS sys_tokens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                token TEXT NOT NULL UNIQUE,
+                user_id INTEGER NOT NULL,
+                username TEXT NOT NULL,
+                expires_at DATETIME NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES sys_users(id) ON DELETE CASCADE
+            );
             "#,
         )
         .execute(&self.pool)

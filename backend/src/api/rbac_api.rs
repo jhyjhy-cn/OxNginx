@@ -4,19 +4,20 @@ use axum::{
 };
 use serde_json::json;
 
-use crate::auth::Claims;
 use crate::dto::{
     ApiResponse, RbacInfo, ResetPasswordRequest, SetRoleMenusRequest, UpsertDeptRequest,
-    UpsertI18nRequest, UpsertMenuRequest, UpsertPostRequest, UpsertRoleRequest, UpsertUserRequest,
+    UpsertDictItemRequest, UpsertDictRequest, UpsertI18nRequest, UpsertMenuRequest,
+    UpsertPostRequest, UpsertRoleRequest, UpsertUserRequest,
 };
+use crate::middleware::TokenInfo;
 use crate::service::rbac_service;
 use crate::AppState;
 
 // ============== /api/rbac/me ==============
 
-/// 当前登录用户的 RBAC 信息（任意登录用户可用，挂在 authed 层）
-pub async fn me(State(state): State<AppState>, Extension(claims): Extension<Claims>) -> Json<serde_json::Value> {
-    match rbac_service::get_rbac_info(&state.db.pool(), &claims.sub).await {
+/// 当前登录用户的 RBAC 信息
+pub async fn me(State(state): State<AppState>, Extension(info): Extension<TokenInfo>) -> Json<serde_json::Value> {
+    match rbac_service::get_rbac_info(&state.db.pool(), &info.username).await {
         Ok((roles, permissions, menus)) => Json(json!(ApiResponse::success(RbacInfo {
             roles,
             permissions,
@@ -429,6 +430,99 @@ pub async fn get_i18n_messages(
     let locale = params.get("locale").map(|s| s.as_str()).unwrap_or("zh-CN");
     match rbac_service::get_i18n_messages(&state.db.pool(), locale).await {
         Ok(data) => Json(json!(ApiResponse::success(data))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
+    }
+}
+
+// ============== 字典管理 ==============
+
+pub async fn list_dicts(State(state): State<AppState>) -> Json<serde_json::Value> {
+    match rbac_service::list_dicts(&state.db.pool()).await {
+        Ok(data) => Json(json!(ApiResponse::success(data))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
+    }
+}
+
+pub async fn get_dict(State(state): State<AppState>, Path(id): Path<i64>) -> Json<serde_json::Value> {
+    match rbac_service::get_dict_with_items(&state.db.pool(), id).await {
+        Ok(Some(data)) => Json(json!(ApiResponse::success(data))),
+        Ok(None) => Json(json!(ApiResponse::<()>::error("字典不存在"))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
+    }
+}
+
+pub async fn create_dict(
+    State(state): State<AppState>,
+    Json(req): Json<UpsertDictRequest>,
+) -> Json<serde_json::Value> {
+    match rbac_service::create_dict(&state.db.pool(), &req.name, &req.code, req.description.as_deref()).await {
+        Ok(id) => Json(json!(ApiResponse::success(id))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
+    }
+}
+
+pub async fn update_dict(
+    State(state): State<AppState>,
+    Path(id): Path<i64>,
+    Json(req): Json<UpsertDictRequest>,
+) -> Json<serde_json::Value> {
+    match rbac_service::update_dict(&state.db.pool(), id, Some(&req.name), req.description.as_deref(), None).await {
+        Ok(_) => Json(json!(ApiResponse::success("ok"))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
+    }
+}
+
+pub async fn delete_dict(State(state): State<AppState>, Path(id): Path<i64>) -> Json<serde_json::Value> {
+    match rbac_service::delete_dict(&state.db.pool(), id).await {
+        Ok(true) => Json(json!(ApiResponse::success("ok"))),
+        Ok(false) => Json(json!(ApiResponse::<()>::error("字典不存在"))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
+    }
+}
+
+pub async fn create_dict_item(
+    State(state): State<AppState>,
+    Path(dict_id): Path<i64>,
+    Json(req): Json<UpsertDictItemRequest>,
+) -> Json<serde_json::Value> {
+    match rbac_service::create_dict_item(
+        &state.db.pool(),
+        dict_id,
+        &req.label,
+        &req.value,
+        req.sort.unwrap_or(0),
+    )
+    .await
+    {
+        Ok(id) => Json(json!(ApiResponse::success(id))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
+    }
+}
+
+pub async fn update_dict_item(
+    State(state): State<AppState>,
+    Path(id): Path<i64>,
+    Json(req): Json<UpsertDictItemRequest>,
+) -> Json<serde_json::Value> {
+    match rbac_service::update_dict_item(
+        &state.db.pool(),
+        id,
+        Some(&req.label),
+        Some(&req.value),
+        req.sort,
+        req.status.as_deref(),
+    )
+    .await
+    {
+        Ok(_) => Json(json!(ApiResponse::success("ok"))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
+    }
+}
+
+pub async fn delete_dict_item(State(state): State<AppState>, Path(id): Path<i64>) -> Json<serde_json::Value> {
+    match rbac_service::delete_dict_item(&state.db.pool(), id).await {
+        Ok(true) => Json(json!(ApiResponse::success("ok"))),
+        Ok(false) => Json(json!(ApiResponse::<()>::error("字典项不存在"))),
         Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
     }
 }

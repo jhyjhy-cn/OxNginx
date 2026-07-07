@@ -57,6 +57,7 @@ export default {
     rbacDepts: 'Department Management',
     rbacPosts: 'Post Management',
     rbacI18n: 'I18n Management',
+    rbacDicts: 'Dict Management',
   },
 
   forbidden: {

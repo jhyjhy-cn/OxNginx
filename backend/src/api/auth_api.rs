@@ -1,8 +1,8 @@
-use axum::{extract::State, http::header, Json};
+use axum::{extract::{Extension, State}, http::header, Json};
 use serde_json::json;
 
-use crate::auth;
 use crate::dto::{ApiResponse, ChangePasswordRequest, ChangeUsernameRequest, LoginRequest, LoginResponse};
+use crate::middleware::TokenInfo;
 use crate::AppState;
 
 /// 用户登录
@@ -30,20 +30,26 @@ pub async fn login(
     };
 
     // 验证密码
-    match auth::verify_password(&req.password, &user.password) {
+    match crate::auth::verify_password(&req.password, &user.password) {
         Ok(true) => {}
         _ => {
             return Json(json!(ApiResponse::<()>::error("用户名或密码错误")));
         }
-    }
+    };
 
-    // 生成JWT
+    // 获取过期时间配置
     let config = state.get_config();
-    match auth::generate_token(
+    let expires_hours = config.auth.jwt_expires_hours as i64;
+
+    // 生成 token并存库
+    match crate::service::token_service::create_token(
+        state.db.pool(),
+        user.id,
         &user.username,
-        &config.auth.jwt_secret,
-        config.auth.jwt_expires_hours,
-    ) {
+        expires_hours,
+    )
+    .await
+    {
         Ok(token) => {
             // ponytail: 登录即拿 RBAC 信息，省一次 /me 请求
             let (roles, permissions, menus) = match crate::service::rbac_service::get_rbac_info(
@@ -67,33 +73,31 @@ pub async fn login(
     }
 }
 
+/// 登出
+pub async fn logout(State(state): State<AppState>, headers: header::HeaderMap) -> Json<serde_json::Value> {
+    let token = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "));
+
+    if let Some(token) = token {
+        let _ = crate::service::token_service::delete_token(state.db.pool(), token).await;
+    }
+
+    Json(json!(ApiResponse::success("ok")))
+}
+
 /// 修改密码（需要认证）
 pub async fn change_password(
     State(state): State<AppState>,
-    headers: header::HeaderMap,
+    Extension(info): Extension<TokenInfo>,
     Json(req): Json<ChangePasswordRequest>,
 ) -> Json<serde_json::Value> {
-    // 从 Authorization 头提取并验证 token
-    let token = match headers
-        .get(header::AUTHORIZATION)
-        .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.strip_prefix("Bearer "))
-    {
-        Some(t) => t,
-        None => return Json(json!(ApiResponse::<()>::error("未登录"))),
-    };
-
-    let config = state.get_config();
-    let claims = match auth::verify_token(token, &config.auth.jwt_secret) {
-        Ok(c) => c,
-        Err(_) => return Json(json!(ApiResponse::<()>::error("登录已过期"))),
-    };
-
     // 查询当前用户
     let user = sqlx::query_as::<_, crate::model::User>(
         "SELECT * FROM sys_users WHERE username = ?",
     )
-    .bind(&claims.sub)
+    .bind(&info.username)
     .fetch_optional(state.db.pool())
     .await;
 
@@ -104,24 +108,28 @@ pub async fn change_password(
     };
 
     // 验证旧密码
-    match auth::verify_password(&req.old_password, &user.password) {
+    match crate::auth::verify_password(&req.old_password, &user.password) {
         Ok(true) => {}
         _ => return Json(json!(ApiResponse::<()>::error("旧密码错误"))),
     }
 
     // 哈希新密码并更新
-    let hashed = match auth::hash_password(&req.new_password) {
+    let hashed = match crate::auth::hash_password(&req.new_password) {
         Ok(h) => h,
         Err(e) => return Json(json!(ApiResponse::<()>::error(format!("密码哈希失败: {}", e)))),
     };
 
     match sqlx::query("UPDATE sys_users SET password = ? WHERE username = ?")
         .bind(&hashed)
-        .bind(&claims.sub)
+        .bind(&info.username)
         .execute(state.db.pool())
         .await
     {
-        Ok(_) => Json(json!(ApiResponse::success("密码修改成功"))),
+        Ok(_) => {
+            // 使该用户所有旧 token 失效
+            let _ = crate::service::token_service::delete_user_tokens(state.db.pool(), user.id).await;
+            Json(json!(ApiResponse::success("密码修改成功")))
+        }
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("修改密码失败: {}", e)))),
     }
 }
@@ -129,30 +137,14 @@ pub async fn change_password(
 /// 修改账号（需要认证）
 pub async fn change_username(
     State(state): State<AppState>,
-    headers: header::HeaderMap,
+    Extension(info): Extension<TokenInfo>,
     Json(req): Json<ChangeUsernameRequest>,
 ) -> Json<serde_json::Value> {
-    // 从 Authorization 头提取并验证 token
-    let token = match headers
-        .get(header::AUTHORIZATION)
-        .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.strip_prefix("Bearer "))
-    {
-        Some(t) => t,
-        None => return Json(json!(ApiResponse::<()>::error("未登录"))),
-    };
-
-    let config = state.get_config();
-    let claims = match auth::verify_token(token, &config.auth.jwt_secret) {
-        Ok(c) => c,
-        Err(_) => return Json(json!(ApiResponse::<()>::error("登录已过期"))),
-    };
-
     // 查询当前用户
     let user = sqlx::query_as::<_, crate::model::User>(
         "SELECT * FROM sys_users WHERE username = ?",
     )
-    .bind(&claims.sub)
+    .bind(&info.username)
     .fetch_optional(state.db.pool())
     .await;
 
@@ -163,7 +155,7 @@ pub async fn change_username(
     };
 
     // 验证密码
-    match auth::verify_password(&req.password, &user.password) {
+    match crate::auth::verify_password(&req.password, &user.password) {
         Ok(true) => {}
         _ => return Json(json!(ApiResponse::<()>::error("密码错误"))),
     }
@@ -183,38 +175,33 @@ pub async fn change_username(
     // 更新用户名
     match sqlx::query("UPDATE sys_users SET username = ? WHERE username = ?")
         .bind(&req.new_username)
-        .bind(&claims.sub)
+        .bind(&info.username)
         .execute(state.db.pool())
         .await
     {
         Ok(_) => {
-            // 生成新 token（含新用户名）
-            let token = auth::generate_token(
+            // 更新 token 表中的用户名
+            let _ = sqlx::query("UPDATE sys_tokens SET username = ? WHERE user_id = ?")
+                .bind(&req.new_username)
+                .bind(user.id)
+                .execute(state.db.pool())
+                .await;
+
+            let (roles, permissions, menus) = match crate::service::rbac_service::get_rbac_info(
+                state.db.pool(),
                 &req.new_username,
-                &config.auth.jwt_secret,
-                config.auth.jwt_expires_hours,
-            );
-            match token {
-                Ok(token) => {
-                    let (roles, permissions, menus) = match crate::service::rbac_service::get_rbac_info(
-                        state.db.pool(),
-                        &req.new_username,
-                    )
-                    .await
-                    {
-                        Ok(v) => v,
-                        Err(_) => (vec![], vec![], vec![]),
-                    };
-                    Json(json!(ApiResponse::success(LoginResponse {
-                        token,
-                        username: req.new_username,
-                        roles,
-                        permissions,
-                        menus,
-                    })))
-                }
-                Err(e) => Json(json!(ApiResponse::<()>::error(format!("生成token失败: {}", e)))),
-            }
+            )
+            .await
+            {
+                Ok(v) => v,
+                Err(_) => (vec![], vec![], vec![]),
+            };
+            Json(json!(ApiResponse::success(serde_json::json!({
+                "username": req.new_username,
+                "roles": roles,
+                "permissions": permissions,
+                "menus": menus,
+            }))))
         }
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("修改账号失败: {}", e)))),
     }
@@ -250,7 +237,7 @@ pub async fn setup(
     }
 
     // 哈希密码
-    let hashed_password = match auth::hash_password(&req.password) {
+    let hashed_password = match crate::auth::hash_password(&req.password) {
         Ok(h) => h,
         Err(e) => {
             return Json(json!(ApiResponse::<()>::error(format!("密码哈希失败: {}", e))));

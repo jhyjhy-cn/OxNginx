@@ -40,6 +40,7 @@ pub async fn seed_i18n(pool: &SqlitePool) -> Result<()> {
         ("zh-CN", "common.operationFailed", "操作失败"),
         ("zh-CN", "common.warning", "警告"),
         ("zh-CN", "common.download", "下载"),
+        ("zh-CN", "common.close", "关闭"),
         ("zh-CN", "menu.dashboard", "仪表盘"),
         ("zh-CN", "menu.sites", "站点管理"),
         ("zh-CN", "menu.ssl", "SSL证书"),
@@ -1053,6 +1054,23 @@ pub async fn seed_i18n(pool: &SqlitePool) -> Result<()> {
         ("en-US", "files.notEditable", "This file type is not supported for online editing"),
         ("en-US", "files.selectItems", "Please select files first"),
         ("en-US", "files.notePlaceholder", "Add a note for this file..."),
+        // 字典管理
+        ("zh-CN", "menu.rbacDicts", "字典管理"),
+        ("zh-CN", "dict.colName", "字典名称"),
+        ("zh-CN", "dict.colCode", "字典编码"),
+        ("zh-CN", "dict.colDesc", "描述"),
+        ("zh-CN", "dict.colLabel", "标签"),
+        ("zh-CN", "dict.colValue", "值"),
+        ("zh-CN", "dict.colSort", "排序"),
+        ("zh-CN", "dict.manageItems", "管理字典项"),
+        ("en-US", "menu.rbacDicts", "Dict Management"),
+        ("en-US", "dict.colName", "Dict Name"),
+        ("en-US", "dict.colCode", "Dict Code"),
+        ("en-US", "dict.colDesc", "Description"),
+        ("en-US", "dict.colLabel", "Label"),
+        ("en-US", "dict.colValue", "Value"),
+        ("en-US", "dict.colSort", "Sort"),
+        ("en-US", "dict.manageItems", "Manage Items"),
     ];
 
     for (locale, key, value) in SEED_I18N {

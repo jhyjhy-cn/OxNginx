@@ -38,6 +38,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     ("权限管理", "部门管理",   "menu.rbacDepts",      "OfficeBuilding",  "/settings/rbac/depts", "C", "sys:user:manage", "RbacDepts"),
     ("权限管理", "岗位管理",   "menu.rbacPosts",      "Postcard",        "/settings/rbac/posts", "C", "sys:user:manage", "RbacPosts"),
     ("权限管理", "国际化管理", "menu.rbacI18n",       "MapLocation",       "/settings/rbac/i18n",  "C", "sys:config:view", "RbacI18n"),
+    ("权限管理", "字典管理",   "menu.rbacDicts",       "Grid",              "/settings/rbac/dicts", "C", "sys:config:view", "RbacDicts"),
 ];
 
 /// 启动种子：菜单 + super_admin 角色 + admin 用户绑定 + i18n
