@@ -44,6 +44,8 @@
     },
     "windows": {
       "nsis": {
+        "installMode": "perMachine",
+        "installerHooks": "../scripts/uninstall-hooks.nsh",
         "displayLanguageSelector": true,
         "languages": ["SimpChinese", "English"],
         "installerIcon": "icons/icon.ico"
