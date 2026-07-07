@@ -41,6 +41,7 @@ export default {
     logs: 'Logs',
     config: 'Config Editor',
     files: 'Files',
+    terminal: 'Terminal',
     settings: 'Settings',
   },
 
@@ -457,6 +458,12 @@ export default {
     language: 'Language',
     showTabs: 'Tabs',
     showTabIcons: 'Tab Icons',
+  },
+
+  terminal: {
+    connected: 'Terminal connected',
+    disconnected: 'Terminal disconnected',
+    error: 'Connection error',
   },
 
   tabs: {

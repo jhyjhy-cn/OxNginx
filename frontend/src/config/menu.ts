@@ -27,6 +27,7 @@ export const flatMenuItems: MenuItem[] = [
   { path: '/logs',       title: 'menu.logs',        icon: 'Document' },
   { path: '/config',     title: 'menu.config',      icon: 'Edit' },
   { path: '/files',      title: 'menu.files',       icon: 'FolderOpened' },
+  { path: '/terminal',  title: 'menu.terminal',    icon: 'Monitor' },
   { path: '/settings',   title: 'menu.settings',    icon: 'Setting' },
 ]
 
@@ -45,6 +46,7 @@ export const groupedMenuItems: MenuGroup[] = [
     { path: '/config', title: 'menu.config', icon: 'Edit' },
     { path: '/logs',   title: 'menu.logs',   icon: 'Document' },
     { path: '/files',  title: 'menu.files',  icon: 'FolderOpened' },
+    { path: '/terminal', title: 'menu.terminal', icon: 'Monitor' },
   ]},
 ]
 

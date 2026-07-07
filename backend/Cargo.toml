@@ -22,14 +22,15 @@ strip = true
 
 [dependencies]
 # Web框架
-axum = { version = "0.7", features = ["macros"] }
-tokio = { version = "1", features = ["full"] }
+axum = { version = "0.7", features = ["macros", "ws"] }
+tokio = { version = "1", features = ["full", "process"] }
 tower = "0.4"
 tower-http = { version = "0.5", features = ["cors", "fs"] }
 
 # 序列化
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+futures-util = "0.3"
 
 # 数据库
 sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "chrono"] }
@@ -75,3 +76,6 @@ uzers = "0.12"
 # Windows API
 [target.'cfg(target_os = "windows")'.dependencies]
 winapi = { version = "0.3", features = ["winuser", "libloaderapi", "consoleapi"] }
+
+# 伪终端
+portable-pty = "0.8"

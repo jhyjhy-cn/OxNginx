@@ -43,6 +43,7 @@ export default {
     logs: '日志',
     config: '配置编辑',
     files: '文件管理',
+    terminal: '终端',
     settings: '设置',
   },
 
@@ -475,6 +476,13 @@ export default {
     language: '多语言',
     showTabs: '标签页',
     showTabIcons: '标签图标',
+  },
+
+  // 终端
+  terminal: {
+    connected: '终端已连接',
+    disconnected: '终端已断开',
+    error: '连接错误',
   },
 
   // 标签页

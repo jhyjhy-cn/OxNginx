@@ -18,6 +18,7 @@ const epLocale = computed(() => locale.value === 'zh-CN' ? zhCn : en)
 <style>
 :root {
   --el-bg-color-page: #f3f5f8;
+  --font-mono: 'Maple Mono NF CN', 'Maple Mono', Consolas, 'Courier New', monospace;
 }
 
 * {
@@ -29,5 +30,9 @@ const epLocale = computed(() => locale.value === 'zh-CN' ? zhCn : en)
 html, body, #app {
   height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+code, pre, .monaco-editor, .xterm {
+  font-family: var(--font-mono) !important;
 }
 </style>

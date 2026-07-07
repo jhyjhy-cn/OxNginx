@@ -75,6 +75,12 @@ const router = createRouter({
           meta: { title: 'menu.files' },
         },
         {
+          path: 'terminal',
+          name: 'Terminal',
+          component: () => import('@/views/Terminal.vue'),
+          meta: { title: 'menu.terminal' },
+        },
+        {
           path: 'settings',
           name: 'Settings',
           component: () => import('@/views/Settings.vue'),

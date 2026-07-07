@@ -16,7 +16,8 @@ pub fn build(state: AppState) -> Router {
     let public_routes = Router::new()
         .route("/api/login", post(api::auth_api::login))
         .route("/api/setup", post(api::auth_api::setup))
-        .route("/api/setup/status", get(api::auth_api::setup_status));
+        .route("/api/setup/status", get(api::auth_api::setup_status))
+        .route("/api/terminal/ws", get(api::terminal_api::terminal_ws));
 
     // 需要认证的路由
     let protected_routes = Router::new()

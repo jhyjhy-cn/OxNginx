@@ -140,6 +140,7 @@ function initEditor() {
         language: 'nginx',
         theme: 'vs-dark',
         minimap: { enabled: false },
+        fontFamily: '"Maple Mono NF CN", "Maple Mono", Consolas, "Courier New", monospace',
         fontSize: 14,
         lineNumbers: 'on',
         scrollBeyondLastLine: false,
