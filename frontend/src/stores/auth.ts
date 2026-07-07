@@ -40,6 +40,7 @@ export const useAuthStore = defineStore('auth', () => {
   const roles = ref<string[]>(loadJSON<string[]>(LS.roles, []))
   const permissions = ref<string[]>(loadJSON<string[]>(LS.perms, []))
   const menus = ref<MenuNode[]>(loadJSON<MenuNode[]>(LS.menus, []))
+  const routesReady = ref(false)  // ponytail: 路由是否已注册完成，防止提前渲染
 
   const isAuthenticated = computed(() => !!token.value)
   let i18nLoaded = false  // ponytail: 防止刷新页面时重复拉 i18n
@@ -84,7 +85,6 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function fetchRbacInfo() {
-    // ponytail: 登录时已带 RBAC 信息；token 存在但 store 为空时刷新用
     if (!token.value) return
     try {
       const { data } = await api.get('/api/rbac/me')
@@ -94,8 +94,11 @@ export const useAuthStore = defineStore('auth', () => {
         menus.value = data.data.menus ?? []
         persistRbac()
       }
-    } catch {
-      // 401 走拦截器；其他忽略
+    } catch (e: any) {
+      // 401 时清空 token，强制重新登录
+      if (e?.response?.status === 401) {
+        logout()
+      }
     }
   }
 
@@ -146,6 +149,7 @@ export const useAuthStore = defineStore('auth', () => {
     roles,
     permissions,
     menus,
+    routesReady,
     isAuthenticated,
     isSuperAdmin,
     permissionSet,
