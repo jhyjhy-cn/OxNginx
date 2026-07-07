@@ -40,7 +40,6 @@ export const useAuthStore = defineStore('auth', () => {
   const roles = ref<string[]>(loadJSON<string[]>(LS.roles, []))
   const permissions = ref<string[]>(loadJSON<string[]>(LS.perms, []))
   const menus = ref<MenuNode[]>(loadJSON<MenuNode[]>(LS.menus, []))
-  const routesReady = ref(false)  // ponytail: 路由是否已注册完成，防止提前渲染
 
   const isAuthenticated = computed(() => !!token.value)
   let i18nLoaded = false  // ponytail: 防止刷新页面时重复拉 i18n
@@ -149,7 +148,6 @@ export const useAuthStore = defineStore('auth', () => {
     roles,
     permissions,
     menus,
-    routesReady,
     isAuthenticated,
     isSuperAdmin,
     permissionSet,
