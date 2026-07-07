@@ -47,21 +47,18 @@ const router = createRouter({
   ],
 })
 
-/** ponytail: 动态路由——登录后从后端菜单 addRoute */
-export function setupDynamicRoutes() {
-  const authStore = useAuthStore()
-
+/** ponytail: 从菜单数组注册动态路由 */
+function addRoutesFromMenus(menus: MenuNode[]) {
   const walk = (nodes: MenuNode[]) => {
     for (const n of nodes) {
       if (n.type === 'C' && n.path && n.component) {
         const loader = componentMap[n.component]
         if (loader) {
           const path = n.path.replace(/^\//, '')
-          const name = n.name
-          if (!router.hasRoute(name)) {
+          if (!router.hasRoute(n.name)) {
             router.addRoute('Root', {
               path,
-              name,
+              name: n.name,
               component: loader,
               meta: {
                 title: n.title,
@@ -75,8 +72,20 @@ export function setupDynamicRoutes() {
       if (n.children?.length) walk(n.children)
     }
   }
+  walk(menus)
+}
 
-  walk(authStore.menus)
+/** ponytail: 登录后调用 */
+export function setupDynamicRoutes() {
+  addRoutesFromMenus(useAuthStore().menus)
+}
+
+/** ponytail: app.mount 前调用，从 localStorage 恢复路由，避免首次解析时告警 */
+export function restoreDynamicRoutes() {
+  const authStore = useAuthStore()
+  if (authStore.isAuthenticated && authStore.menus.length > 0) {
+    addRoutesFromMenus(authStore.menus)
+  }
 }
 
 router.beforeEach(async (to) => {
@@ -91,10 +100,6 @@ router.beforeEach(async (to) => {
       await authStore.fetchRbacInfo()
     }
     setupDynamicRoutes()
-    // ponytail: 刷新时 addRoute 对当前导航不可见, 重试一次
-    if (to.matched.length === 0) {
-      return { path: to.fullPath, query: to.query, hash: to.hash }
-    }
   }
 
   await authStore.fetchI18n()

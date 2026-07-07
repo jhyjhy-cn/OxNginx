@@ -9,7 +9,7 @@ import 'element-plus/theme-chalk/dark/css-vars.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 import App from './App.vue'
-import router from './router'
+import router, { restoreDynamicRoutes } from './router'
 import i18n, { restoreLocale } from './i18n'
 import { useSettingsStore } from './stores/settings'
 import OnIconPlugin from './components/OnIcon'
@@ -25,6 +25,8 @@ const pinia = createPinia()
 pinia.use(piniaPluginPersistedstate)
 
 app.use(pinia)
+// 必须在 app.use(router) 之前恢复动态路由——router.install() 内部会立即解析初始路由
+restoreDynamicRoutes()
 app.use(router)
 app.use(ElementPlus)
 app.use(OnIconPlugin)
