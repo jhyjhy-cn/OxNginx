@@ -2,6 +2,7 @@ use crate::config::AppConfig;
 use crate::database::Database;
 use std::sync::{Arc, Mutex};
 use sysinfo::{System, Pid};
+use tokio::sync::broadcast;
 
 /// 应用共享状态
 pub struct AppState {
@@ -9,6 +10,7 @@ pub struct AppState {
     pub config: Arc<Mutex<AppConfig>>,
     pub sys: Arc<Mutex<System>>,
     pub pid: Pid,
+    pub dashboard_tx: broadcast::Sender<String>,
 }
 
 impl Clone for AppState {
@@ -18,6 +20,7 @@ impl Clone for AppState {
             config: Arc::clone(&self.config),
             sys: Arc::clone(&self.sys),
             pid: self.pid,
+            dashboard_tx: self.dashboard_tx.clone(),
         }
     }
 }
@@ -36,11 +39,13 @@ impl AppState {
 
     /// 创建新的 AppState 实例
     pub fn new(db: Database, config: AppConfig) -> Self {
+        let (dashboard_tx, _) = broadcast::channel(16);
         AppState {
             db,
             config: Arc::new(Mutex::new(config)),
             sys: Arc::new(Mutex::new(System::new())),
             pid: Pid::from_u32(std::process::id()),
+            dashboard_tx,
         }
     }
 }

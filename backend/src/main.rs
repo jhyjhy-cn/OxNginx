@@ -96,6 +96,7 @@ fn main() -> anyhow::Result<()> {
 
         // 创建应用状态 & 构建路由
         let state = AppState::new(db, config.clone());
+        api::dashboard_ws::start_push_task(state.clone());
         let app = app::router::build(state);
 
         // 启动服务

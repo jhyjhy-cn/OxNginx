@@ -62,8 +62,11 @@
           <el-icon :size="24"><Monitor /></el-icon>
         </div>
         <div class="stat-info">
-          <div class="stat-value">{{ stats.site_count }}</div>
-          <div class="stat-label">{{ $t('dashboard.sites') }}</div>
+          <el-statistic :value="stats.site_count" :duration="800">
+            <template #title>
+              <div class="stat-label">{{ $t('dashboard.sites') }}</div>
+            </template>
+          </el-statistic>
         </div>
       </el-card>
       <el-card class="stat-card" shadow="hover">
@@ -71,8 +74,11 @@
           <el-icon :size="24"><Lock /></el-icon>
         </div>
         <div class="stat-info">
-          <div class="stat-value">{{ stats.cert_count }}</div>
-          <div class="stat-label">{{ $t('dashboard.certificates') }}</div>
+          <el-statistic :value="stats.cert_count" :duration="800">
+            <template #title>
+              <div class="stat-label">{{ $t('dashboard.certificates') }}</div>
+            </template>
+          </el-statistic>
         </div>
       </el-card>
       <el-card class="stat-card" shadow="hover">
@@ -80,8 +86,11 @@
           <el-icon :size="24"><Cpu /></el-icon>
         </div>
         <div class="stat-info">
-          <div class="stat-value">{{ stats.cpu_usage.toFixed(1) }}%</div>
-          <div class="stat-label">{{ $t('dashboard.cpuUsage') }}</div>
+          <el-statistic :value="stats.cpu_usage" :precision="1" :duration="800" suffix="%">
+            <template #title>
+              <div class="stat-label">{{ $t('dashboard.cpuUsage') }}</div>
+            </template>
+          </el-statistic>
         </div>
       </el-card>
       <el-card class="stat-card" shadow="hover">
@@ -89,8 +98,11 @@
           <el-icon :size="24"><Coin /></el-icon>
         </div>
         <div class="stat-info">
-          <div class="stat-value">{{ stats.memory_usage.toFixed(1) }}%</div>
-          <div class="stat-label">{{ $t('dashboard.memoryUsage') }}</div>
+          <el-statistic :value="stats.memory_usage" :precision="1" :duration="800" suffix="%">
+            <template #title>
+              <div class="stat-label">{{ $t('dashboard.memoryUsage') }}</div>
+            </template>
+          </el-statistic>
         </div>
       </el-card>
       <el-card class="stat-card" shadow="hover">
@@ -98,8 +110,11 @@
           <el-icon :size="24"><Box /></el-icon>
         </div>
         <div class="stat-info">
-          <div class="stat-value">{{ stats.app_memory }} MB</div>
-          <div class="stat-label">{{ $t('dashboard.appMemory') }}</div>
+          <el-statistic :value="stats.app_memory" :duration="800" suffix=" MB">
+            <template #title>
+              <div class="stat-label">{{ $t('dashboard.appMemory') }}</div>
+            </template>
+          </el-statistic>
         </div>
       </el-card>
     </div>
@@ -178,8 +193,10 @@ import {
   Download,
 } from '@element-plus/icons-vue'
 import api from '@/api'
+import { useAuthStore } from '@/stores/auth'
 
 const { t } = useI18n()
+const authStore = useAuthStore()
 
 const nginxStatus = ref({
   running: false,
@@ -221,16 +238,15 @@ const loading = reactive({
 })
 
 let refreshTimer: ReturnType<typeof setInterval> | null = null
+let ws: WebSocket | null = null
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+let reconnectDelay = 1000
 
 onMounted(() => {
+  fetchSystemInfo()
   fetchNginxStatus()
   fetchDashboard()
-  fetchSystemInfo()
-  // 每 10 秒轮询更新状态
-  refreshTimer = setInterval(() => {
-    fetchNginxStatus()
-    fetchDashboard()
-  }, 10000)
+  connectWs()
 })
 
 onUnmounted(() => {
@@ -238,7 +254,41 @@ onUnmounted(() => {
     clearInterval(refreshTimer)
     refreshTimer = null
   }
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
+  ws?.close()
 })
+
+function connectWs() {
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const token = authStore.token
+  ws = new WebSocket(`${protocol}//${location.host}/api/dashboard/ws?token=${token}`)
+
+  ws.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data)
+      if (msg.nginx) nginxStatus.value = msg.nginx
+      if (msg.stats) {
+        // 保留字段兼容，stats 不含 nginx_version/worker_count/active_connections
+        stats.value = { ...stats.value, ...msg.stats }
+      }
+      // 收到数据，重置重连延迟
+      reconnectDelay = 1000
+    } catch (err) {
+      console.error('Dashboard WS 解析失败:', err)
+    }
+  }
+
+  ws.onclose = () => {
+    // 指数退避重连，max 30s
+    reconnectTimer = setTimeout(connectWs, reconnectDelay)
+    reconnectDelay = Math.min(reconnectDelay * 2, 30000)
+  }
+
+  ws.onerror = () => ws?.close()
+}
 
 
 async function fetchNginxStatus() {
