@@ -1,18 +1,20 @@
+use axum::Extension;
+use crate::audit::context::SharedAuditContext;
 use axum::{
     extract::{Path, State},
     Json,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use ox_nginx_macros::operation_log;
+use ox_nginx_macros::audit_log;
 
 use crate::dto::{ApiResponse, CreateSiteRequest, DeleteSiteRequest, UpdateSiteRequest};
 use crate::service::site_service;
 use crate::AppState;
 
 /// 批量操作请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct BatchRequest {
     pub ids: Vec<i64>,
 }
@@ -95,8 +97,10 @@ pub async fn get_site(
 }
 
 /// 创建站点
-#[operation_log("创建站点")]
+#[audit_log(module = "site", action = "创建站点", capture = req)]
 pub async fn create_site(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Json(mut req): Json<CreateSiteRequest>,
 ) -> Json<serde_json::Value> {
@@ -176,8 +180,10 @@ pub async fn create_site(
 }
 
 /// 更新站点
-#[operation_log("更新站点")]
+#[audit_log(module = "site", action = "更新站点", capture = req)]
 pub async fn update_site(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(req): Json<UpdateSiteRequest>,
@@ -206,8 +212,10 @@ pub async fn update_site(
 }
 
 /// 删除站点
-#[operation_log("删除站点")]
+#[audit_log(module = "site", action = "删除站点", capture = req)]
 pub async fn delete_site(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(req): Json<DeleteSiteRequest>,
@@ -254,8 +262,10 @@ pub async fn delete_site(
 }
 
 /// 批量启用站点
-#[operation_log("批量启用站点")]
+#[audit_log(module = "site", action = "批量启用站点", capture = req)]
 pub async fn batch_enable(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Json(req): Json<BatchRequest>,
 ) -> Json<serde_json::Value> {
@@ -305,8 +315,10 @@ pub async fn batch_enable(
 }
 
 /// 批量禁用站点
-#[operation_log("批量禁用站点")]
+#[audit_log(module = "site", action = "批量禁用站点", capture = req)]
 pub async fn batch_disable(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Json(req): Json<BatchRequest>,
 ) -> Json<serde_json::Value> {
@@ -355,8 +367,10 @@ pub async fn batch_disable(
 }
 
 /// 部署SSL证书（一键申请Let's Encrypt并绑定到站点）
-#[operation_log("部署SSL证书")]
+#[audit_log(module = "site", action = "部署SSL证书")]
 pub async fn deploy_ssl(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Json<serde_json::Value> {
@@ -467,8 +481,10 @@ pub async fn deploy_ssl(
 
 
 /// 批量删除站点
-#[operation_log("批量删除站点")]
+#[audit_log(module = "site", action = "批量删除站点", capture = req)]
 pub async fn batch_delete(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Json(req): Json<BatchRequest>,
 ) -> Json<serde_json::Value> {

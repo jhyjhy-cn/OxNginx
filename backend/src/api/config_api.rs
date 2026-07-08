@@ -1,3 +1,5 @@
+use axum::Extension;
+use crate::audit::context::SharedAuditContext;
 use axum::{
     extract::{Path, State},
     Json,
@@ -5,7 +7,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use ox_nginx_macros::operation_log;
+use ox_nginx_macros::audit_log;
 
 use crate::dto::ApiResponse;
 use crate::AppState;
@@ -18,7 +20,7 @@ pub struct ConfigContent {
 }
 
 /// 保存配置请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct SaveConfigRequest {
     pub content: String,
 }
@@ -76,8 +78,10 @@ pub async fn get_main_config(
 }
 
 /// 保存主配置文件
-#[operation_log("保存主配置")]
+#[audit_log(module = "config", action = "保存主配置", capture = req)]
 pub async fn save_main_config(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Json(req): Json<SaveConfigRequest>,
 ) -> Json<serde_json::Value> {
@@ -132,8 +136,10 @@ pub async fn get_site_config(
 }
 
 /// 保存站点配置文件
-#[operation_log("保存站点配置")]
+#[audit_log(module = "config", action = "保存站点配置", capture = req)]
 pub async fn save_site_config(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(name): Path<String>,
     Json(req): Json<SaveConfigRequest>,
@@ -173,8 +179,10 @@ pub async fn save_site_config(
 }
 
 /// 启用/禁用站点配置
-#[operation_log("启禁站点配置")]
+#[audit_log(module = "config", action = "启禁站点配置")]
 pub async fn toggle_site_config(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(name): Path<String>,
 ) -> Json<serde_json::Value> {
@@ -197,8 +205,10 @@ pub async fn toggle_site_config(
 }
 
 /// 删除站点配置文件
-#[operation_log("删除站点配置")]
+#[audit_log(module = "config", action = "删除站点配置")]
 pub async fn delete_site_config(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(name): Path<String>,
 ) -> Json<serde_json::Value> {

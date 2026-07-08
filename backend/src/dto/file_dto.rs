@@ -26,62 +26,62 @@ pub struct FileListResponse {
 }
 
 /// 写入文件请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct FileWriteRequest {
     pub path: String,
     pub content: String,
 }
 
 /// 创建目录请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct FileMkdirRequest {
     pub path: String,
     pub name: String,
 }
 
 /// 创建文件请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct FileTouchRequest {
     pub path: String,
     pub name: String,
 }
 
 /// 重命名请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct FileRenameRequest {
     pub path: String,
     pub new_name: String,
 }
 
 /// 移动请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct FileMoveRequest {
     pub source: String,
     pub destination: String,
 }
 
 /// 复制请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct FileCopyRequest {
     pub source: String,
     pub destination: String,
 }
 
 /// 删除请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct FileDeleteRequest {
     pub path: String,
 }
 
 /// 修改权限请求（仅 Linux 生效）
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct FileChmodRequest {
     pub path: String,
     pub mode: String,
 }
 
 /// 压缩请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct FileCompressRequest {
     pub paths: Vec<String>,
     pub destination: String,
@@ -89,14 +89,14 @@ pub struct FileCompressRequest {
 }
 
 /// 解压请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct FileExtractRequest {
     pub path: String,
     pub destination: String,
 }
 
 /// 保存备注请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct FileNoteRequest {
     pub path: String,
     pub note: String,

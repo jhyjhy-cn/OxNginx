@@ -1,10 +1,12 @@
+use axum::Extension;
+use crate::audit::context::SharedAuditContext;
 use axum::{
     extract::{Path, State},
     Json,
 };
 use serde_json::json;
 
-use ox_nginx_macros::operation_log;
+use ox_nginx_macros::audit_log;
 
 use crate::dto::{ApiResponse, CreateTemplateRequest, UpdateTemplateRequest};
 use crate::service::template_service;
@@ -33,8 +35,10 @@ pub async fn get_template(
 }
 
 /// 创建配置模板
-#[operation_log("创建模板")]
+#[audit_log(module = "template", action = "创建模板", capture = req)]
 pub async fn create_template(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Json(req): Json<CreateTemplateRequest>,
 ) -> Json<serde_json::Value> {
@@ -45,8 +49,10 @@ pub async fn create_template(
 }
 
 /// 更新配置模板
-#[operation_log("更新模板")]
+#[audit_log(module = "template", action = "更新模板", capture = req)]
 pub async fn update_template(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(req): Json<UpdateTemplateRequest>,
@@ -59,8 +65,10 @@ pub async fn update_template(
 }
 
 /// 删除配置模板
-#[operation_log("删除模板")]
+#[audit_log(module = "template", action = "删除模板")]
 pub async fn delete_template(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Json<serde_json::Value> {

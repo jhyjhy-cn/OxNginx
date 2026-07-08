@@ -1,16 +1,18 @@
+use axum::Extension;
+use crate::audit::context::SharedAuditContext;
 use axum::{
     extract::{Path, State},
     Json,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::dto::ApiResponse;
 use crate::service::reverse_proxy_service;
 use crate::AppState;
-use ox_nginx_macros::operation_log;
+use ox_nginx_macros::audit_log;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct CreateProxyRequest {
     pub name: String,
     pub proxy_dir: Option<String>,
@@ -18,7 +20,7 @@ pub struct CreateProxyRequest {
     pub cache: Option<i32>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UpdateProxyRequest {
     pub name: Option<String>,
     pub proxy_dir: Option<String>,
@@ -39,8 +41,10 @@ pub async fn list_proxies(
 }
 
 /// 创建反向代理
-#[operation_log("创建反向代理")]
+#[audit_log(module = "proxy", action = "创建反向代理", capture = req)]
 pub async fn create_proxy(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(site_id): Path<i64>,
     Json(req): Json<CreateProxyRequest>,
@@ -56,8 +60,10 @@ pub async fn create_proxy(
 }
 
 /// 更新反向代理
-#[operation_log("更新反向代理")]
+#[audit_log(module = "proxy", action = "更新反向代理", capture = req)]
 pub async fn update_proxy(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(req): Json<UpdateProxyRequest>,
@@ -89,8 +95,10 @@ pub async fn update_proxy(
 }
 
 /// 删除反向代理
-#[operation_log("删除反向代理")]
+#[audit_log(module = "proxy", action = "删除反向代理")]
 pub async fn delete_proxy(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Json<serde_json::Value> {

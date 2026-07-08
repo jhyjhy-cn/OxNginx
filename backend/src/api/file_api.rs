@@ -1,8 +1,9 @@
 use axum::extract::Query;
 use axum::http::header;
 use axum::response::{IntoResponse, Response};
-use axum::{extract::State, Json};
-use serde::Deserialize;
+use axum::{extract::State, Extension, Json};
+use crate::audit::context::SharedAuditContext;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::path::Path;
 
@@ -10,16 +11,16 @@ use crate::dto::file_dto::*;
 use crate::dto::ApiResponse;
 use crate::service::file_service;
 use crate::AppState;
-use ox_nginx_macros::operation_log;
+use ox_nginx_macros::audit_log;
 
 /// 查询参数（GET 接口用）
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct PathQuery {
     pub path: String,
 }
 
 /// POST 请求参数
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ListFilesRequest {
     pub path: String,
     #[serde(default)]
@@ -153,8 +154,10 @@ pub async fn read_file(Json(req): Json<PathQuery>) -> Json<serde_json::Value> {
 }
 
 /// 写入文件
-#[operation_log("写入文件")]
+#[audit_log(module = "file", action = "写入文件", capture = req)]
 pub async fn write_file(
+    ctx: Extension<SharedAuditContext>,
+    
     State(_state): State<AppState>,
     Json(req): Json<FileWriteRequest>,
 ) -> Json<serde_json::Value> {
@@ -165,8 +168,10 @@ pub async fn write_file(
 }
 
 /// 创建目录
-#[operation_log("创建目录")]
-pub async fn mkdir(Json(req): Json<FileMkdirRequest>) -> Json<serde_json::Value> {
+#[audit_log(module = "file", action = "创建目录", capture = req)]
+pub async fn mkdir(
+    ctx: Extension<SharedAuditContext>,
+    Json(req): Json<FileMkdirRequest>) -> Json<serde_json::Value> {
     match file_service::create_dir(&req.path, &req.name).await {
         Ok(new_path) => Json(json!(ApiResponse::success(json!({ "path": new_path })))),
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("创建目录失败: {}", e)))),
@@ -174,8 +179,10 @@ pub async fn mkdir(Json(req): Json<FileMkdirRequest>) -> Json<serde_json::Value>
 }
 
 /// 创建文件
-#[operation_log("创建文件")]
-pub async fn touch(Json(req): Json<FileTouchRequest>) -> Json<serde_json::Value> {
+#[audit_log(module = "file", action = "创建文件", capture = req)]
+pub async fn touch(
+    ctx: Extension<SharedAuditContext>,
+    Json(req): Json<FileTouchRequest>) -> Json<serde_json::Value> {
     match file_service::create_file(&req.path, &req.name).await {
         Ok(new_path) => Json(json!(ApiResponse::success(json!({ "path": new_path })))),
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("创建文件失败: {}", e)))),
@@ -183,8 +190,10 @@ pub async fn touch(Json(req): Json<FileTouchRequest>) -> Json<serde_json::Value>
 }
 
 /// 重命名
-#[operation_log("重命名文件")]
+#[audit_log(module = "file", action = "重命名文件", capture = req)]
 pub async fn rename(
+    ctx: Extension<SharedAuditContext>,
+    
     Json(req): Json<FileRenameRequest>,
 ) -> Json<serde_json::Value> {
     match file_service::rename(&req.path, &req.new_name).await {
@@ -194,8 +203,10 @@ pub async fn rename(
 }
 
 /// 移动文件
-#[operation_log("移动文件")]
-pub async fn move_file(Json(req): Json<FileMoveRequest>) -> Json<serde_json::Value> {
+#[audit_log(module = "file", action = "移动文件", capture = req)]
+pub async fn move_file(
+    ctx: Extension<SharedAuditContext>,
+    Json(req): Json<FileMoveRequest>) -> Json<serde_json::Value> {
     match file_service::move_path(&req.source, &req.destination).await {
         Ok(_) => Json(json!(ApiResponse::success("移动成功"))),
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("移动失败: {}", e)))),
@@ -203,8 +214,10 @@ pub async fn move_file(Json(req): Json<FileMoveRequest>) -> Json<serde_json::Val
 }
 
 /// 复制文件
-#[operation_log("复制文件")]
-pub async fn copy_file(Json(req): Json<FileCopyRequest>) -> Json<serde_json::Value> {
+#[audit_log(module = "file", action = "复制文件", capture = req)]
+pub async fn copy_file(
+    ctx: Extension<SharedAuditContext>,
+    Json(req): Json<FileCopyRequest>) -> Json<serde_json::Value> {
     match file_service::copy_path(&req.source, &req.destination).await {
         Ok(_) => Json(json!(ApiResponse::success("复制成功"))),
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("复制失败: {}", e)))),
@@ -212,8 +225,10 @@ pub async fn copy_file(Json(req): Json<FileCopyRequest>) -> Json<serde_json::Val
 }
 
 /// 删除文件
-#[operation_log("删除文件")]
+#[audit_log(module = "file", action = "删除文件", capture = req)]
 pub async fn delete_file(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Json(req): Json<FileDeleteRequest>,
 ) -> Json<serde_json::Value> {
@@ -228,8 +243,10 @@ pub async fn delete_file(
 }
 
 /// 修改权限
-#[operation_log("修改权限")]
-pub async fn chmod(Json(req): Json<FileChmodRequest>) -> Json<serde_json::Value> {
+#[audit_log(module = "file", action = "修改权限", capture = req)]
+pub async fn chmod(
+    ctx: Extension<SharedAuditContext>,
+    Json(req): Json<FileChmodRequest>) -> Json<serde_json::Value> {
     match file_service::chmod(&req.path, &req.mode).await {
         Ok(_) => Json(json!(ApiResponse::success("权限已修改"))),
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("修改权限失败: {}", e)))),
@@ -237,8 +254,10 @@ pub async fn chmod(Json(req): Json<FileChmodRequest>) -> Json<serde_json::Value>
 }
 
 /// 压缩文件
-#[operation_log("压缩文件")]
-pub async fn compress(Json(req): Json<FileCompressRequest>) -> Json<serde_json::Value> {
+#[audit_log(module = "file", action = "压缩文件", capture = req)]
+pub async fn compress(
+    ctx: Extension<SharedAuditContext>,
+    Json(req): Json<FileCompressRequest>) -> Json<serde_json::Value> {
     match file_service::compress(&req.paths, &req.destination, &req.format).await {
         Ok(_) => Json(json!(ApiResponse::success("压缩完成"))),
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("压缩失败: {}", e)))),
@@ -246,8 +265,10 @@ pub async fn compress(Json(req): Json<FileCompressRequest>) -> Json<serde_json::
 }
 
 /// 解压文件
-#[operation_log("解压文件")]
-pub async fn extract(Json(req): Json<FileExtractRequest>) -> Json<serde_json::Value> {
+#[audit_log(module = "file", action = "解压文件", capture = req)]
+pub async fn extract(
+    ctx: Extension<SharedAuditContext>,
+    Json(req): Json<FileExtractRequest>) -> Json<serde_json::Value> {
     match file_service::extract(&req.path, &req.destination).await {
         Ok(_) => Json(json!(ApiResponse::success("解压完成"))),
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("解压失败: {}", e)))),
@@ -255,8 +276,10 @@ pub async fn extract(Json(req): Json<FileExtractRequest>) -> Json<serde_json::Va
 }
 
 /// 保存备注
-#[operation_log("保存备注")]
+#[audit_log(module = "file", action = "保存备注", capture = req)]
 pub async fn save_note(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Json(req): Json<FileNoteRequest>,
 ) -> Json<serde_json::Value> {

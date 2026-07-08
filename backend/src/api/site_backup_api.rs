@@ -1,17 +1,19 @@
+use axum::Extension;
+use crate::audit::context::SharedAuditContext;
 use axum::{
     extract::{Path, Query, State},
     response::IntoResponse,
     Json,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::dto::ApiResponse;
 use crate::service::{site_service, site_backup_service};
 use crate::AppState;
-use ox_nginx_macros::operation_log;
+use ox_nginx_macros::audit_log;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct PageQuery {
     #[serde(default = "default_page")]
     pub page: u32,
@@ -23,7 +25,7 @@ fn default_page() -> u32 { 1 }
 fn default_page_size() -> u32 { 20 }
 
 /// 批量删除请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct BatchDeleteRequest {
     pub filenames: Vec<String>,
 }
@@ -47,8 +49,10 @@ pub async fn list_site_backups(
 }
 
 /// 创建站点备份
-#[operation_log("创建站点备份")]
+#[audit_log(module = "site", action = "创建站点备份")]
 pub async fn create_site_backup(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(site_id): Path<i64>,
 ) -> Json<serde_json::Value> {
@@ -103,8 +107,10 @@ pub async fn download_site_backup(
 }
 
 /// 删除站点备份
-#[operation_log("删除站点备份")]
+#[audit_log(module = "site", action = "删除站点备份")]
 pub async fn delete_site_backup(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path((site_id, filename)): Path<(i64, String)>,
 ) -> Json<serde_json::Value> {
@@ -121,8 +127,10 @@ pub async fn delete_site_backup(
 }
 
 /// 批量删除站点备份
-#[operation_log("批量删除备份")]
+#[audit_log(module = "site", action = "批量删除备份", capture = req)]
 pub async fn batch_delete_site_backups(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(site_id): Path<i64>,
     Json(req): Json<BatchDeleteRequest>,

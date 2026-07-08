@@ -1,10 +1,12 @@
+use axum::Extension;
+use crate::audit::context::SharedAuditContext;
 use axum::{
     extract::{Path, State},
     Json,
 };
 use serde_json::json;
 
-use ox_nginx_macros::operation_log;
+use ox_nginx_macros::audit_log;
 
 use crate::dto::{ApiResponse, CreateAccessRuleRequest, UpdateAccessRuleRequest};
 use crate::service::access_service;
@@ -33,8 +35,10 @@ pub async fn get_rule(
 }
 
 /// 创建访问控制规则
-#[operation_log("创建访问规则")]
+#[audit_log(module = "access", action = "创建访问规则", capture = req)]
 pub async fn create_rule(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Json(req): Json<CreateAccessRuleRequest>,
 ) -> Json<serde_json::Value> {
@@ -45,8 +49,10 @@ pub async fn create_rule(
 }
 
 /// 更新访问控制规则
-#[operation_log("更新访问规则")]
+#[audit_log(module = "access", action = "更新访问规则", capture = req)]
 pub async fn update_rule(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(req): Json<UpdateAccessRuleRequest>,
@@ -59,8 +65,10 @@ pub async fn update_rule(
 }
 
 /// 删除访问控制规则
-#[operation_log("删除访问规则")]
+#[audit_log(module = "access", action = "删除访问规则")]
 pub async fn delete_rule(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Json<serde_json::Value> {

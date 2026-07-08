@@ -1,14 +1,16 @@
+use axum::Extension;
+use crate::audit::context::SharedAuditContext;
 use axum::{
     extract::{Path, State},
     Json,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::dto::ApiResponse;
 use crate::service::backup_service;
 use crate::AppState;
-use ox_nginx_macros::operation_log;
+use ox_nginx_macros::audit_log;
 
 /// 获取站点备份列表
 pub async fn list_backups(
@@ -22,8 +24,10 @@ pub async fn list_backups(
 }
 
 /// 创建备份
-#[operation_log("创建备份")]
+#[audit_log(module = "backup", action = "创建备份")]
 pub async fn create_backup(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(site_id): Path<i64>,
 ) -> Json<serde_json::Value> {
@@ -42,8 +46,10 @@ pub async fn create_backup(
 }
 
 /// 恢复备份
-#[operation_log("恢复备份")]
+#[audit_log(module = "backup", action = "恢复备份")]
 pub async fn restore_backup(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(backup_id): Path<i64>,
 ) -> Json<serde_json::Value> {
@@ -65,7 +71,7 @@ pub async fn restore_backup(
 }
 
 /// 对比请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct DiffRequest {
     pub id1: i64,
     pub id2: i64,
@@ -159,8 +165,10 @@ fn compute_diff(old: &str, new: &str) -> Vec<serde_json::Value> {
 }
 
 /// 删除备份
-#[operation_log("删除备份")]
+#[audit_log(module = "backup", action = "删除备份")]
 pub async fn delete_backup(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(backup_id): Path<i64>,
 ) -> Json<serde_json::Value> {

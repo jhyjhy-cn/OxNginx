@@ -3,6 +3,7 @@
 
 mod api;
 mod app;
+mod audit;
 mod auth;
 mod backup;
 mod config;
@@ -102,6 +103,12 @@ fn main() -> anyhow::Result<()> {
 
         let state = AppState::new(db, config.clone(), rsa_private_key, rsa_public_key_b64);
         api::dashboard_ws::start_push_task(state.clone());
+
+        // 启动操作日志后台批量写库 worker
+        tracing::info!("[3.5/4] 启动操作日志 worker...");
+        let audit_rx = crate::audit::sender::init();
+        crate::audit::worker::spawn(audit_rx, state.db.pool().clone());
+        tracing::info!("[3.5/4] 操作日志 worker 已启动");
 
         tracing::info!("[4/4] 构建路由...");
         let app = app::router::build(state);

@@ -1,8 +1,9 @@
-use axum::{extract::State, Json};
-use serde::Deserialize;
+use axum::{extract::State, Extension, Json};
+use crate::audit::context::SharedAuditContext;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use ox_nginx_macros::operation_log;
+use ox_nginx_macros::audit_log;
 
 use crate::dto::ApiResponse;
 use crate::AppState;
@@ -51,7 +52,7 @@ pub struct SystemInfo {
 }
 
 /// 更新设置请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UpdateSettingsRequest {
     pub nginx_bin: Option<String>,
     pub nginx_config: Option<String>,
@@ -105,8 +106,10 @@ pub async fn get_settings(
 }
 
 /// 更新系统设置
-#[operation_log("保存系统设置")]
+#[audit_log(module = "system", action = "保存系统设置", capture = req)]
 pub async fn update_settings(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Json(req): Json<UpdateSettingsRequest>,
 ) -> Json<serde_json::Value> {

@@ -1,10 +1,11 @@
+use crate::audit::context::SharedAuditContext;
 use axum::{
     extract::{Extension, Path, State},
     Json,
 };
 use serde_json::json;
 
-use ox_nginx_macros::operation_log;
+use ox_nginx_macros::audit_log;
 
 use crate::dto::{
     ApiResponse, PageQuery, PagedResult, RbacInfo, ResetPasswordRequest, SetRoleMenusRequest,
@@ -40,8 +41,10 @@ pub async fn list_users(State(state): State<AppState>, axum::extract::Query(q): 
     }
 }
 
-#[operation_log("创建用户")]
+#[audit_log(module = "rbac", action = "创建用户", capture = req)]
 pub async fn create_user(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Json(req): Json<UpsertUserRequest>,
 ) -> Json<serde_json::Value> {
@@ -63,8 +66,10 @@ pub async fn create_user(
     }
 }
 
-#[operation_log("更新用户")]
+#[audit_log(module = "rbac", action = "更新用户", capture = req)]
 pub async fn update_user(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(req): Json<UpsertUserRequest>,
@@ -84,8 +89,10 @@ pub async fn update_user(
     }
 }
 
-#[operation_log("删除用户")]
+#[audit_log(module = "rbac", action = "删除用户")]
 pub async fn delete_user(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Json<serde_json::Value> {
@@ -96,8 +103,10 @@ pub async fn delete_user(
     }
 }
 
-#[operation_log("重置密码")]
+#[audit_log(module = "rbac", action = "重置密码", capture = req)]
 pub async fn reset_password(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(req): Json<ResetPasswordRequest>,
@@ -119,8 +128,10 @@ pub async fn list_roles(State(state): State<AppState>, axum::extract::Query(q): 
     }
 }
 
-#[operation_log("创建角色")]
+#[audit_log(module = "rbac", action = "创建角色", capture = req)]
 pub async fn create_role(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Json(req): Json<UpsertRoleRequest>,
 ) -> Json<serde_json::Value> {
@@ -142,8 +153,10 @@ pub async fn create_role(
     }
 }
 
-#[operation_log("更新角色")]
+#[audit_log(module = "rbac", action = "更新角色", capture = req)]
 pub async fn update_role(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(req): Json<UpsertRoleRequest>,
@@ -167,8 +180,10 @@ pub async fn update_role(
     }
 }
 
-#[operation_log("删除角色")]
+#[audit_log(module = "rbac", action = "删除角色")]
 pub async fn delete_role(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Json<serde_json::Value> {
@@ -179,8 +194,10 @@ pub async fn delete_role(
     }
 }
 
-#[operation_log("设置角色菜单")]
+#[audit_log(module = "rbac", action = "设置角色菜单", capture = req)]
 pub async fn set_role_menus(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(req): Json<SetRoleMenusRequest>,
@@ -202,8 +219,10 @@ pub async fn list_depts(State(state): State<AppState>, axum::extract::Query(q): 
     }
 }
 
-#[operation_log("创建部门")]
+#[audit_log(module = "rbac", action = "创建部门", capture = req)]
 pub async fn create_dept(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Json(req): Json<UpsertDeptRequest>,
 ) -> Json<serde_json::Value> {
@@ -220,8 +239,10 @@ pub async fn create_dept(
     }
 }
 
-#[operation_log("更新部门")]
+#[audit_log(module = "rbac", action = "更新部门", capture = req)]
 pub async fn update_dept(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(req): Json<UpsertDeptRequest>,
@@ -240,8 +261,10 @@ pub async fn update_dept(
     }
 }
 
-#[operation_log("删除部门")]
+#[audit_log(module = "rbac", action = "删除部门")]
 pub async fn delete_dept(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Json<serde_json::Value> {
@@ -263,8 +286,10 @@ pub async fn list_posts(State(state): State<AppState>, axum::extract::Query(q): 
     }
 }
 
-#[operation_log("创建岗位")]
+#[audit_log(module = "rbac", action = "创建岗位", capture = req)]
 pub async fn create_post(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Json(req): Json<UpsertPostRequest>,
 ) -> Json<serde_json::Value> {
@@ -281,8 +306,10 @@ pub async fn create_post(
     }
 }
 
-#[operation_log("更新岗位")]
+#[audit_log(module = "rbac", action = "更新岗位", capture = req)]
 pub async fn update_post(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(req): Json<UpsertPostRequest>,
@@ -300,8 +327,10 @@ pub async fn update_post(
     }
 }
 
-#[operation_log("删除岗位")]
+#[audit_log(module = "rbac", action = "删除岗位")]
 pub async fn delete_post(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Json<serde_json::Value> {
@@ -321,8 +350,10 @@ pub async fn list_menus(State(state): State<AppState>) -> Json<serde_json::Value
     }
 }
 
-#[operation_log("创建菜单")]
+#[audit_log(module = "rbac", action = "创建菜单", capture = req)]
 pub async fn create_menu(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Json(req): Json<UpsertMenuRequest>,
 ) -> Json<serde_json::Value> {
@@ -345,8 +376,10 @@ pub async fn create_menu(
     }
 }
 
-#[operation_log("更新菜单")]
+#[audit_log(module = "rbac", action = "更新菜单", capture = req)]
 pub async fn update_menu(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(req): Json<UpsertMenuRequest>,
@@ -370,8 +403,10 @@ pub async fn update_menu(
     }
 }
 
-#[operation_log("删除菜单")]
+#[audit_log(module = "rbac", action = "删除菜单")]
 pub async fn delete_menu(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Json<serde_json::Value> {
@@ -382,8 +417,10 @@ pub async fn delete_menu(
     }
 }
 
-#[operation_log("批量删除菜单")]
+#[audit_log(module = "rbac", action = "批量删除菜单", capture = ids)]
 pub async fn batch_delete_menus(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Json(ids): Json<Vec<i64>>,
 ) -> Json<serde_json::Value> {
@@ -429,8 +466,10 @@ pub async fn list_i18n(
     }
 }
 
-#[operation_log("保存国际化")]
+#[audit_log(module = "rbac", action = "保存国际化", capture = req)]
 pub async fn upsert_i18n(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Json(req): Json<UpsertI18nRequest>,
 ) -> Json<serde_json::Value> {
@@ -441,8 +480,10 @@ pub async fn upsert_i18n(
     }
 }
 
-#[operation_log("删除国际化")]
+#[audit_log(module = "rbac", action = "删除国际化")]
 pub async fn delete_i18n(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Json<serde_json::Value> {
@@ -481,8 +522,10 @@ pub async fn get_dict(State(state): State<AppState>, Path(id): Path<i64>) -> Jso
     }
 }
 
-#[operation_log("创建字典")]
+#[audit_log(module = "rbac", action = "创建字典", capture = req)]
 pub async fn create_dict(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Json(req): Json<UpsertDictRequest>,
 ) -> Json<serde_json::Value> {
@@ -492,8 +535,10 @@ pub async fn create_dict(
     }
 }
 
-#[operation_log("更新字典")]
+#[audit_log(module = "rbac", action = "更新字典", capture = req)]
 pub async fn update_dict(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(req): Json<UpsertDictRequest>,
@@ -504,8 +549,10 @@ pub async fn update_dict(
     }
 }
 
-#[operation_log("删除字典")]
-pub async fn delete_dict(State(state): State<AppState>, Path(id): Path<i64>) -> Json<serde_json::Value> {
+#[audit_log(module = "rbac", action = "删除字典")]
+pub async fn delete_dict(
+    ctx: Extension<SharedAuditContext>,
+    State(state): State<AppState>, Path(id): Path<i64>) -> Json<serde_json::Value> {
     match rbac_service::delete_dict(&state.db.pool(), id).await {
         Ok(true) => Json(json!(ApiResponse::success("ok"))),
         Ok(false) => Json(json!(ApiResponse::<()>::error("字典不存在"))),
@@ -513,8 +560,10 @@ pub async fn delete_dict(State(state): State<AppState>, Path(id): Path<i64>) -> 
     }
 }
 
-#[operation_log("创建字典项")]
+#[audit_log(module = "rbac", action = "创建字典项", capture = req)]
 pub async fn create_dict_item(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(dict_id): Path<i64>,
     Json(req): Json<UpsertDictItemRequest>,
@@ -533,8 +582,10 @@ pub async fn create_dict_item(
     }
 }
 
-#[operation_log("更新字典项")]
+#[audit_log(module = "rbac", action = "更新字典项", capture = req)]
 pub async fn update_dict_item(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(req): Json<UpsertDictItemRequest>,
@@ -554,8 +605,10 @@ pub async fn update_dict_item(
     }
 }
 
-#[operation_log("删除字典项")]
-pub async fn delete_dict_item(State(state): State<AppState>, Path(id): Path<i64>) -> Json<serde_json::Value> {
+#[audit_log(module = "rbac", action = "删除字典项")]
+pub async fn delete_dict_item(
+    ctx: Extension<SharedAuditContext>,
+    State(state): State<AppState>, Path(id): Path<i64>) -> Json<serde_json::Value> {
     match rbac_service::delete_dict_item(&state.db.pool(), id).await {
         Ok(true) => Json(json!(ApiResponse::success("ok"))),
         Ok(false) => Json(json!(ApiResponse::<()>::error("字典项不存在"))),

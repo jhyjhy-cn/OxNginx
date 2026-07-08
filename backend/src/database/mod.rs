@@ -293,15 +293,17 @@ impl Database {
 
             CREATE TABLE IF NOT EXISTS sys_operation_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                trace_id TEXT,
                 username TEXT NOT NULL,
+                module TEXT,
                 action TEXT NOT NULL,
                 method TEXT,
                 uri TEXT,
                 ip TEXT,
                 status TEXT NOT NULL DEFAULT 'success',
                 cost_ms INTEGER,
+                duration_ms INTEGER,
                 request_body TEXT,
-                response_body TEXT,
                 error_msg TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
@@ -358,6 +360,17 @@ impl Database {
 
         // 兼容旧库：sys_menus 加 component 列
         let _ = sqlx::query("ALTER TABLE sys_menus ADD COLUMN component TEXT")
+            .execute(&self.pool)
+            .await;
+
+        // 兼容旧库：sys_operation_logs 加新列
+        let _ = sqlx::query("ALTER TABLE sys_operation_logs ADD COLUMN trace_id TEXT")
+            .execute(&self.pool)
+            .await;
+        let _ = sqlx::query("ALTER TABLE sys_operation_logs ADD COLUMN module TEXT")
+            .execute(&self.pool)
+            .await;
+        let _ = sqlx::query("ALTER TABLE sys_operation_logs ADD COLUMN duration_ms INTEGER")
             .execute(&self.pool)
             .await;
 

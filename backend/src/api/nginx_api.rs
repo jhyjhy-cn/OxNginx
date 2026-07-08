@@ -1,17 +1,22 @@
-use axum::{extract::State, Json};
+use axum::{extract::State, Extension, Json};
 use serde_json::json;
 
+use crate::audit::context::SharedAuditContext;
 use crate::dto::{ApiResponse, NginxTestResult};
 use crate::AppState;
-use ox_nginx_macros::operation_log;
+use ox_nginx_macros::audit_log;
 
 pub async fn test_config(State(state): State<AppState>) -> Json<serde_json::Value> {
     let config = state.get_config();
     Json(json!(ApiResponse::success(crate::nginx::test_config(&config.nginx.bin).await)))
 }
 
-#[operation_log("重载Nginx配置")]
-pub async fn reload(State(state): State<AppState>) -> Json<serde_json::Value> {
+#[audit_log(module = "nginx", action = "重载Nginx配置")]
+pub async fn reload(
+    ctx: Extension<SharedAuditContext>,
+    State(state): State<AppState>,
+) -> Json<serde_json::Value> {
+    let _ = ctx; // ponytail: 宏已通过 ctx 写入 module/action，参数声明是宏工作的前提
     let config = state.get_config();
     let test_result = crate::nginx::test_config(&config.nginx.bin).await;
     if !test_result.success {
@@ -34,8 +39,12 @@ pub async fn status(State(state): State<AppState>) -> Json<serde_json::Value> {
     Json(json!(ApiResponse::success(crate::nginx::get_nginx_status(&config.nginx.bin).await)))
 }
 
-#[operation_log("启动Nginx")]
-pub async fn start(State(state): State<AppState>) -> Json<serde_json::Value> {
+#[audit_log(module = "nginx", action = "启动Nginx")]
+pub async fn start(
+    ctx: Extension<SharedAuditContext>,
+    State(state): State<AppState>,
+) -> Json<serde_json::Value> {
+    let _ = ctx;
     let config = state.get_config();
     match crate::nginx::start_nginx(&config.nginx.bin, &config.nginx.config).await {
         Ok(true) => { crate::api::dashboard_ws::trigger_push(&state).await; Json(json!(ApiResponse::success("Nginx已启动"))) }
@@ -44,8 +53,12 @@ pub async fn start(State(state): State<AppState>) -> Json<serde_json::Value> {
     }
 }
 
-#[operation_log("停止Nginx")]
-pub async fn stop(State(state): State<AppState>) -> Json<serde_json::Value> {
+#[audit_log(module = "nginx", action = "停止Nginx")]
+pub async fn stop(
+    ctx: Extension<SharedAuditContext>,
+    State(state): State<AppState>,
+) -> Json<serde_json::Value> {
+    let _ = ctx;
     let config = state.get_config();
     match crate::nginx::stop_nginx(&config.nginx.bin).await {
         Ok(true) => { crate::api::dashboard_ws::trigger_push(&state).await; Json(json!(ApiResponse::success("Nginx已停止"))) }
@@ -54,8 +67,12 @@ pub async fn stop(State(state): State<AppState>) -> Json<serde_json::Value> {
     }
 }
 
-#[operation_log("重启Nginx")]
-pub async fn restart(State(state): State<AppState>) -> Json<serde_json::Value> {
+#[audit_log(module = "nginx", action = "重启Nginx")]
+pub async fn restart(
+    ctx: Extension<SharedAuditContext>,
+    State(state): State<AppState>,
+) -> Json<serde_json::Value> {
+    let _ = ctx;
     let config = state.get_config();
     match crate::nginx::restart_nginx(&config.nginx.bin, &config.nginx.config).await {
         Ok(true) => { crate::api::dashboard_ws::trigger_push(&state).await; Json(json!(ApiResponse::success("Nginx已重启"))) }
@@ -64,8 +81,12 @@ pub async fn restart(State(state): State<AppState>) -> Json<serde_json::Value> {
     }
 }
 
-#[operation_log("一键安装Nginx")]
-pub async fn install(State(state): State<AppState>) -> Json<serde_json::Value> {
+#[audit_log(module = "nginx", action = "一键安装Nginx")]
+pub async fn install(
+    ctx: Extension<SharedAuditContext>,
+    State(state): State<AppState>,
+) -> Json<serde_json::Value> {
+    let _ = ctx;
     let config = state.get_config();
     let install_dir = std::path::Path::new(&config.nginx.bin)
         .parent().and_then(|p| p.parent())

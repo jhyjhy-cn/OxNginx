@@ -3,6 +3,10 @@
     <el-card>
       <div class="search-bar">
         <el-input v-model="params.username" :placeholder="$t('login.username')" clearable style="width: 140px" @keyup.enter="doSearch" />
+        <el-select v-model="params.module" placeholder="操作模块" clearable style="width: 130px">
+          <el-option v-for="m in MODULE_OPTIONS" :key="m.value" :label="m.label" :value="m.value" />
+        </el-select>
+        <el-input v-model="params.trace_id" placeholder="TraceID" clearable style="width: 220px" @keyup.enter="doSearch" />
         <el-select v-model="params.status" :placeholder="$t('common.status')" clearable style="width: 110px">
           <el-option label="成功" value="success" />
           <el-option label="失败" value="failed" />
@@ -21,6 +25,9 @@
       </div>
 
       <el-table :data="logs" v-loading="loading" max-height="calc(100vh - 340px)">
+        <el-table-column prop="module" label="操作模块" min-width="100" show-overflow-tooltip>
+          <template #default="{ row }">{{ moduleLabel(row.module) }}</template>
+        </el-table-column>
         <el-table-column prop="action" label="操作类型" min-width="180" show-overflow-tooltip />
         <el-table-column prop="method" label="请求方式" width="80" />
         <el-table-column prop="username" :label="$t('login.username')" width="100" />
@@ -35,8 +42,8 @@
         <el-table-column label="操作日期" width="170">
           <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
         </el-table-column>
-        <el-table-column label="耗时" width="70">
-          <template #default="{ row }">{{ row.cost_ms != null ? row.cost_ms + 'ms' : '' }}</template>
+        <el-table-column label="耗时" width="80">
+          <template #default="{ row }">{{ durationMs(row) }}</template>
         </el-table-column>
         <el-table-column label="详情" width="60" fixed="right">
           <template #default="{ row }">
@@ -51,6 +58,7 @@
     <!-- 详情弹窗 -->
     <OnDialog v-model="showDialog" title="操作详情" width="700px">
       <el-descriptions :column="1" border size="small">
+        <el-descriptions-item label="操作模块">{{ moduleLabel(detail?.module) }}</el-descriptions-item>
         <el-descriptions-item label="操作类型">{{ detail?.action }}</el-descriptions-item>
         <el-descriptions-item label="请求方式">{{ detail?.method }}</el-descriptions-item>
         <el-descriptions-item label="操作人员">{{ detail?.username }}</el-descriptions-item>
@@ -61,12 +69,12 @@
           </el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="操作日期">{{ formatTime(detail?.created_at ?? null) }}</el-descriptions-item>
-        <el-descriptions-item label="消耗时间">{{ detail?.cost_ms != null ? detail.cost_ms + 'ms' : '-' }}</el-descriptions-item>
+        <el-descriptions-item label="消耗时间">{{ durationMs(detail) }}</el-descriptions-item>
+        <el-descriptions-item v-if="detail?.trace_id" label="TraceID">
+          <span style="font-family: monospace; font-size: 12px">{{ detail.trace_id }}</span>
+        </el-descriptions-item>
         <el-descriptions-item label="请求参数">
           <pre class="detail-pre">{{ formatJson(detail?.request_body ?? null) }}</pre>
-        </el-descriptions-item>
-        <el-descriptions-item label="返回参数">
-          <pre class="detail-pre">{{ formatJson(detail?.response_body ?? null) }}</pre>
         </el-descriptions-item>
         <el-descriptions-item v-if="detail?.error_msg" label="错误信息">
           <span style="color: var(--el-color-danger)">{{ detail.error_msg }}</span>
@@ -86,19 +94,48 @@ import OnDialog from '@/components/OnDialog/index.vue'
 
 dayjs.extend(utc)
 
+// ponytail: module 英文 key → 中文显示。前端做 i18n 翻译
+const MODULE_OPTIONS = [
+  { value: 'site', label: '站点管理' },
+  { value: 'rbac', label: '权限管理' },
+  { value: 'nginx', label: 'Nginx' },
+  { value: 'file', label: '文件管理' },
+  { value: 'config', label: '配置管理' },
+  { value: 'access', label: '访问控制' },
+  { value: 'backup', label: '备份管理' },
+  { value: 'template', label: '模板管理' },
+  { value: 'upstream', label: '上游服务' },
+  { value: 'proxy', label: '反向代理' },
+  { value: 'system', label: '系统设置' },
+]
+const MODULE_MAP: Record<string, string> = Object.fromEntries(MODULE_OPTIONS.map(m => [m.value, m.label]))
+function moduleLabel(key: string | null | undefined): string {
+  if (!key) return ''
+  return MODULE_MAP[key] || key
+}
+
 interface OpLog {
   id: number
+  trace_id: string | null
   username: string
+  module: string | null
   action: string
   method: string | null
   uri: string | null
   ip: string | null
   status: string
   cost_ms: number | null
+  duration_ms: number | null
   request_body: string | null
   response_body: string | null
   error_msg: string | null
   created_at: string | null
+}
+
+function durationMs(row: OpLog | null | undefined): string {
+  if (!row) return '-'
+  const ms = row.duration_ms ?? row.cost_ms
+  return ms != null ? ms + 'ms' : '-'
 }
 
 const logs = ref<OpLog[]>([])
@@ -109,7 +146,7 @@ const pageSize = ref(20)
 const dateRange = ref<[string, string] | null>(null)
 const showDialog = ref(false)
 const detail = ref<OpLog | null>(null)
-const params = ref({ username: '', status: '' })
+const params = ref({ username: '', status: '', module: '', trace_id: '' })
 
 function formatTime(t: string | null): string {
   if (!t) return ''
@@ -125,6 +162,8 @@ function buildParams() {
   const p: Record<string, string | number> = { page: currentPage.value, page_size: pageSize.value }
   if (params.value.username) p.username = params.value.username
   if (params.value.status) p.status = params.value.status
+  if (params.value.module) p.module = params.value.module
+  if (params.value.trace_id) p.trace_id = params.value.trace_id
   if (dateRange.value) {
     p.start_time = dateRange.value[0] + ' 00:00:00'
     p.end_time = dateRange.value[1] + ' 23:59:59'
@@ -133,7 +172,12 @@ function buildParams() {
 }
 
 function doSearch() { currentPage.value = 1; load() }
-function doReset() { params.value = { username: '', status: '' }; dateRange.value = null; currentPage.value = 1; load() }
+function doReset() {
+  params.value = { username: '', status: '', module: '', trace_id: '' }
+  dateRange.value = null
+  currentPage.value = 1
+  load()
+}
 function showDetail(row: OpLog) { detail.value = row; showDialog.value = true }
 
 function doExport() {

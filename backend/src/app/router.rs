@@ -7,6 +7,7 @@ use tower_http::cors::CorsLayer;
 use tower_http::services::{ServeDir, ServeFile};
 
 use crate::api;
+use crate::audit;
 use crate::middleware;
 use super::state::AppState;
 
@@ -112,8 +113,8 @@ pub fn build(state: AppState) -> Router {
         // RBAC me（任意登录用户可用）
         .route("/api/rbac/me", get(api::rbac_api::me))
         .route("/api/rbac/i18n/messages", get(api::rbac_api::get_i18n_messages))
-        .layer(from_fn_with_state(state.clone(), middleware::operation_log_middleware))
-        .layer(from_fn_with_state(state.clone(), middleware::auth_middleware));
+        .layer(from_fn_with_state(state.clone(), middleware::auth_middleware))         // 外层先跑（注入 TokenInfo）
+        .layer(from_fn_with_state(state.clone(), audit::middleware::audit_middleware));// 内层（读 TokenInfo）
 
     let admin_routes = Router::new()
         .route("/api/rbac/users", get(api::rbac_api::list_users).post(api::rbac_api::create_user))
@@ -138,9 +139,9 @@ pub fn build(state: AppState) -> Router {
         .route("/api/rbac/dicts/:id", get(api::rbac_api::get_dict).put(api::rbac_api::update_dict).delete(api::rbac_api::delete_dict))
         .route("/api/rbac/dicts/:dict_id/items", post(api::rbac_api::create_dict_item))
         .route("/api/rbac/dict-items/:id", put(api::rbac_api::update_dict_item).delete(api::rbac_api::delete_dict_item))
-        .layer(from_fn_with_state(state.clone(), middleware::require_admin))
-        .layer(from_fn_with_state(state.clone(), middleware::operation_log_middleware))
-        .layer(from_fn_with_state(state.clone(), middleware::auth_middleware));
+        .layer(from_fn_with_state(state.clone(), middleware::require_admin))            // 最外
+        .layer(from_fn_with_state(state.clone(), middleware::auth_middleware))         // auth
+        .layer(from_fn_with_state(state.clone(), audit::middleware::audit_middleware));// audit 内层
 
     // 静态文件服务（前端 SPA）
     // 使用 exe 所在目录下的 static 目录
@@ -157,7 +158,8 @@ pub fn build(state: AppState) -> Router {
     public_routes
         .merge(protected_routes)
         .merge(admin_routes)
-        .layer(axum::middleware::from_fn(middleware::logging_middleware))
+        .layer(from_fn_with_state(state.clone(), audit::middleware::audit_middleware))  // 顶层 audit（兜底 public_routes）
+        .layer(axum::middleware::from_fn(middleware::logging_middleware))              // 全局耗时
         .layer(CorsLayer::permissive())
         .fallback_service(static_service)
         .with_state(state)

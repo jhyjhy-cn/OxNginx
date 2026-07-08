@@ -34,6 +34,8 @@ pub struct OperationLogParams {
     pub status: Option<String>,
     pub start_time: Option<String>,
     pub end_time: Option<String>,
+    pub module: Option<String>,
+    pub trace_id: Option<String>,
 }
 
 fn build_op_query(p: &OperationLogParams) -> OperationLogQuery {
@@ -44,6 +46,8 @@ fn build_op_query(p: &OperationLogParams) -> OperationLogQuery {
         status: p.status.clone().filter(|s| !s.is_empty()),
         start_time: p.start_time.clone().filter(|s| !s.is_empty()),
         end_time: p.end_time.clone().filter(|s| !s.is_empty()),
+        module: p.module.clone().filter(|s| !s.is_empty()),
+        trace_id: p.trace_id.clone().filter(|s| !s.is_empty()),
     }
 }
 

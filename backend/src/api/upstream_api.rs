@@ -1,10 +1,12 @@
+use axum::Extension;
+use crate::audit::context::SharedAuditContext;
 use axum::{
     extract::{Path, State},
     Json,
 };
 use serde_json::json;
 
-use ox_nginx_macros::operation_log;
+use ox_nginx_macros::audit_log;
 
 use crate::dto::{ApiResponse, CreateUpstreamRequest, UpdateUpstreamRequest};
 use crate::service::upstream_service;
@@ -38,8 +40,10 @@ pub async fn get_upstream(
 }
 
 /// 创建上游服务器
-#[operation_log("创建上游服务器")]
+#[audit_log(module = "upstream", action = "创建上游服务器", capture = req)]
 pub async fn create_upstream(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Json(req): Json<CreateUpstreamRequest>,
 ) -> Json<serde_json::Value> {
@@ -68,8 +72,10 @@ pub async fn create_upstream(
 }
 
 /// 更新上游服务器
-#[operation_log("更新上游服务器")]
+#[audit_log(module = "upstream", action = "更新上游服务器", capture = req)]
 pub async fn update_upstream(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(req): Json<UpdateUpstreamRequest>,
@@ -94,8 +100,10 @@ pub async fn update_upstream(
 }
 
 /// 删除上游服务器
-#[operation_log("删除上游服务器")]
+#[audit_log(module = "upstream", action = "删除上游服务器")]
 pub async fn delete_upstream(
+    ctx: Extension<SharedAuditContext>,
+    
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Json<serde_json::Value> {

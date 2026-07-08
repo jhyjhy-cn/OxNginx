@@ -55,7 +55,7 @@ impl<T: Serialize> ApiResponse<T> {
 }
 
 /// 登录请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct LoginRequest {
     pub username: String,
     pub encrypted_password: String,
@@ -69,21 +69,21 @@ pub struct LoginResponse {
 }
 
 /// 修改密码请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ChangePasswordRequest {
     pub old_password: String,
     pub new_password: String,
 }
 
 /// 修改账号请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ChangeUsernameRequest {
     pub password: String,
     pub new_username: String,
 }
 
 /// 创建站点请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct CreateSiteRequest {
     pub name: String,
     pub server_name: String,
@@ -109,7 +109,7 @@ fn default_listen() -> String {
 }
 
 /// 删除站点请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct DeleteSiteRequest {
     #[serde(default = "default_true")]
     pub delete_record: bool,
@@ -123,7 +123,7 @@ fn default_true() -> bool {
 
 /// 更新站点请求
 /// 清空字段: JSON null → Some(None)，字段缺失 → None，有值 → Some(Some(v))
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UpdateSiteRequest {
     pub name: Option<String>,
     pub server_name: Option<String>,
@@ -175,7 +175,7 @@ pub struct LogResponse {
 }
 
 /// SSL申请请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ApplyCertRequest {
     pub domain: String,
 }
@@ -188,7 +188,7 @@ pub struct NginxTestResult {
 }
 
 /// 创建上游服务器请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct CreateUpstreamRequest {
     pub name: String,
     #[serde(default = "default_method")]
@@ -207,7 +207,7 @@ fn default_keepalive() -> i32 {
 }
 
 /// 上游服务器节点请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UpstreamServerRequest {
     pub address: String,
     #[serde(default = "default_weight")]
@@ -225,7 +225,7 @@ fn default_max_fails() -> i32 { 3 }
 fn default_fail_timeout() -> String { "30s".into() }
 
 /// 更新上游服务器请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UpdateUpstreamRequest {
     pub name: Option<String>,
     pub method: Option<String>,
@@ -235,7 +235,7 @@ pub struct UpdateUpstreamRequest {
 }
 
 /// 创建访问控制规则请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct CreateAccessRuleRequest {
     pub site_id: Option<i64>,
     pub rule_type: String,
@@ -244,7 +244,7 @@ pub struct CreateAccessRuleRequest {
 }
 
 /// 更新访问控制规则请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UpdateAccessRuleRequest {
     pub site_id: Option<i64>,
     pub rule_type: Option<String>,
@@ -254,7 +254,7 @@ pub struct UpdateAccessRuleRequest {
 }
 
 /// 创建配置模板请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct CreateTemplateRequest {
     pub name: String,
     pub description: Option<String>,
@@ -263,7 +263,7 @@ pub struct CreateTemplateRequest {
 }
 
 /// 更新配置模板请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UpdateTemplateRequest {
     pub name: Option<String>,
     pub description: Option<String>,
@@ -299,7 +299,7 @@ pub struct RbacInfo {
 }
 
 /// 通用分页查询参数
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct PageQuery {
     pub page: Option<i64>,
     pub page_size: Option<i64>,
@@ -316,7 +316,7 @@ pub struct PagedResult<T: Serialize> {
 }
 
 /// 创建/更新用户请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UpsertUserRequest {
     pub username: String,
     pub password: Option<String>,
@@ -327,13 +327,13 @@ pub struct UpsertUserRequest {
 }
 
 /// 重置密码请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ResetPasswordRequest {
     pub new_password: String,
 }
 
 /// 创建/更新角色
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UpsertRoleRequest {
     pub code: String,
     pub name: String,
@@ -343,7 +343,7 @@ pub struct UpsertRoleRequest {
 }
 
 /// 创建/更新部门
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UpsertDeptRequest {
     pub name: String,
     pub parent_id: Option<i64>,
@@ -351,7 +351,7 @@ pub struct UpsertDeptRequest {
 }
 
 /// 创建/更新岗位
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UpsertPostRequest {
     pub code: String,
     pub name: String,
@@ -359,7 +359,7 @@ pub struct UpsertPostRequest {
 }
 
 /// 创建/更新菜单
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UpsertMenuRequest {
     pub name: String,
     pub title: String,
@@ -374,7 +374,7 @@ pub struct UpsertMenuRequest {
 }
 
 /// 角色绑定菜单
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct SetRoleMenusRequest {
     pub menu_ids: Vec<i64>,
 }
@@ -389,7 +389,7 @@ pub struct I18nKv {
 }
 
 /// 批量 upsert i18n 请求
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UpsertI18nRequest {
     pub locale: String,
     pub entries: Vec<I18nKv>,
@@ -398,7 +398,7 @@ pub struct UpsertI18nRequest {
 // ============== 字典 DTOs ==============
 
 /// 创建/更新字典
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UpsertDictRequest {
     pub name: String,
     pub code: String,
@@ -406,7 +406,7 @@ pub struct UpsertDictRequest {
 }
 
 /// 创建/更新字典项
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UpsertDictItemRequest {
     pub label: String,
     pub value: String,
