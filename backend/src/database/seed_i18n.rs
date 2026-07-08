@@ -1065,6 +1065,15 @@ pub async fn seed_i18n(pool: &SqlitePool) -> Result<()> {
         ("en-US", "dict.colValue", "Value"),
         ("en-US", "dict.colSort", "Sort"),
         ("en-US", "dict.manageItems", "Manage Items"),
+        // 日志管理
+        ("zh-CN", "menu.logManagement", "日志管理"),
+        ("zh-CN", "menu.nginxLogs", "Nginx日志"),
+        ("zh-CN", "menu.operationLogs", "操作日志"),
+        ("zh-CN", "menu.loginLogs", "登录日志"),
+        ("en-US", "menu.logManagement", "Log Management"),
+        ("en-US", "menu.nginxLogs", "Nginx Logs"),
+        ("en-US", "menu.operationLogs", "Operation Logs"),
+        ("en-US", "menu.loginLogs", "Login Logs"),
         // RBAC 补充
         ("zh-CN", "rbac.colCode", "编码"),
         ("zh-CN", "rbac.colRemark", "备注"),

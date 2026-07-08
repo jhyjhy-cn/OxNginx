@@ -3,6 +3,7 @@ use std::path::Path;
 
 pub mod seed;
 pub mod seed_i18n;
+pub mod seed_menu;
 
 /// 数据库封装
 #[derive(Clone)]
@@ -35,13 +36,20 @@ impl Database {
     async fn init_tables(&self) -> anyhow::Result<()> {
         // ponytail: sys_ 前缀；旧库无前缀则一次性 RENAME，平滑迁移
         for old in [
-            "users", "sites", "certificates", "backups",
-            "upstreams", "upstream_servers", "access_rules",
-            "templates", "file_notes", "reverse_proxies",
+            "users",
+            "sites",
+            "certificates",
+            "backups",
+            "upstreams",
+            "upstream_servers",
+            "access_rules",
+            "templates",
+            "file_notes",
+            "reverse_proxies",
         ] {
             let new = format!("sys_{}", old);
             let exists_new: i64 = sqlx::query_scalar(
-                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name = ?"
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name = ?",
             )
             .bind(&new)
             .fetch_one(&self.pool)

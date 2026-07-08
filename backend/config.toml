@@ -21,8 +21,8 @@ sites_enabled = ""
 bin = ""
 
 [auth]
-# Token 过期时间（小时）默认：24
-token_expires_hours = 24
+# Token 过期时间（小时）默认：1
+token_expires_hours = 1
 
 [log]
 # 日志级别：trace / debug / info / warn / error
