@@ -2,6 +2,9 @@ import { defineConfig } from 'vite'
 import { resolve } from 'path'
 import { fileURLToPath } from 'url'
 import vue from '@vitejs/plugin-vue'
+import vueJsx from '@vitejs/plugin-vue-jsx'
+import tailwindcss from '@tailwindcss/vite'
+import vueDevTools from 'vite-plugin-vue-devtools'
 import svgLoader from 'vite-svg-loader'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
@@ -25,6 +28,9 @@ export default defineConfig({
   },
   plugins: [
     vue(),
+    vueDevTools(),
+    vueJsx(),
+    tailwindcss(),
     svgLoader({ defaultImport: 'component' }),
     AutoImport({ resolvers: [ElementPlusResolver()] }),
     Components({ resolvers: [ElementPlusResolver()] }),

@@ -337,7 +337,11 @@ export function useFileManager(initialPath?: string, tabId?: string) {
   }
 
   function handleDblClick(row: FileItem) {
-    row.is_dir ? enterDir(row) : handleEdit(row)
+    if (row.is_dir) {
+      enterDir(row)
+    } else {
+      handleEdit(row)
+    }
   }
   function enterDir(row: FileItem) {
     currentPath.value = row.path.replace(/\\\\\?\\/, '').replace(/\\/g, '/')

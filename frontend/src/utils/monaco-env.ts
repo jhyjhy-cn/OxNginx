@@ -98,7 +98,7 @@ monaco.languages.setMonarchTokensProvider('nginx', {
           cases: { '@keywords': 'keyword', '@default': 'identifier' },
         },
       ],
-      [/[{}()\[\]]/, 'delimiter'],
+      [/[{}()[\]]/, 'delimiter'],
       [/[;=]/, 'delimiter'],
     ],
   },

@@ -41,7 +41,7 @@ export const useTabStore = defineStore(
     function closeLeft(path: string) {
       const idx = tabs.value.findIndex((t) => t.path === path)
       if (idx <= 0) return
-      tabs.value = [...tabs.value.filter((t, i) => i === 0 || i >= idx || !t.closable)]
+      tabs.value = tabs.value.filter((t, i) => i === 0 || i >= idx || !t.closable)
       // 确保当前激活的还在
       if (!tabs.value.find((t) => t.path === activePath.value)) {
         activePath.value = tabs.value[0].path
