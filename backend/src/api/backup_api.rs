@@ -8,6 +8,7 @@ use serde_json::json;
 use crate::dto::ApiResponse;
 use crate::service::backup_service;
 use crate::AppState;
+use ox_nginx_macros::operation_log;
 
 /// 获取站点备份列表
 pub async fn list_backups(
@@ -21,6 +22,7 @@ pub async fn list_backups(
 }
 
 /// 创建备份
+#[operation_log("创建备份")]
 pub async fn create_backup(
     State(state): State<AppState>,
     Path(site_id): Path<i64>,
@@ -40,6 +42,7 @@ pub async fn create_backup(
 }
 
 /// 恢复备份
+#[operation_log("恢复备份")]
 pub async fn restore_backup(
     State(state): State<AppState>,
     Path(backup_id): Path<i64>,
@@ -156,6 +159,7 @@ fn compute_diff(old: &str, new: &str) -> Vec<serde_json::Value> {
 }
 
 /// 删除备份
+#[operation_log("删除备份")]
 pub async fn delete_backup(
     State(state): State<AppState>,
     Path(backup_id): Path<i64>,

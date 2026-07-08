@@ -4,6 +4,8 @@ use axum::{
 };
 use serde_json::json;
 
+use ox_nginx_macros::operation_log;
+
 use crate::dto::{ApiResponse, CreateTemplateRequest, UpdateTemplateRequest};
 use crate::service::template_service;
 use crate::AppState;
@@ -31,6 +33,7 @@ pub async fn get_template(
 }
 
 /// 创建配置模板
+#[operation_log("创建模板")]
 pub async fn create_template(
     State(state): State<AppState>,
     Json(req): Json<CreateTemplateRequest>,
@@ -42,6 +45,7 @@ pub async fn create_template(
 }
 
 /// 更新配置模板
+#[operation_log("更新模板")]
 pub async fn update_template(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -55,6 +59,7 @@ pub async fn update_template(
 }
 
 /// 删除配置模板
+#[operation_log("删除模板")]
 pub async fn delete_template(
     State(state): State<AppState>,
     Path(id): Path<i64>,

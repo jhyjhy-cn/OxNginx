@@ -10,6 +10,7 @@ use crate::dto::file_dto::*;
 use crate::dto::ApiResponse;
 use crate::service::file_service;
 use crate::AppState;
+use ox_nginx_macros::operation_log;
 
 /// 查询参数（GET 接口用）
 #[derive(Debug, Deserialize)]
@@ -152,6 +153,7 @@ pub async fn read_file(Json(req): Json<PathQuery>) -> Json<serde_json::Value> {
 }
 
 /// 写入文件
+#[operation_log("写入文件")]
 pub async fn write_file(
     State(_state): State<AppState>,
     Json(req): Json<FileWriteRequest>,
@@ -163,6 +165,7 @@ pub async fn write_file(
 }
 
 /// 创建目录
+#[operation_log("创建目录")]
 pub async fn mkdir(Json(req): Json<FileMkdirRequest>) -> Json<serde_json::Value> {
     match file_service::create_dir(&req.path, &req.name).await {
         Ok(new_path) => Json(json!(ApiResponse::success(json!({ "path": new_path })))),
@@ -171,6 +174,7 @@ pub async fn mkdir(Json(req): Json<FileMkdirRequest>) -> Json<serde_json::Value>
 }
 
 /// 创建文件
+#[operation_log("创建文件")]
 pub async fn touch(Json(req): Json<FileTouchRequest>) -> Json<serde_json::Value> {
     match file_service::create_file(&req.path, &req.name).await {
         Ok(new_path) => Json(json!(ApiResponse::success(json!({ "path": new_path })))),
@@ -179,6 +183,7 @@ pub async fn touch(Json(req): Json<FileTouchRequest>) -> Json<serde_json::Value>
 }
 
 /// 重命名
+#[operation_log("重命名文件")]
 pub async fn rename(
     Json(req): Json<FileRenameRequest>,
 ) -> Json<serde_json::Value> {
@@ -189,6 +194,7 @@ pub async fn rename(
 }
 
 /// 移动文件
+#[operation_log("移动文件")]
 pub async fn move_file(Json(req): Json<FileMoveRequest>) -> Json<serde_json::Value> {
     match file_service::move_path(&req.source, &req.destination).await {
         Ok(_) => Json(json!(ApiResponse::success("移动成功"))),
@@ -197,6 +203,7 @@ pub async fn move_file(Json(req): Json<FileMoveRequest>) -> Json<serde_json::Val
 }
 
 /// 复制文件
+#[operation_log("复制文件")]
 pub async fn copy_file(Json(req): Json<FileCopyRequest>) -> Json<serde_json::Value> {
     match file_service::copy_path(&req.source, &req.destination).await {
         Ok(_) => Json(json!(ApiResponse::success("复制成功"))),
@@ -205,6 +212,7 @@ pub async fn copy_file(Json(req): Json<FileCopyRequest>) -> Json<serde_json::Val
 }
 
 /// 删除文件
+#[operation_log("删除文件")]
 pub async fn delete_file(
     State(state): State<AppState>,
     Json(req): Json<FileDeleteRequest>,
@@ -220,6 +228,7 @@ pub async fn delete_file(
 }
 
 /// 修改权限
+#[operation_log("修改权限")]
 pub async fn chmod(Json(req): Json<FileChmodRequest>) -> Json<serde_json::Value> {
     match file_service::chmod(&req.path, &req.mode).await {
         Ok(_) => Json(json!(ApiResponse::success("权限已修改"))),
@@ -228,6 +237,7 @@ pub async fn chmod(Json(req): Json<FileChmodRequest>) -> Json<serde_json::Value>
 }
 
 /// 压缩文件
+#[operation_log("压缩文件")]
 pub async fn compress(Json(req): Json<FileCompressRequest>) -> Json<serde_json::Value> {
     match file_service::compress(&req.paths, &req.destination, &req.format).await {
         Ok(_) => Json(json!(ApiResponse::success("压缩完成"))),
@@ -236,6 +246,7 @@ pub async fn compress(Json(req): Json<FileCompressRequest>) -> Json<serde_json::
 }
 
 /// 解压文件
+#[operation_log("解压文件")]
 pub async fn extract(Json(req): Json<FileExtractRequest>) -> Json<serde_json::Value> {
     match file_service::extract(&req.path, &req.destination).await {
         Ok(_) => Json(json!(ApiResponse::success("解压完成"))),
@@ -244,6 +255,7 @@ pub async fn extract(Json(req): Json<FileExtractRequest>) -> Json<serde_json::Va
 }
 
 /// 保存备注
+#[operation_log("保存备注")]
 pub async fn save_note(
     State(state): State<AppState>,
     Json(req): Json<FileNoteRequest>,

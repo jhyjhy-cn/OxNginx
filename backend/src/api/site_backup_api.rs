@@ -9,6 +9,7 @@ use serde_json::json;
 use crate::dto::ApiResponse;
 use crate::service::{site_service, site_backup_service};
 use crate::AppState;
+use ox_nginx_macros::operation_log;
 
 #[derive(Debug, Deserialize)]
 pub struct PageQuery {
@@ -46,6 +47,7 @@ pub async fn list_site_backups(
 }
 
 /// 创建站点备份
+#[operation_log("创建站点备份")]
 pub async fn create_site_backup(
     State(state): State<AppState>,
     Path(site_id): Path<i64>,
@@ -101,6 +103,7 @@ pub async fn download_site_backup(
 }
 
 /// 删除站点备份
+#[operation_log("删除站点备份")]
 pub async fn delete_site_backup(
     State(state): State<AppState>,
     Path((site_id, filename)): Path<(i64, String)>,
@@ -118,6 +121,7 @@ pub async fn delete_site_backup(
 }
 
 /// 批量删除站点备份
+#[operation_log("批量删除备份")]
 pub async fn batch_delete_site_backups(
     State(state): State<AppState>,
     Path(site_id): Path<i64>,

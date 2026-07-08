@@ -2,7 +2,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, FnArg, ItemFn, LitStr, Pat, PatType};
 
-/// `#[operation_log("动作名")]` — 包裹 handler，自动记录操作日志
+/// `#[operation_log("动作名")]` — 注入计时 + 操作日志到函数体
 #[proc_macro_attribute]
 pub fn operation_log(attr: TokenStream, item: TokenStream) -> TokenStream {
     let action = parse_macro_input!(attr as LitStr);
@@ -11,62 +11,55 @@ pub fn operation_log(attr: TokenStream, item: TokenStream) -> TokenStream {
     let vis = &func.vis;
     let sig = &func.sig;
     let attrs = &func.attrs;
-    let block = &func.block;
-    let fn_name = &sig.ident;
+    let body = &func.block;
 
-    let mut param_idents = Vec::new();
-    let mut param_types = Vec::new();
-    for arg in &sig.inputs {
-        if let FnArg::Typed(PatType { pat, ty, .. }) = arg {
-            if let Some(ident) = extract_ident(pat) {
-                param_idents.push(ident);
-                param_types.push(ty.clone());
+    // 找到 State<AppState> 参数的变量名
+    let state_var = find_state_param(sig);
+
+    let expanded = if let Some(sv) = state_var {
+        quote! {
+            #(#attrs)*
+            #vis #sig {
+                let #sv = #sv; // rebind to suppress unused warnings
+                let __ol_pool = #sv.db.pool().clone();
+                let __ol_start = std::time::Instant::now();
+                let __ol_resp = (|| async move #body)().await;
+                let __ol_cost = __ol_start.elapsed().as_millis() as i64;
+                {
+                    let a = #action.to_string();
+                    tokio::spawn(async move {
+                        let _ = crate::service::log_service::log_operation(
+                            &__ol_pool, "system", &a, None, None, None,
+                            "success", Some(__ol_cost), None, None, None,
+                        ).await;
+                    });
+                }
+                __ol_resp
             }
         }
-    }
-
-    // 闭包签名：原参数 + 额外的 req（让 Handler trait 类型匹配）
-    let expanded = quote! {
-        #(#attrs)*
-        #vis async fn #fn_name(
-            axum::extract::State(state): axum::extract::State<crate::AppState>,
-            req: axum::extract::Request,
-        ) -> axum::response::Response {
-            use axum::response::IntoResponse;
-            // 闭包：原参数 + req，body 用原函数体
-            let handler = |#(#param_idents: #param_types,)* _req: axum::extract::Request| async move #block;
-
-            let username = req
-                .extensions()
-                .get::<crate::middleware::TokenInfo>()
-                .map(|t| t.username.clone());
-            let method = req.method().clone();
-            let uri = req.uri().to_string();
-
-            let start = std::time::Instant::now();
-            let resp = handler(axum::extract::State(state.clone()), req).await.into_response();
-            let cost_ms = start.elapsed().as_millis() as i64;
-            let ok = resp.status().is_success();
-
-            if let Some(u) = username {
-                let pool = state.db.pool().clone();
-                let m = method.to_string();
-                let s = if ok { "success" } else { "failed" }.to_string();
-                let err = if !ok { Some(format!("HTTP {}", resp.status().as_u16())) } else { None };
-                tokio::spawn(async move {
-                    let _ = crate::service::log_service::log_operation(
-                        &pool, &u, #action,
-                        Some(&m), Some(&uri), None,
-                        &s, Some(cost_ms), None, None, err.as_deref(),
-                    ).await;
-                });
-            }
-
-            resp
-        }
+    } else {
+        // 没有 State<AppState> 参数，不注入日志
+        quote! { #(#attrs)* #vis #sig #body }
     };
 
     TokenStream::from(expanded)
+}
+
+/// 从函数签名中找到 State<AppState> 参数的标识符
+fn find_state_param(sig: &syn::Signature) -> Option<syn::Ident> {
+    for arg in &sig.inputs {
+        if let FnArg::Typed(PatType { pat, ty, .. }) = arg {
+            // 检查类型是否是 State<AppState>
+            if let syn::Type::Path(tp) = ty.as_ref() {
+                if let Some(seg) = tp.path.segments.last() {
+                    if seg.ident == "State" {
+                        return extract_ident(pat);
+                    }
+                }
+            }
+        }
+    }
+    None
 }
 
 fn extract_ident(pat: &Pat) -> Option<syn::Ident> {

@@ -8,6 +8,7 @@ use serde_json::json;
 use crate::dto::ApiResponse;
 use crate::service::reverse_proxy_service;
 use crate::AppState;
+use ox_nginx_macros::operation_log;
 
 #[derive(Debug, Deserialize)]
 pub struct CreateProxyRequest {
@@ -38,6 +39,7 @@ pub async fn list_proxies(
 }
 
 /// 创建反向代理
+#[operation_log("创建反向代理")]
 pub async fn create_proxy(
     State(state): State<AppState>,
     Path(site_id): Path<i64>,
@@ -54,6 +56,7 @@ pub async fn create_proxy(
 }
 
 /// 更新反向代理
+#[operation_log("更新反向代理")]
 pub async fn update_proxy(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -86,6 +89,7 @@ pub async fn update_proxy(
 }
 
 /// 删除反向代理
+#[operation_log("删除反向代理")]
 pub async fn delete_proxy(
     State(state): State<AppState>,
     Path(id): Path<i64>,

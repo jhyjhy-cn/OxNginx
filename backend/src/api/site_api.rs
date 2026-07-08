@@ -5,6 +5,8 @@ use axum::{
 use serde::Deserialize;
 use serde_json::json;
 
+use ox_nginx_macros::operation_log;
+
 use crate::dto::{ApiResponse, CreateSiteRequest, DeleteSiteRequest, UpdateSiteRequest};
 use crate::service::site_service;
 use crate::AppState;
@@ -93,6 +95,7 @@ pub async fn get_site(
 }
 
 /// 创建站点
+#[operation_log("创建站点")]
 pub async fn create_site(
     State(state): State<AppState>,
     Json(mut req): Json<CreateSiteRequest>,
@@ -165,7 +168,6 @@ pub async fn create_site(
     // 保存到数据库
     match site_service::create_site(&state, req).await {
         Ok(site) => {
-            // 重载 nginx 配置
             let _ = crate::nginx::reload_nginx(&config.nginx.bin).await;
             Json(json!(ApiResponse::success(site)))
         }
@@ -174,6 +176,7 @@ pub async fn create_site(
 }
 
 /// 更新站点
+#[operation_log("更新站点")]
 pub async fn update_site(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -203,6 +206,7 @@ pub async fn update_site(
 }
 
 /// 删除站点
+#[operation_log("删除站点")]
 pub async fn delete_site(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -250,6 +254,7 @@ pub async fn delete_site(
 }
 
 /// 批量启用站点
+#[operation_log("批量启用站点")]
 pub async fn batch_enable(
     State(state): State<AppState>,
     Json(req): Json<BatchRequest>,
@@ -300,6 +305,7 @@ pub async fn batch_enable(
 }
 
 /// 批量禁用站点
+#[operation_log("批量禁用站点")]
 pub async fn batch_disable(
     State(state): State<AppState>,
     Json(req): Json<BatchRequest>,
@@ -349,6 +355,7 @@ pub async fn batch_disable(
 }
 
 /// 部署SSL证书（一键申请Let's Encrypt并绑定到站点）
+#[operation_log("部署SSL证书")]
 pub async fn deploy_ssl(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -460,6 +467,7 @@ pub async fn deploy_ssl(
 
 
 /// 批量删除站点
+#[operation_log("批量删除站点")]
 pub async fn batch_delete(
     State(state): State<AppState>,
     Json(req): Json<BatchRequest>,

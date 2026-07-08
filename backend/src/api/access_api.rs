@@ -4,6 +4,8 @@ use axum::{
 };
 use serde_json::json;
 
+use ox_nginx_macros::operation_log;
+
 use crate::dto::{ApiResponse, CreateAccessRuleRequest, UpdateAccessRuleRequest};
 use crate::service::access_service;
 use crate::AppState;
@@ -31,6 +33,7 @@ pub async fn get_rule(
 }
 
 /// 创建访问控制规则
+#[operation_log("创建访问规则")]
 pub async fn create_rule(
     State(state): State<AppState>,
     Json(req): Json<CreateAccessRuleRequest>,
@@ -42,6 +45,7 @@ pub async fn create_rule(
 }
 
 /// 更新访问控制规则
+#[operation_log("更新访问规则")]
 pub async fn update_rule(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -55,6 +59,7 @@ pub async fn update_rule(
 }
 
 /// 删除访问控制规则
+#[operation_log("删除访问规则")]
 pub async fn delete_rule(
     State(state): State<AppState>,
     Path(id): Path<i64>,

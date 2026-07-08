@@ -4,6 +4,8 @@ use axum::{
 };
 use serde_json::json;
 
+use ox_nginx_macros::operation_log;
+
 use crate::dto::{
     ApiResponse, PageQuery, PagedResult, RbacInfo, ResetPasswordRequest, SetRoleMenusRequest,
     UpsertDeptRequest, UpsertDictItemRequest, UpsertDictRequest, UpsertI18nRequest,
@@ -38,6 +40,7 @@ pub async fn list_users(State(state): State<AppState>, axum::extract::Query(q): 
     }
 }
 
+#[operation_log("创建用户")]
 pub async fn create_user(
     State(state): State<AppState>,
     Json(req): Json<UpsertUserRequest>,
@@ -60,6 +63,7 @@ pub async fn create_user(
     }
 }
 
+#[operation_log("更新用户")]
 pub async fn update_user(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -80,6 +84,7 @@ pub async fn update_user(
     }
 }
 
+#[operation_log("删除用户")]
 pub async fn delete_user(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -91,6 +96,7 @@ pub async fn delete_user(
     }
 }
 
+#[operation_log("重置密码")]
 pub async fn reset_password(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -113,6 +119,7 @@ pub async fn list_roles(State(state): State<AppState>, axum::extract::Query(q): 
     }
 }
 
+#[operation_log("创建角色")]
 pub async fn create_role(
     State(state): State<AppState>,
     Json(req): Json<UpsertRoleRequest>,
@@ -135,6 +142,7 @@ pub async fn create_role(
     }
 }
 
+#[operation_log("更新角色")]
 pub async fn update_role(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -159,6 +167,7 @@ pub async fn update_role(
     }
 }
 
+#[operation_log("删除角色")]
 pub async fn delete_role(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -170,6 +179,7 @@ pub async fn delete_role(
     }
 }
 
+#[operation_log("设置角色菜单")]
 pub async fn set_role_menus(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -192,6 +202,7 @@ pub async fn list_depts(State(state): State<AppState>, axum::extract::Query(q): 
     }
 }
 
+#[operation_log("创建部门")]
 pub async fn create_dept(
     State(state): State<AppState>,
     Json(req): Json<UpsertDeptRequest>,
@@ -209,6 +220,7 @@ pub async fn create_dept(
     }
 }
 
+#[operation_log("更新部门")]
 pub async fn update_dept(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -228,6 +240,7 @@ pub async fn update_dept(
     }
 }
 
+#[operation_log("删除部门")]
 pub async fn delete_dept(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -250,6 +263,7 @@ pub async fn list_posts(State(state): State<AppState>, axum::extract::Query(q): 
     }
 }
 
+#[operation_log("创建岗位")]
 pub async fn create_post(
     State(state): State<AppState>,
     Json(req): Json<UpsertPostRequest>,
@@ -267,6 +281,7 @@ pub async fn create_post(
     }
 }
 
+#[operation_log("更新岗位")]
 pub async fn update_post(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -285,6 +300,7 @@ pub async fn update_post(
     }
 }
 
+#[operation_log("删除岗位")]
 pub async fn delete_post(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -305,6 +321,7 @@ pub async fn list_menus(State(state): State<AppState>) -> Json<serde_json::Value
     }
 }
 
+#[operation_log("创建菜单")]
 pub async fn create_menu(
     State(state): State<AppState>,
     Json(req): Json<UpsertMenuRequest>,
@@ -328,6 +345,7 @@ pub async fn create_menu(
     }
 }
 
+#[operation_log("更新菜单")]
 pub async fn update_menu(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -352,6 +370,7 @@ pub async fn update_menu(
     }
 }
 
+#[operation_log("删除菜单")]
 pub async fn delete_menu(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -363,6 +382,7 @@ pub async fn delete_menu(
     }
 }
 
+#[operation_log("批量删除菜单")]
 pub async fn batch_delete_menus(
     State(state): State<AppState>,
     Json(ids): Json<Vec<i64>>,
@@ -409,6 +429,7 @@ pub async fn list_i18n(
     }
 }
 
+#[operation_log("保存国际化")]
 pub async fn upsert_i18n(
     State(state): State<AppState>,
     Json(req): Json<UpsertI18nRequest>,
@@ -420,6 +441,7 @@ pub async fn upsert_i18n(
     }
 }
 
+#[operation_log("删除国际化")]
 pub async fn delete_i18n(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -459,6 +481,7 @@ pub async fn get_dict(State(state): State<AppState>, Path(id): Path<i64>) -> Jso
     }
 }
 
+#[operation_log("创建字典")]
 pub async fn create_dict(
     State(state): State<AppState>,
     Json(req): Json<UpsertDictRequest>,
@@ -469,6 +492,7 @@ pub async fn create_dict(
     }
 }
 
+#[operation_log("更新字典")]
 pub async fn update_dict(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -480,6 +504,7 @@ pub async fn update_dict(
     }
 }
 
+#[operation_log("删除字典")]
 pub async fn delete_dict(State(state): State<AppState>, Path(id): Path<i64>) -> Json<serde_json::Value> {
     match rbac_service::delete_dict(&state.db.pool(), id).await {
         Ok(true) => Json(json!(ApiResponse::success("ok"))),
@@ -488,6 +513,7 @@ pub async fn delete_dict(State(state): State<AppState>, Path(id): Path<i64>) -> 
     }
 }
 
+#[operation_log("创建字典项")]
 pub async fn create_dict_item(
     State(state): State<AppState>,
     Path(dict_id): Path<i64>,
@@ -507,6 +533,7 @@ pub async fn create_dict_item(
     }
 }
 
+#[operation_log("更新字典项")]
 pub async fn update_dict_item(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -527,6 +554,7 @@ pub async fn update_dict_item(
     }
 }
 
+#[operation_log("删除字典项")]
 pub async fn delete_dict_item(State(state): State<AppState>, Path(id): Path<i64>) -> Json<serde_json::Value> {
     match rbac_service::delete_dict_item(&state.db.pool(), id).await {
         Ok(true) => Json(json!(ApiResponse::success("ok"))),

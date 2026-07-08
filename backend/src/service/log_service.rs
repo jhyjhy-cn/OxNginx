@@ -41,12 +41,54 @@ pub async fn log_operation(pool: &SqlitePool, username: &str, action: &str, meth
     Ok(())
 }
 
-pub async fn list_operation_logs(pool: &SqlitePool, page: i64, page_size: i64) -> Result<(Vec<OperationLog>, i64)> {
-    let offset = (page - 1).max(0) * page_size;
-    let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sys_operation_logs").fetch_one(pool).await?;
-    let list = sqlx::query_as::<_, OperationLog>("SELECT * FROM sys_operation_logs ORDER BY id DESC LIMIT ? OFFSET ?")
-        .bind(page_size).bind(offset).fetch_all(pool).await?;
+pub struct OperationLogQuery {
+    pub page: i64,
+    pub page_size: i64,
+    pub username: Option<String>,
+    pub status: Option<String>,
+    pub start_time: Option<String>,
+    pub end_time: Option<String>,
+}
+
+pub async fn list_operation_logs(pool: &SqlitePool, q: &OperationLogQuery) -> Result<(Vec<OperationLog>, i64)> {
+    let offset = (q.page - 1).max(0) * q.page_size;
+    let mut wheres = Vec::new();
+    if q.username.is_some() { wheres.push("username LIKE ?"); }
+    if q.status.is_some() { wheres.push("status = ?"); }
+    if q.start_time.is_some() { wheres.push("created_at >= ?"); }
+    if q.end_time.is_some() { wheres.push("created_at <= ?"); }
+    let where_sql = if wheres.is_empty() { String::new() } else { format!(" WHERE {}", wheres.join(" AND ")) };
+
+    let count_sql = format!("SELECT COUNT(*) FROM sys_operation_logs{}", where_sql);
+    let list_sql = format!("SELECT * FROM sys_operation_logs{} ORDER BY id DESC LIMIT ? OFFSET ?", where_sql);
+
+    let mut count_q = sqlx::query_scalar(&count_sql);
+    let mut list_q = sqlx::query_as::<_, OperationLog>(&list_sql);
+    if let Some(ref v) = q.username { count_q = count_q.bind(format!("%{}%", v)); list_q = list_q.bind(format!("%{}%", v)); }
+    if let Some(ref v) = q.status { count_q = count_q.bind(v.clone()); list_q = list_q.bind(v.clone()); }
+    if let Some(ref v) = q.start_time { count_q = count_q.bind(v.clone()); list_q = list_q.bind(v.clone()); }
+    if let Some(ref v) = q.end_time { count_q = count_q.bind(v.clone()); list_q = list_q.bind(v.clone()); }
+
+    let total: i64 = count_q.fetch_one(pool).await?;
+    let list = list_q.bind(q.page_size).bind(offset).fetch_all(pool).await?;
     Ok((list, total))
+}
+
+pub async fn export_operation_logs_csv(pool: &SqlitePool, q: &OperationLogQuery) -> Result<String> {
+    let (list, _) = list_operation_logs(pool, q).await?;
+    let mut csv = String::from("\u{FEFF}操作类型,请求方式,操作人员,操作地址,操作状态,操作日期,消耗时间(ms)\n");
+    for row in &list {
+        csv.push_str(&format!("{},{},{},{},{},{},{}\n",
+            row.action,
+            row.method.as_deref().unwrap_or(""),
+            row.username,
+            row.uri.as_deref().unwrap_or(""),
+            row.status,
+            row.created_at.map(|t| t.format("%Y-%m-%d %H:%M:%S").to_string()).unwrap_or_default(),
+            row.cost_ms.unwrap_or(0),
+        ));
+    }
+    Ok(csv)
 }
 
 pub async fn log_login(

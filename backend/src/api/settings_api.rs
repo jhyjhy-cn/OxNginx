@@ -2,6 +2,8 @@ use axum::{extract::State, Json};
 use serde::Deserialize;
 use serde_json::json;
 
+use ox_nginx_macros::operation_log;
+
 use crate::dto::ApiResponse;
 use crate::AppState;
 use crate::util::cmd;
@@ -103,6 +105,7 @@ pub async fn get_settings(
 }
 
 /// 更新系统设置
+#[operation_log("保存系统设置")]
 pub async fn update_settings(
     State(state): State<AppState>,
     Json(req): Json<UpdateSettingsRequest>,

@@ -4,6 +4,8 @@ use axum::{
 };
 use serde_json::json;
 
+use ox_nginx_macros::operation_log;
+
 use crate::dto::{ApiResponse, CreateUpstreamRequest, UpdateUpstreamRequest};
 use crate::service::upstream_service;
 use crate::AppState;
@@ -36,6 +38,7 @@ pub async fn get_upstream(
 }
 
 /// 创建上游服务器
+#[operation_log("创建上游服务器")]
 pub async fn create_upstream(
     State(state): State<AppState>,
     Json(req): Json<CreateUpstreamRequest>,
@@ -65,6 +68,7 @@ pub async fn create_upstream(
 }
 
 /// 更新上游服务器
+#[operation_log("更新上游服务器")]
 pub async fn update_upstream(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -90,6 +94,7 @@ pub async fn update_upstream(
 }
 
 /// 删除上游服务器
+#[operation_log("删除上游服务器")]
 pub async fn delete_upstream(
     State(state): State<AppState>,
     Path(id): Path<i64>,

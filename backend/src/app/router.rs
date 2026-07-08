@@ -55,6 +55,7 @@ pub fn build(state: AppState) -> Router {
         .route("/api/log/access", get(api::log_api::access_log))
         .route("/api/log/error", get(api::log_api::error_log))
         .route("/api/log/operation", get(api::log_api::list_operation_logs))
+        .route("/api/log/operation/export", get(api::log_api::export_operation_logs))
         .route("/api/log/login", get(api::log_api::list_login_logs))
         .route("/api/log/login/export", get(api::log_api::export_login_logs))
         .route("/api/backups/:id", get(api::backup_api::list_backups))
