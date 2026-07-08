@@ -301,6 +301,23 @@ pub struct RbacInfo {
     pub menus: Vec<MenuNode>,
 }
 
+/// 通用分页查询参数
+#[derive(Debug, Deserialize)]
+pub struct PageQuery {
+    pub page: Option<i64>,
+    pub page_size: Option<i64>,
+    pub keyword: Option<String>,
+}
+
+/// 分页响应
+#[derive(Debug, Serialize)]
+pub struct PagedResult<T: Serialize> {
+    pub list: Vec<T>,
+    pub total: i64,
+    pub page: i64,
+    pub page_size: i64,
+}
+
 /// 创建/更新用户请求
 #[derive(Debug, Deserialize)]
 pub struct UpsertUserRequest {

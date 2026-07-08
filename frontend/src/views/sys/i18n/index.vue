@@ -1,34 +1,23 @@
 <template>
   <div class="rbac-page">
     <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>{{ $t('menu.rbacI18n') }}</span>
-          <div class="toolbar">
-            <el-button type="primary" @click="openAddKey">{{ $t('common.add') }}</el-button>
-            <el-button type="primary" @click="openAddLocale">新增语言</el-button>
-            <el-button type="success" @click="batchSave" :loading="saving">{{ $t('common.save') }}</el-button>
-            <el-button @click="load">{{ $t('common.refresh') }}</el-button>
-          </div>
-        </div>
-      </template>
-
-      <!-- 搜索栏 -->
       <div class="search-bar">
-        <el-input
-          v-model="search"
-          :placeholder="$t('common.search') + ' Key...'"
-          clearable
-          style="width: 300px"
-          @input="onSearchInput"
-          @clear="currentPage = 1; load()"
-        >
+        <el-input v-model="search" :placeholder="$t('common.search') + ' Key...'" clearable style="width: 260px" @input="onInput" @keyup.enter="doSearch">
           <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
-        <span class="total-hint">共 {{ total }} 条</span>
+        <el-button type="primary" @click="doSearch">{{ $t('common.search') }}</el-button>
+        <el-button @click="doReset">{{ $t('common.reset') }}</el-button>
+        <span class="total-hint" style="margin-left: auto">{{ $t('files.totalItems', { n: total }) }}</span>
       </div>
 
-      <el-table :data="rows" v-loading="loading" @selection-change="onSelect" max-height="calc(100vh - 310px)">
+      <div class="toolbar">
+        <el-button type="primary" @click="openAddKey">{{ $t('common.add') }}</el-button>
+        <el-button type="primary" @click="openAddLocale">{{ $t('rbac.addLocale') }}</el-button>
+        <el-button type="success" @click="batchSave" :loading="saving">{{ $t('common.save') }}</el-button>
+        <el-button @click="load">{{ $t('common.refresh') }}</el-button>
+      </div>
+
+      <el-table :data="rows" v-loading="loading" @selection-change="onSelect" max-height="calc(100vh - 380px)">
         <el-table-column type="selection" width="48" />
         <el-table-column prop="key" label="Key" min-width="220" fixed sortable />
         <el-table-column
@@ -52,25 +41,12 @@
         </el-table-column>
       </el-table>
 
-      <!-- 分页 -->
-      <div class="pagination-bar">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :total="total"
-          :page-sizes="[50, 100, 200]"
-          layout="total, sizes, prev, pager, next"
-          small
-          @current-change="load"
-          @size-change="currentPage = 1; load()"
-        />
-      </div>
+      <OnPagination v-model:current-page="currentPage" v-model:page-size="pageSize" :total="total" :page-sizes="[50, 100, 200]" @change="load" />
     </el-card>
 
-    <!-- 新增语言 -->
-    <OnDialog v-model="showAddLocale" title="新增语言" width="400px">
+    <OnDialog v-model="showAddLocale" :title="$t('rbac.addLocale')" width="400px">
       <el-form label-width="80px">
-        <el-form-item label="Locale">
+        <el-form-item :label="$t('rbac.locale')">
           <el-input v-model="newLocale" placeholder="ja-JP / ko-KR / fr-FR ..." />
         </el-form-item>
       </el-form>
@@ -80,7 +56,6 @@
       </template>
     </OnDialog>
 
-    <!-- 新增翻译 key -->
     <OnDialog v-model="showAddKey" :title="$t('common.add')" width="500px">
       <el-form label-width="100px">
         <el-form-item label="Key">
@@ -102,8 +77,12 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/api'
+import OnPagination from '@/components/OnPagination/index.vue'
 import OnDialog from '@/components/OnDialog/index.vue'
+
+const { t } = useI18n()
 
 interface I18nRaw { id: number; locale: string; key: string; value: string }
 interface Row {
@@ -129,25 +108,22 @@ const showAddKey = ref(false)
 const newKey = ref('')
 const newValues = reactive<Record<string, string>>({})
 
-// 搜索防抖
-let searchTimer: ReturnType<typeof setTimeout> | null = null
-function onSearchInput() {
-  if (searchTimer) clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => { currentPage.value = 1; load() }, 300)
-}
+function doSearch() { currentPage.value = 1; load() }
+function doReset() { search.value = ''; currentPage.value = 1; load() }
+
+let timer: ReturnType<typeof setTimeout> | null = null
+function onInput() { if (timer) clearTimeout(timer); timer = setTimeout(doSearch, 300) }
 
 onMounted(load)
 
 async function load() {
   loading.value = true
   try {
-    // 1. locale 列表（只在 locales 为空时拉一次）
     if (!locales.value.length) {
       const { data: locRes } = await api.get('/api/rbac/i18n/locales')
       if (locRes.code === 0) locales.value = locRes.data || []
     }
 
-    // 2. 分页查询
     const params: Record<string, string | number> = {
       page: currentPage.value,
       page_size: pageSize.value,
@@ -159,7 +135,6 @@ async function load() {
     const list: I18nRaw[] = data.data.list || []
     total.value = data.data.total || 0
 
-    // 3. 按 key 聚合成行（同 key 多 locale 合并到 values）
     const map = new Map<string, Row>()
     for (const e of list) {
       if (!map.has(e.key)) {
@@ -190,7 +165,6 @@ async function addLocale() {
   if (!locales.value.includes(loc)) locales.value.push(loc)
   showAddLocale.value = false
   newLocale.value = ''
-  // 新语言列立刻出现，已有行的值为空
 }
 
 function openAddKey() {
@@ -222,7 +196,7 @@ async function addKey() {
 async function batchSave() {
   const dirty = rows.value.filter(r => r._dirty)
   if (!dirty.length) {
-    ElMessage.info('无修改')
+    ElMessage.info(t('rbac.noChange'))
     return
   }
   saving.value = true
@@ -234,7 +208,7 @@ async function batchSave() {
       if (!entries.length) continue
       await api.post('/api/rbac/i18n', { locale: loc, entries })
     }
-    ElMessage.success(`已保存 ${dirty.length} 条`)
+    ElMessage.success(t('rbac.savedN', { n: dirty.length }))
     dirty.forEach(r => (r._dirty = false))
   } finally {
     saving.value = false
@@ -243,7 +217,7 @@ async function batchSave() {
 
 async function del(row: Row) {
   try {
-    await ElMessageBox.confirm(`确定删除「${row.key}」（所有语言）?`, '提示', { type: 'warning' })
+    await ElMessageBox.confirm(t('common.confirmDelete'), t('common.tip'), { type: 'warning' })
     for (const id of Object.values(row._ids)) {
       await api.delete(`/api/rbac/i18n/${id}`)
     }
@@ -254,9 +228,7 @@ async function del(row: Row) {
 </script>
 
 <style scoped>
-.toolbar { display: flex; gap: 12px; }
-.card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
-.search-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.search-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+.toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
 .total-hint { font-size: 13px; color: var(--el-text-color-secondary); }
-.pagination-bar { display: flex; justify-content: flex-end; margin-top: 12px; }
 </style>

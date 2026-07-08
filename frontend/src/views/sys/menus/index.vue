@@ -1,25 +1,21 @@
 <template>
   <div class="rbac-page">
     <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>{{ $t('menu.rbacMenus') }}</span>
-          <span class="hint">新增/修改菜单后,刷新页面或重启服务生效</span>
-        </div>
-      </template>
+      <div class="search-bar">
+        <el-input v-model="keyword" :placeholder="$t('common.search')" clearable style="width: 240px" @input="onInput" @keyup.enter="doSearch" />
+        <el-button type="primary" @click="doSearch">{{ $t('common.search') }}</el-button>
+        <el-button @click="doReset">{{ $t('common.reset') }}</el-button>
+      </div>
 
       <div class="toolbar">
         <el-button type="primary" @click="openCreate(null)">
           <el-icon><Plus /></el-icon>{{ $t('common.add') }}
         </el-button>
-        <el-button
-          type="danger"
-          :disabled="!selectedIds.length"
-          @click="batchDelete"
-        >
-          <el-icon><Delete /></el-icon>批量删除 ({{ selectedIds.length }})
+        <el-button type="danger" :disabled="!selectedIds.length" @click="batchDelete">
+          <el-icon><Delete /></el-icon>{{ $t('rbac.batchDelete') }} ({{ selectedIds.length }})
         </el-button>
         <el-button @click="load">{{ $t('common.refresh') }}</el-button>
+        <span class="hint" style="margin-left: auto">{{ $t('rbac.hintMenuRefresh') }}</span>
       </div>
 
       <el-table
@@ -29,6 +25,7 @@
         :tree-props="{ children: 'children' }"
         @selection-change="onSelect"
         ref="tableRef"
+        max-height="calc(100vh - 380px)"
       >
         <el-table-column type="selection" width="48" />
         <el-table-column prop="name" :label="$t('rbac.colName')" min-width="160">
@@ -46,7 +43,7 @@
         <el-table-column prop="component" :label="$t('rbac.colComponent')" min-width="140" />
         <el-table-column prop="type" :label="$t('rbac.colType')" width="80">
           <template #default="{ row }">
-            <el-tag size="small" :type="typeColor(row.type)">{{ typeLabel(row.type) }}</el-tag>
+            <el-tag size="small" :type="typeColor(row.type)">{{ $t(row.type === 'M' ? 'rbac.typeM' : row.type === 'C' ? 'rbac.typeC' : 'rbac.typeF') }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="permission" :label="$t('rbac.colPermission')" min-width="180" />
@@ -54,7 +51,7 @@
         <el-table-column :label="$t('common.action')" width="200" fixed="right">
           <template #default="{ row }">
             <el-button v-if="row.type !== 'F'" type="primary" text size="small" @click="openCreate(row)">
-              +子项
+              +{{ $t('rbac.subItem') }}
             </el-button>
             <el-button type="primary" text size="small" @click="openEdit(row)">
               {{ $t('common.edit') }}
@@ -65,6 +62,8 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <OnPagination v-model:current-page="currentPage" v-model:page-size="pageSize" :total="total" :page-sizes="[50, 100, 200]" @change="load" />
     </el-card>
 
     <OnDialog v-model="dialogVisible" :title="form.id ? $t('common.edit') : $t('common.add')" width="600px">
@@ -121,8 +120,12 @@
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Delete } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/api'
+import OnPagination from '@/components/OnPagination/index.vue'
 import OnDialog from '@/components/OnDialog/index.vue'
+
+const { t } = useI18n()
 
 interface Menu {
   id: number
@@ -143,6 +146,10 @@ const menus = ref<Menu[]>([])
 const loading = ref(false)
 const tableRef = ref()
 const selectedIds = ref<number[]>([])
+const keyword = ref('')
+const currentPage = ref(1)
+const pageSize = ref(100)
+const total = ref(0)
 
 const parentOptions = computed(() => {
   const filter = (nodes: Menu[]): Menu[] =>
@@ -169,26 +176,32 @@ const form = reactive({
 })
 
 const rules = {
-  name: [{ required: true, message: '必填', trigger: 'blur' }],
-  title: [{ required: true, message: '必填', trigger: 'blur' }],
-  type: [{ required: true, message: '必填', trigger: 'change' }],
+  name: [{ required: true, message: t('rbac.required'), trigger: 'blur' }],
+  title: [{ required: true, message: t('rbac.required'), trigger: 'blur' }],
+  type: [{ required: true, message: t('rbac.required'), trigger: 'change' }],
 }
 
 function typeColor(t: string) {
-  return t === 'M' ? 'success' : t === 'C' ? '' : 'info'
+  return t === 'M' ? 'success' : t === 'C' ? undefined : 'info'
 }
-function typeLabel(t: string) {
-  return t === 'M' ? '目录' : t === 'C' ? '菜单' : '按钮'
-}
+
+function doSearch() { currentPage.value = 1; load() }
+function doReset() { keyword.value = ''; currentPage.value = 1; load() }
+
+let timer: ReturnType<typeof setTimeout> | null = null
+function onInput() { if (timer) clearTimeout(timer); timer = setTimeout(doSearch, 300) }
 
 onMounted(load)
 
 async function load() {
   loading.value = true
   try {
-    const { data } = await api.get('/api/rbac/menus')
+    const params: Record<string, string | number> = { page: currentPage.value, page_size: pageSize.value }
+    if (keyword.value) params.keyword = keyword.value
+    const { data } = await api.get('/api/rbac/menus', { params })
     if (data.code !== 0) return
-    const list: Menu[] = data.data
+    const list: Menu[] = data.data.list || data.data
+    total.value = data.data.total || list.length
     const map = new Map<number, Menu>()
     list.forEach(m => map.set(m.id, { ...m, children: [] }))
     const roots: Menu[] = []
@@ -200,7 +213,7 @@ async function load() {
       }
     }
     allMenus.value = list
-    menus.value = roots
+    menus.value = keyword.value ? list : roots
   } finally {
     loading.value = false
   }
@@ -286,8 +299,8 @@ async function submit() {
 async function del(row: Menu) {
   try {
     await ElMessageBox.confirm(
-      `确定删除「${row.title}」? 子菜单和关联角色权限将一并删除`,
-      '提示',
+      `${t('common.confirmDelete')} ${t('rbac.deleteChildrenHint')}`,
+      t('common.tip'),
       { type: 'warning' },
     )
     const { data } = await api.delete(`/api/rbac/menus/${row.id}`)
@@ -304,8 +317,8 @@ async function batchDelete() {
   if (!selectedIds.value.length) return
   try {
     await ElMessageBox.confirm(
-      `确定批量删除 ${selectedIds.value.length} 项? 子菜单将一并删除`,
-      '提示',
+      t('rbac.batchDeleteConfirm', { n: selectedIds.value.length }),
+      t('common.tip'),
       { type: 'warning' },
     )
     const { data } = await api.post('/api/rbac/menus/batch-delete', selectedIds.value)
@@ -322,11 +335,7 @@ async function batchDelete() {
 </script>
 
 <style scoped>
-.toolbar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-.card-header { display: flex; justify-content: space-between; align-items: center; }
+.search-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+.toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
 .hint { font-size: 12px; color: var(--el-text-color-secondary); }
 </style>

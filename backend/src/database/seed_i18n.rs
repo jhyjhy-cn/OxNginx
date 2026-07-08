@@ -2,13 +2,7 @@ use anyhow::Result;
 use sqlx::SqlitePool;
 
 pub async fn seed_i18n(pool: &SqlitePool) -> Result<()> {
-    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sys_i18n")
-        .fetch_one(pool)
-        .await?;
-    if count > 0 {
-        return Ok(());
-    }
-
+    // INSERT OR IGNORE: 已有条目跳过，新增条目自动插入
     // (locale, key, value)
     const SEED_I18N: &[(&str, &str, &str)] = &[
         ("zh-CN", "common.add", "添加"),
@@ -1071,6 +1065,35 @@ pub async fn seed_i18n(pool: &SqlitePool) -> Result<()> {
         ("en-US", "dict.colValue", "Value"),
         ("en-US", "dict.colSort", "Sort"),
         ("en-US", "dict.manageItems", "Manage Items"),
+        // RBAC 补充
+        ("zh-CN", "rbac.colCode", "编码"),
+        ("zh-CN", "rbac.colRemark", "备注"),
+        ("zh-CN", "rbac.colRoles", "角色"),
+        ("zh-CN", "rbac.menuPermission", "菜单权限"),
+        ("zh-CN", "rbac.required", "必填"),
+        ("zh-CN", "rbac.batchDelete", "批量删除"),
+        ("zh-CN", "rbac.subItem", "子项"),
+        ("zh-CN", "rbac.batchDeleteConfirm", "确定批量删除 {n} 项? 子菜单将一并删除"),
+        ("zh-CN", "rbac.deleteChildrenHint", "子菜单和关联角色权限将一并删除"),
+        ("zh-CN", "rbac.addLocale", "新增语言"),
+        ("zh-CN", "rbac.locale", "语言标识"),
+        ("zh-CN", "rbac.noChange", "无修改"),
+        ("zh-CN", "rbac.savedN", "已保存 {n} 条"),
+        ("zh-CN", "rbac.hintMenuRefresh", "新增/修改菜单后,刷新页面或重启服务生效"),
+        ("en-US", "rbac.colCode", "Code"),
+        ("en-US", "rbac.colRemark", "Remark"),
+        ("en-US", "rbac.colRoles", "Roles"),
+        ("en-US", "rbac.menuPermission", "Menu Permission"),
+        ("en-US", "rbac.required", "Required"),
+        ("en-US", "rbac.batchDelete", "Batch Delete"),
+        ("en-US", "rbac.subItem", "Sub Item"),
+        ("en-US", "rbac.batchDeleteConfirm", "Batch delete {n} items? Sub menus will also be deleted"),
+        ("en-US", "rbac.deleteChildrenHint", "Sub menus and associated role permissions will also be deleted"),
+        ("en-US", "rbac.addLocale", "Add Language"),
+        ("en-US", "rbac.locale", "Locale"),
+        ("en-US", "rbac.noChange", "No changes"),
+        ("en-US", "rbac.savedN", "Saved {n} items"),
+        ("en-US", "rbac.hintMenuRefresh", "After adding/editing menus, refresh the page or restart the service to take effect"),
     ];
 
     for (locale, key, value) in SEED_I18N {

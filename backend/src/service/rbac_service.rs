@@ -218,6 +218,49 @@ pub async fn list_users(pool: &SqlitePool) -> Result<Vec<UserListItem>> {
         .collect())
 }
 
+/// 分页查询用户列表
+pub async fn list_users_paged(pool: &SqlitePool, page: i64, page_size: i64, keyword: Option<&str>) -> Result<(Vec<UserListItem>, i64)> {
+    let offset = (page - 1).max(0) * page_size;
+    let like = keyword.map(|k| format!("%{}%", k));
+
+    let base_count = "SELECT COUNT(DISTINCT u.id) FROM sys_users u
+         LEFT JOIN sys_user_roles ur ON u.id = ur.user_id
+         LEFT JOIN sys_roles r ON ur.role_id = r.id";
+    let base_query = "SELECT u.id, u.username, u.dept_id, u.post_id, u.disabled, u.status, u.created_at,
+                GROUP_CONCAT(r.name, ',') AS roles
+         FROM sys_users u
+         LEFT JOIN sys_user_roles ur ON u.id = ur.user_id
+         LEFT JOIN sys_roles r ON ur.role_id = r.id";
+
+    let (total, rows) = if let Some(ref pattern) = like {
+        let where_clause = " WHERE u.username LIKE ? OR r.name LIKE ?";
+        let total: i64 = sqlx::query_scalar(&format!("{}{}", base_count, where_clause))
+            .bind(pattern).bind(pattern).fetch_one(pool).await?;
+        let rows = sqlx::query(&format!("{}{} GROUP BY u.id ORDER BY u.id LIMIT ? OFFSET ?", base_query, where_clause))
+            .bind(pattern).bind(pattern).bind(page_size).bind(offset).fetch_all(pool).await?;
+        (total, rows)
+    } else {
+        let total: i64 = sqlx::query_scalar(&format!("{}{}", base_count, " GROUP BY u.id"))
+            .fetch_one(pool).await?;
+        let rows = sqlx::query(&format!("{}{} GROUP BY u.id ORDER BY u.id LIMIT ? OFFSET ?", base_query, ""))
+            .bind(page_size).bind(offset).fetch_all(pool).await?;
+        (total, rows)
+    };
+
+    let items: Vec<UserListItem> = rows.into_iter().map(|r| UserListItem {
+        id: r.get("id"),
+        username: r.get("username"),
+        dept_id: r.get("dept_id"),
+        post_id: r.get("post_id"),
+        disabled: r.get("disabled"),
+        status: r.get("status"),
+        roles: r.get::<Option<String>, _>("roles").unwrap_or_default(),
+        created_at: r.get("created_at"),
+    }).collect();
+
+    Ok((items, total))
+}
+
 pub async fn create_user(pool: &SqlitePool, username: &str, password: &str) -> Result<i64> {
     let hashed = auth::hash_password(password)?;
     let id = sqlx::query_scalar::<_, i64>(
@@ -286,6 +329,25 @@ pub async fn list_roles(pool: &SqlitePool) -> Result<Vec<Role>> {
         .await?)
 }
 
+/// 分页查询角色
+pub async fn list_roles_paged(pool: &SqlitePool, page: i64, page_size: i64, keyword: Option<&str>) -> Result<(Vec<Role>, i64)> {
+    let offset = (page - 1).max(0) * page_size;
+    let like = keyword.map(|k| format!("%{}%", k));
+    let (total, rows) = if let Some(ref pattern) = like {
+        let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sys_roles WHERE name LIKE ? OR code LIKE ?")
+            .bind(pattern).bind(pattern).fetch_one(pool).await?;
+        let rows = sqlx::query_as::<_, Role>("SELECT * FROM sys_roles WHERE name LIKE ? OR code LIKE ? ORDER BY id LIMIT ? OFFSET ?")
+            .bind(pattern).bind(pattern).bind(page_size).bind(offset).fetch_all(pool).await?;
+        (total, rows)
+    } else {
+        let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sys_roles").fetch_one(pool).await?;
+        let rows = sqlx::query_as::<_, Role>("SELECT * FROM sys_roles ORDER BY id LIMIT ? OFFSET ?")
+            .bind(page_size).bind(offset).fetch_all(pool).await?;
+        (total, rows)
+    };
+    Ok((rows, total))
+}
+
 pub async fn create_role(pool: &SqlitePool, code: &str, name: &str, remark: Option<&str>) -> Result<i64> {
     let id = sqlx::query_scalar::<_, i64>(
         "INSERT INTO sys_roles (code, name, remark) VALUES (?, ?, ?) RETURNING id",
@@ -346,6 +408,25 @@ pub async fn list_depts(pool: &SqlitePool) -> Result<Vec<Dept>> {
         .await?)
 }
 
+/// 分页查询部门
+pub async fn list_depts_paged(pool: &SqlitePool, page: i64, page_size: i64, keyword: Option<&str>) -> Result<(Vec<Dept>, i64)> {
+    let offset = (page - 1).max(0) * page_size;
+    let like = keyword.map(|k| format!("%{}%", k));
+    let (total, rows) = if let Some(ref pattern) = like {
+        let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sys_depts WHERE name LIKE ?")
+            .bind(pattern).fetch_one(pool).await?;
+        let rows = sqlx::query_as::<_, Dept>("SELECT * FROM sys_depts WHERE name LIKE ? ORDER BY sort, id LIMIT ? OFFSET ?")
+            .bind(pattern).bind(page_size).bind(offset).fetch_all(pool).await?;
+        (total, rows)
+    } else {
+        let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sys_depts").fetch_one(pool).await?;
+        let rows = sqlx::query_as::<_, Dept>("SELECT * FROM sys_depts ORDER BY sort, id LIMIT ? OFFSET ?")
+            .bind(page_size).bind(offset).fetch_all(pool).await?;
+        (total, rows)
+    };
+    Ok((rows, total))
+}
+
 pub async fn create_dept(pool: &SqlitePool, name: &str, parent_id: Option<i64>, sort: i32) -> Result<i64> {
     Ok(sqlx::query_scalar::<_, i64>(
         "INSERT INTO sys_depts (name, parent_id, sort) VALUES (?, ?, ?) RETURNING id",
@@ -385,6 +466,25 @@ pub async fn list_posts(pool: &SqlitePool) -> Result<Vec<Post>> {
     Ok(sqlx::query_as::<_, Post>("SELECT * FROM sys_posts ORDER BY sort, id")
         .fetch_all(pool)
         .await?)
+}
+
+/// 分页查询岗位
+pub async fn list_posts_paged(pool: &SqlitePool, page: i64, page_size: i64, keyword: Option<&str>) -> Result<(Vec<Post>, i64)> {
+    let offset = (page - 1).max(0) * page_size;
+    let like = keyword.map(|k| format!("%{}%", k));
+    let (total, rows) = if let Some(ref pattern) = like {
+        let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sys_posts WHERE name LIKE ? OR code LIKE ?")
+            .bind(pattern).bind(pattern).fetch_one(pool).await?;
+        let rows = sqlx::query_as::<_, Post>("SELECT * FROM sys_posts WHERE name LIKE ? OR code LIKE ? ORDER BY sort, id LIMIT ? OFFSET ?")
+            .bind(pattern).bind(pattern).bind(page_size).bind(offset).fetch_all(pool).await?;
+        (total, rows)
+    } else {
+        let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sys_posts").fetch_one(pool).await?;
+        let rows = sqlx::query_as::<_, Post>("SELECT * FROM sys_posts ORDER BY sort, id LIMIT ? OFFSET ?")
+            .bind(page_size).bind(offset).fetch_all(pool).await?;
+        (total, rows)
+    };
+    Ok((rows, total))
 }
 
 pub async fn create_post(pool: &SqlitePool, code: &str, name: &str, sort: i32) -> Result<i64> {

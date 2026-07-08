@@ -1,21 +1,20 @@
 <template>
   <div class="rbac-page">
     <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>菜单权限 - {{ role?.name || id }}</span>
-          <el-button type="primary" @click="save" :loading="saving">{{ $t('common.save') }}</el-button>
-        </div>
-      </template>
+      <div class="toolbar">
+        <span>{{ $t('rbac.menuPermission') }} - {{ role?.name || id }}</span>
+        <el-button type="primary" @click="save" :loading="saving">{{ $t('common.save') }}</el-button>
+      </div>
 
       <el-tree
-        ref="treeRef"
-        :data="tree"
-        show-checkbox
-        node-key="id"
-        :default-checked-keys="checked"
-        :props="{ label: 'title', children: 'children' }"
-      />
+      ref="treeRef"
+      :data="tree"
+      show-checkbox
+      node-key="id"
+      :default-checked-keys="checked"
+      :props="{ label: 'title', children: 'children' }"
+      style="margin-top: 12px"
+    />
     </el-card>
   </div>
 </template>
@@ -35,11 +34,12 @@ const treeRef = ref()
 const saving = ref(false)
 
 onMounted(async () => {
-  const { data: rd } = await api.get('/api/rbac/roles')
-  role.value = (rd.data || []).find((r: any) => r.id === id)
+  const { data: rd } = await api.get('/api/rbac/roles', { params: { page: 1, page_size: 999 } })
+  const roleList = rd.data?.list || rd.data || []
+  role.value = roleList.find((r: any) => r.id === id)
 
-  const { data: md } = await api.get('/api/rbac/menus')
-  const list: any[] = md.data || []
+  const { data: md } = await api.get('/api/rbac/menus', { params: { page: 1, page_size: 999 } })
+  const list: any[] = md.data?.list || md.data || []
   const map = new Map<number, any>()
   list.forEach(m => map.set(m.id, { ...m, children: [] as any[] }))
   const roots: any[] = []
@@ -66,5 +66,5 @@ async function save() {
 </script>
 
 <style scoped>
-.card-header { display: flex; justify-content: space-between; align-items: center; }
+.toolbar { display: flex; justify-content: space-between; align-items: center; }
 </style>

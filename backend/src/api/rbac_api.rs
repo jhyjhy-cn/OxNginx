@@ -5,9 +5,9 @@ use axum::{
 use serde_json::json;
 
 use crate::dto::{
-    ApiResponse, RbacInfo, ResetPasswordRequest, SetRoleMenusRequest, UpsertDeptRequest,
-    UpsertDictItemRequest, UpsertDictRequest, UpsertI18nRequest, UpsertMenuRequest,
-    UpsertPostRequest, UpsertRoleRequest, UpsertUserRequest,
+    ApiResponse, PageQuery, PagedResult, RbacInfo, ResetPasswordRequest, SetRoleMenusRequest,
+    UpsertDeptRequest, UpsertDictItemRequest, UpsertDictRequest, UpsertI18nRequest,
+    UpsertMenuRequest, UpsertPostRequest, UpsertRoleRequest, UpsertUserRequest,
 };
 use crate::middleware::TokenInfo;
 use crate::service::rbac_service;
@@ -29,9 +29,11 @@ pub async fn me(State(state): State<AppState>, Extension(info): Extension<TokenI
 
 // ============== 用户管理 ==============
 
-pub async fn list_users(State(state): State<AppState>) -> Json<serde_json::Value> {
-    match rbac_service::list_users(&state.db.pool()).await {
-        Ok(data) => Json(json!(ApiResponse::success(data))),
+pub async fn list_users(State(state): State<AppState>, axum::extract::Query(q): axum::extract::Query<PageQuery>) -> Json<serde_json::Value> {
+    let page = q.page.unwrap_or(1).max(1);
+    let page_size = q.page_size.unwrap_or(20).max(1);
+    match rbac_service::list_users_paged(&state.db.pool(), page, page_size, q.keyword.as_deref()).await {
+        Ok((list, total)) => Json(json!(ApiResponse::success(PagedResult { list, total, page, page_size }))),
         Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
     }
 }
@@ -102,9 +104,11 @@ pub async fn reset_password(
 
 // ============== 角色管理 ==============
 
-pub async fn list_roles(State(state): State<AppState>) -> Json<serde_json::Value> {
-    match rbac_service::list_roles(&state.db.pool()).await {
-        Ok(data) => Json(json!(ApiResponse::success(data))),
+pub async fn list_roles(State(state): State<AppState>, axum::extract::Query(q): axum::extract::Query<PageQuery>) -> Json<serde_json::Value> {
+    let page = q.page.unwrap_or(1).max(1);
+    let page_size = q.page_size.unwrap_or(20).max(1);
+    match rbac_service::list_roles_paged(&state.db.pool(), page, page_size, q.keyword.as_deref()).await {
+        Ok((list, total)) => Json(json!(ApiResponse::success(PagedResult { list, total, page, page_size }))),
         Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
     }
 }
@@ -179,9 +183,11 @@ pub async fn set_role_menus(
 
 // ============== 部门管理 ==============
 
-pub async fn list_depts(State(state): State<AppState>) -> Json<serde_json::Value> {
-    match rbac_service::list_depts(&state.db.pool()).await {
-        Ok(data) => Json(json!(ApiResponse::success(data))),
+pub async fn list_depts(State(state): State<AppState>, axum::extract::Query(q): axum::extract::Query<PageQuery>) -> Json<serde_json::Value> {
+    let page = q.page.unwrap_or(1).max(1);
+    let page_size = q.page_size.unwrap_or(100).max(1);
+    match rbac_service::list_depts_paged(&state.db.pool(), page, page_size, q.keyword.as_deref()).await {
+        Ok((list, total)) => Json(json!(ApiResponse::success(PagedResult { list, total, page, page_size }))),
         Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
     }
 }
@@ -235,9 +241,11 @@ pub async fn delete_dept(
 
 // ============== 岗位管理 ==============
 
-pub async fn list_posts(State(state): State<AppState>) -> Json<serde_json::Value> {
-    match rbac_service::list_posts(&state.db.pool()).await {
-        Ok(data) => Json(json!(ApiResponse::success(data))),
+pub async fn list_posts(State(state): State<AppState>, axum::extract::Query(q): axum::extract::Query<PageQuery>) -> Json<serde_json::Value> {
+    let page = q.page.unwrap_or(1).max(1);
+    let page_size = q.page_size.unwrap_or(20).max(1);
+    match rbac_service::list_posts_paged(&state.db.pool(), page, page_size, q.keyword.as_deref()).await {
+        Ok((list, total)) => Json(json!(ApiResponse::success(PagedResult { list, total, page, page_size }))),
         Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
     }
 }

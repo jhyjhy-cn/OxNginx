@@ -1,17 +1,12 @@
 <template>
   <div class="rbac-page">
     <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>{{ $t('menu.rbacDicts') }}</span>
-          <div class="toolbar">
-            <el-button type="primary" @click="openAdd">{{ $t('common.add') }}</el-button>
-            <el-button @click="load">{{ $t('common.refresh') }}</el-button>
-          </div>
-        </div>
-      </template>
+      <div class="toolbar">
+        <el-button type="primary" @click="openAdd">{{ $t('common.add') }}</el-button>
+        <el-button @click="load">{{ $t('common.refresh') }}</el-button>
+      </div>
 
-      <el-table :data="dicts" v-loading="loading" max-height="calc(100vh - 230px)">
+      <el-table :data="dicts" v-loading="loading" max-height="calc(100vh - 260px)" style="margin-top: 12px">
         <el-table-column prop="name" :label="$t('dict.colName')" min-width="160" />
         <el-table-column prop="code" :label="$t('dict.colCode')" min-width="160" />
         <el-table-column prop="description" :label="$t('dict.colDesc')" min-width="200" />

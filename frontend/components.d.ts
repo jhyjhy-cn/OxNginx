@@ -62,6 +62,7 @@ declare module 'vue' {
     HasPermission: typeof import('./src/components/HasPermission/index.vue')['default']
     OnDialog: typeof import('./src/components/OnDialog/index.vue')['default']
     OnIcon: typeof import('./src/components/OnIcon/index.vue')['default']
+    OnPagination: typeof import('./src/components/OnPagination/index.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
   }
