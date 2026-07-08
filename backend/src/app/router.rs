@@ -112,6 +112,7 @@ pub fn build(state: AppState) -> Router {
         // RBAC me（任意登录用户可用）
         .route("/api/rbac/me", get(api::rbac_api::me))
         .route("/api/rbac/i18n/messages", get(api::rbac_api::get_i18n_messages))
+        .layer(from_fn_with_state(state.clone(), middleware::operation_log_middleware))
         .layer(from_fn_with_state(state.clone(), middleware::auth_middleware));
 
     let admin_routes = Router::new()
@@ -138,6 +139,7 @@ pub fn build(state: AppState) -> Router {
         .route("/api/rbac/dicts/:dict_id/items", post(api::rbac_api::create_dict_item))
         .route("/api/rbac/dict-items/:id", put(api::rbac_api::update_dict_item).delete(api::rbac_api::delete_dict_item))
         .layer(from_fn_with_state(state.clone(), middleware::require_admin))
+        .layer(from_fn_with_state(state.clone(), middleware::operation_log_middleware))
         .layer(from_fn_with_state(state.clone(), middleware::auth_middleware));
 
     // 静态文件服务（前端 SPA）
