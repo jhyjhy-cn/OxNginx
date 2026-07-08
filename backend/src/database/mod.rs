@@ -19,6 +19,8 @@ impl Database {
             std::fs::create_dir_all(parent)?;
         }
 
+        let db_exists = Path::new(db_path).exists() && std::fs::metadata(db_path).map(|m| m.len() > 0).unwrap_or(false);
+
         let url = format!("sqlite:{}?mode=rwc", db_path);
         let pool = SqlitePoolOptions::new()
             .max_connections(1)
@@ -26,8 +28,14 @@ impl Database {
             .await?;
 
         let db = Self { pool: pool.clone() };
-        db.init_tables().await?;
-        seed::run(&pool).await?;
+        if db_exists {
+            tracing::info!("  数据库已存在，跳过初始化");
+        } else {
+            tracing::info!("  创建数据表...");
+            db.init_tables().await?;
+            tracing::info!("  初始化种子数据...");
+            seed::run(&pool).await?;
+        }
 
         Ok(db)
     }

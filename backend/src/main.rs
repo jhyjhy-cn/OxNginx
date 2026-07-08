@@ -91,14 +91,18 @@ fn main() -> anyhow::Result<()> {
 
     rt.block_on(async {
         // 初始化数据库
+        tracing::info!("[1/4] 初始化数据库...");
         let db = Database::new(&config.database.path).await?;
-        tracing::info!("数据库初始化完成");
+        tracing::info!("[2/4] 数据库初始化完成");
 
         // 创建应用状态 & 构建路由
+        tracing::info!("[3/4] 生成 RSA 密钥对...");
         let (rsa_private_key, rsa_public_key_b64) = crate::auth::generate_rsa_keypair()?;
-        tracing::info!("RSA 密钥对已生成");
+        tracing::info!("[3/4] RSA 密钥对已生成");
         let state = AppState::new(db, config.clone(), rsa_private_key, rsa_public_key_b64);
         api::dashboard_ws::start_push_task(state.clone());
+
+        tracing::info!("[4/4] 构建路由...");
         let app = app::router::build(state);
 
         // 启动服务

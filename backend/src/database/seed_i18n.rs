@@ -2,7 +2,14 @@ use anyhow::Result;
 use sqlx::SqlitePool;
 
 pub async fn seed_i18n(pool: &SqlitePool) -> Result<()> {
-    // INSERT OR IGNORE: 已有条目跳过，新增条目自动插入
+    // 已有数据则跳过（首次运行才 seed）
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sys_i18n")
+        .fetch_one(pool)
+        .await?;
+    if count > 0 {
+        return Ok(());
+    }
+
     // (locale, key, value)
     const SEED_I18N: &[(&str, &str, &str)] = &[
         ("zh-CN", "common.add", "添加"),
@@ -1105,13 +1112,15 @@ pub async fn seed_i18n(pool: &SqlitePool) -> Result<()> {
         ("en-US", "rbac.hintMenuRefresh", "After adding/editing menus, refresh the page or restart the service to take effect"),
     ];
 
+    let mut tx = pool.begin().await?;
     for (locale, key, value) in SEED_I18N {
         sqlx::query("INSERT OR IGNORE INTO sys_i18n (locale, key, value) VALUES (?, ?, ?)")
             .bind(locale)
             .bind(key)
             .bind(value)
-            .execute(pool)
+            .execute(&mut *tx)
             .await?;
     }
+    tx.commit().await?;
     Ok(())
 }
