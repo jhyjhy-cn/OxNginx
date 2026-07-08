@@ -21,9 +21,7 @@ export function useSites() {
           if (s.cert_expire_time) {
             const expireDate = new Date(s.cert_expire_time)
             const now = new Date()
-            s.cert_expire_days = Math.ceil(
-              (expireDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-            )
+            s.cert_expire_days = Math.ceil((expireDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
           }
           return s
         })
@@ -36,96 +34,65 @@ export function useSites() {
   }
 
   async function toggleSite(site: Site, enable?: boolean) {
-    const newStatus =
-      enable !== undefined
-        ? enable
-          ? 'enabled'
-          : 'disabled'
-        : site.status === 'enabled'
-          ? 'disabled'
-          : 'enabled'
+    const newStatus = enable !== undefined ? (enable ? 'enabled' : 'disabled') : site.status === 'enabled' ? 'disabled' : 'enabled'
     try {
       await api.put(`/api/sites/${site.id}`, { status: newStatus })
-      ElMessage.success(
-        newStatus === 'enabled' ? t('common.enabled') : t('common.disabled'),
-      )
+      ElMessage.success(newStatus === 'enabled' ? t('common.enabled') : t('common.disabled'))
       fetchSites()
     } catch (error: any) {
-      ElMessage.error(
-        error.response?.data?.message || t('sites.operationFailed'),
-      )
+      ElMessage.error(error.response?.data?.message || t('sites.operationFailed'))
     }
   }
 
   async function batchEnable() {
     try {
-      await ElMessageBox.confirm(
-        t('sites.batchEnableConfirm', { count: selectedSites.value.length }),
-        t('common.tip'),
-      )
+      await ElMessageBox.confirm(t('sites.batchEnableConfirm', { count: selectedSites.value.length }), t('common.tip'))
       const response = await api.post('/api/sites/batch/enable', {
         ids: selectedSites.value.map((s) => s.id),
       })
       if (response.data.code === 0) {
-        ElMessage.success(
-          t('sites.batchEnableSuccess', { count: response.data.data.success }),
-        )
+        ElMessage.success(t('sites.batchEnableSuccess', { count: response.data.data.success }))
         fetchSites()
       }
     } catch (error: any) {
       if (error !== 'cancel') {
-        ElMessage.error(
-          error.response?.data?.message || t('sites.operationFailed'),
-        )
+        ElMessage.error(error.response?.data?.message || t('sites.operationFailed'))
       }
     }
   }
 
   async function batchDisable() {
     try {
-      await ElMessageBox.confirm(
-        t('sites.batchDisableConfirm', { count: selectedSites.value.length }),
-        t('common.tip'),
-      )
+      await ElMessageBox.confirm(t('sites.batchDisableConfirm', { count: selectedSites.value.length }), t('common.tip'))
       const response = await api.post('/api/sites/batch/disable', {
         ids: selectedSites.value.map((s) => s.id),
       })
       if (response.data.code === 0) {
-        ElMessage.success(
-          t('sites.batchDisableSuccess', { count: response.data.data.success }),
-        )
+        ElMessage.success(t('sites.batchDisableSuccess', { count: response.data.data.success }))
         fetchSites()
       }
     } catch (error: any) {
       if (error !== 'cancel') {
-        ElMessage.error(
-          error.response?.data?.message || t('sites.operationFailed'),
-        )
+        ElMessage.error(error.response?.data?.message || t('sites.operationFailed'))
       }
     }
   }
 
   async function batchDelete() {
     try {
-      await ElMessageBox.confirm(
-        t('sites.batchDeleteConfirm', { count: selectedSites.value.length }),
-        t('common.warning'),
-        { type: 'warning' },
-      )
+      await ElMessageBox.confirm(t('sites.batchDeleteConfirm', { count: selectedSites.value.length }), t('common.warning'), {
+        type: 'warning',
+      })
       const response = await api.post('/api/sites/batch/delete', {
         ids: selectedSites.value.map((s) => s.id),
       })
       if (response.data.code === 0) {
-        ElMessage.success(
-          t('sites.batchDeleteSuccess', { count: response.data.data.success }),
-        )
+        ElMessage.success(t('sites.batchDeleteSuccess', { count: response.data.data.success }))
         fetchSites()
       }
     } catch (error: any) {
       if (error !== 'cancel') {
-        ElMessage.error(
-          error.response?.data?.message || t('sites.operationFailed'),
-        )
+        ElMessage.error(error.response?.data?.message || t('sites.operationFailed'))
       }
     }
   }

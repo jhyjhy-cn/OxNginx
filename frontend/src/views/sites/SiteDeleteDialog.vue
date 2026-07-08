@@ -1,7 +1,11 @@
 <template>
   <OnDialog v-model="dialogVisible" :title="$t('sites.deleteSite')" width="420px" :maximizable="false">
     <div style="margin-bottom: 16px">
-      <p>{{ $t('sites.confirmDeleteSite') }} <strong>{{ site?.name }}</strong> ?</p>
+      <p>
+        {{ $t('sites.confirmDeleteSite') }}
+        <strong>{{ site?.name }}</strong>
+        ?
+      </p>
     </div>
     <el-checkbox v-model="options.deleteRecord">{{ $t('sites.deleteSiteRecord') }}</el-checkbox>
     <el-checkbox v-model="options.deleteFiles" style="margin-top: 12px">
@@ -44,12 +48,15 @@ const options = reactive({
   deleteFiles: false,
 })
 
-watch(() => props.visible, (val) => {
-  if (val) {
-    options.deleteRecord = true
-    options.deleteFiles = false
+watch(
+  () => props.visible,
+  (val) => {
+    if (val) {
+      options.deleteRecord = true
+      options.deleteFiles = false
+    }
   }
-})
+)
 
 async function confirm() {
   if (!props.site) return

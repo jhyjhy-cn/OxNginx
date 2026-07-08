@@ -78,7 +78,10 @@ const ctxMenu = ref({ show: false, x: 0, y: 0, hasSelection: false })
 function onContextMenu(e: MouseEvent) {
   const hasSelection = !!terminal?.hasSelection()
   ctxMenu.value = { show: true, x: e.clientX, y: e.clientY, hasSelection }
-  const close = () => { ctxMenu.value.show = false; document.removeEventListener('click', close) }
+  const close = () => {
+    ctxMenu.value.show = false
+    document.removeEventListener('click', close)
+  }
   setTimeout(() => document.addEventListener('click', close), 0)
 }
 
@@ -102,7 +105,10 @@ function ctxSelectAll() {
 }
 
 // 常用命令
-interface CmdItem { name: string; cmd: string }
+interface CmdItem {
+  name: string
+  cmd: string
+}
 const STORAGE_KEY = 'ox-terminal-cmds'
 const commands = ref<CmdItem[]>(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'))
 const showAdd = ref(false)
@@ -152,16 +158,24 @@ function connect() {
   const url = `${protocol}//${location.host}/api/terminal/ws?token=${token}&cols=${cols}&rows=${rows}&shell=${currentShell.value}`
   ws = new WebSocket(url)
 
-  ws.onopen = () => { terminal?.focus() }
+  ws.onopen = () => {
+    terminal?.focus()
+  }
   ws.onmessage = (e) => {
     if (e.data instanceof Blob) {
-      e.data.arrayBuffer().then((buf) => { terminal?.write(new Uint8Array(buf)) })
+      e.data.arrayBuffer().then((buf) => {
+        terminal?.write(new Uint8Array(buf))
+      })
     } else {
       terminal?.write(e.data)
     }
   }
-  ws.onclose = () => { terminal?.writeln('\r\n\x1b[31m' + t('terminal.disconnected') + '\x1b[0m') }
-  ws.onerror = () => { terminal?.writeln('\r\n\x1b[31m' + t('terminal.error') + '\x1b[0m') }
+  ws.onclose = () => {
+    terminal?.writeln('\r\n\x1b[31m' + t('terminal.disconnected') + '\x1b[0m')
+  }
+  ws.onerror = () => {
+    terminal?.writeln('\r\n\x1b[31m' + t('terminal.error') + '\x1b[0m')
+  }
 }
 
 function reconnect() {

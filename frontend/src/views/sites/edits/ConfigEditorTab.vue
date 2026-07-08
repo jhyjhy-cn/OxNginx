@@ -6,74 +6,66 @@
     </div>
     <div ref="editorRef" class="config-editor-box" />
     <div style="display: flex; gap: 8px; margin-top: 8px">
-      <el-button
-        type="primary"
-        size="small"
-        :loading="saving"
-        @click="save"
-        >{{ $t("common.save") }}</el-button
-      >
-      <el-button size="small" @click="loadContent">{{
-        $t("common.refresh")
-      }}</el-button>
+      <el-button type="primary" size="small" :loading="saving" @click="save">{{ $t('common.save') }}</el-button>
+      <el-button size="small" @click="loadContent">{{ $t('common.refresh') }}</el-button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
-import { useI18n } from "vue-i18n";
-import { ElMessage, ElMessageBox } from "element-plus";
-import api from "@/api";
-import { monaco } from "@/utils/monaco-env";
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import api from '@/api'
+import { monaco } from '@/utils/monaco-env'
 
-const { t } = useI18n();
+const { t } = useI18n()
 
 const props = defineProps<{
-  siteId: number;
-  siteName: string;
-}>();
+  siteId: number
+  siteName: string
+}>()
 
 const emit = defineEmits<{
-  saved: [];
-}>();
+  saved: []
+}>()
 
-const editorRef = ref<HTMLElement>();
-const saving = ref(false);
-let editor: monaco.editor.IStandaloneCodeEditor | null = null;
-let errorDecorations: string[] = [];
+const editorRef = ref<HTMLElement>()
+const saving = ref(false)
+let editor: monaco.editor.IStandaloneCodeEditor | null = null
+let errorDecorations: string[] = []
 
 onMounted(() => {
-  if (!editorRef.value) return;
+  if (!editorRef.value) return
   editor = monaco.editor.create(editorRef.value, {
-    value: "",
-    language: "nginx",
-    theme: "vs-dark",
+    value: '',
+    language: 'nginx',
+    theme: 'vs-dark',
     minimap: { enabled: false },
     fontSize: 13,
-    lineNumbers: "on",
+    lineNumbers: 'on',
     glyphMargin: true,
     scrollBeyondLastLine: false,
     automaticLayout: true,
     tabSize: 4,
-  });
+  })
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-    save();
-  });
-  loadContent();
-});
+    save()
+  })
+  loadContent()
+})
 
 onUnmounted(() => {
-  editor?.dispose();
-  editor = null;
-});
+  editor?.dispose()
+  editor = null
+})
 
 async function loadContent() {
-  if (!editor) return;
+  if (!editor) return
   try {
-    const res = await api.get(`/api/config/file/${props.siteName}`);
+    const res = await api.get(`/api/config/file/${props.siteName}`)
     if (res.data.code === 0) {
-      editor.setValue(res.data.data?.content || "");
+      editor.setValue(res.data.data?.content || '')
     }
   } catch {
     /* ignore */
@@ -81,40 +73,40 @@ async function loadContent() {
 }
 
 async function save() {
-  if (!editor) return;
-  saving.value = true;
+  if (!editor) return
+  saving.value = true
   try {
     const res = await api.put(`/api/config/file/${props.siteName}`, {
       content: editor.getValue(),
-    });
+    })
     if (res.data.code === 0) {
-      ElMessage.success(t("common.success"));
-      errorDecorations = editor.deltaDecorations(errorDecorations, []);
-      emit("saved");
+      ElMessage.success(t('common.success'))
+      errorDecorations = editor.deltaDecorations(errorDecorations, [])
+      emit('saved')
       // 保存成功后重载 nginx
       try {
-        await api.post("/api/nginx/reload");
+        await api.post('/api/nginx/reload')
       } catch {
         /* 静默 */
       }
     } else {
-      showConfigError(res.data.message);
+      showConfigError(res.data.message)
     }
   } catch (error: any) {
-    showConfigError(error.response?.data?.message || t("common.failed"));
+    showConfigError(error.response?.data?.message || t('common.failed'))
   } finally {
-    saving.value = false;
+    saving.value = false
   }
 }
 
 function showConfigError(msg: string) {
-  if (!editor) return;
-  errorDecorations = editor.deltaDecorations(errorDecorations, []);
+  if (!editor) return
+  errorDecorations = editor.deltaDecorations(errorDecorations, [])
 
   // 解析 nginx 错误中的行号
-  const lineMatch = msg.match(/:(\d+)\r?\n/);
+  const lineMatch = msg.match(/:(\d+)\r?\n/)
   if (lineMatch) {
-    const line = Math.max(1, parseInt(lineMatch[1], 10) - 1);
+    const line = Math.max(1, parseInt(lineMatch[1], 10) - 1)
     errorDecorations = editor.deltaDecorations(
       [],
       [
@@ -127,26 +119,26 @@ function showConfigError(msg: string) {
           },
           options: {
             isWholeLine: true,
-            className: "config-error-line",
-            glyphMarginClassName: "config-error-glyph",
-            hoverMessage: { value: `**语法错误**: ${msg.split("\n")[0]}` },
+            className: 'config-error-line',
+            glyphMarginClassName: 'config-error-glyph',
+            hoverMessage: { value: `**语法错误**: ${msg.split('\n')[0]}` },
           },
         },
-      ],
-    );
-    editor.revealLineInCenter(line);
-    editor.setPosition({ lineNumber: line, column: 1 });
-    editor.focus();
+      ]
+    )
+    editor.revealLineInCenter(line)
+    editor.setPosition({ lineNumber: line, column: 1 })
+    editor.focus()
   }
 
-  ElMessageBox.alert(msg, "配置语法错误", {
-    type: "error",
-    confirmButtonText: "确定",
-    customStyle: { maxWidth: "600px", wordBreak: "break-all" },
-  });
+  ElMessageBox.alert(msg, '配置语法错误', {
+    type: 'error',
+    confirmButtonText: '确定',
+    customStyle: { maxWidth: '600px', wordBreak: 'break-all' },
+  })
 }
 
-defineExpose({ loadContent });
+defineExpose({ loadContent })
 </script>
 
 <style scoped>

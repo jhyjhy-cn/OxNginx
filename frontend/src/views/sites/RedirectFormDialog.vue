@@ -29,12 +29,7 @@
           placeholder="选择或输入域名"
           style="width: 100%"
         >
-          <el-option
-            v-for="d in domainOptions"
-            :key="d"
-            :label="d"
-            :value="d"
-          />
+          <el-option v-for="d in domainOptions" :key="d" :label="d" :value="d" />
         </el-select>
       </el-form-item>
       <el-form-item label="目标URL" prop="target_url">
@@ -56,7 +51,7 @@ import type { RedirectRule } from './types'
 
 const props = defineProps<{
   visible: boolean
-  domains: string[]          // 站点已有域名列表，供选择
+  domains: string[] // 站点已有域名列表，供选择
   rule?: RedirectRule | null // 编辑时传入
 }>()
 
@@ -92,23 +87,26 @@ const rules = {
   target_url: [{ required: true, message: '请输入目标URL', trigger: 'blur' }],
 }
 
-watch(() => props.visible, (val) => {
-  if (val && props.rule) {
-    form.enabled = props.rule.enabled
-    form.keep_params = props.rule.keep_params
-    form.redirect_type = props.rule.redirect_type
-    form.redirect_method = props.rule.redirect_method
-    form.domains = [...props.rule.domains]
-    form.target_url = props.rule.target_url
-  } else if (val) {
-    form.enabled = true
-    form.keep_params = false
-    form.redirect_type = 'type'
-    form.redirect_method = 301
-    form.domains = []
-    form.target_url = ''
+watch(
+  () => props.visible,
+  (val) => {
+    if (val && props.rule) {
+      form.enabled = props.rule.enabled
+      form.keep_params = props.rule.keep_params
+      form.redirect_type = props.rule.redirect_type
+      form.redirect_method = props.rule.redirect_method
+      form.domains = [...props.rule.domains]
+      form.target_url = props.rule.target_url
+    } else if (val) {
+      form.enabled = true
+      form.keep_params = false
+      form.redirect_type = 'type'
+      form.redirect_method = 301
+      form.domains = []
+      form.target_url = ''
+    }
   }
-})
+)
 
 async function submit() {
   const valid = await formRef.value?.validate().catch(() => false)

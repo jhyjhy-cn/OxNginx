@@ -43,7 +43,9 @@
         <el-descriptions-item :label="$t('settings.cpuCores')">{{ settings.system.cpu_cores }}</el-descriptions-item>
         <el-descriptions-item :label="$t('settings.nginxVersion')">{{ settings.system.nginx_version || '-' }}</el-descriptions-item>
         <el-descriptions-item :label="$t('settings.rustVersion')">{{ settings.system.rust_version }}</el-descriptions-item>
-        <el-descriptions-item :label="$t('settings.serverAddress')">{{ settings.server.host }}:{{ settings.server.port }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('settings.serverAddress')">
+          {{ settings.server.host }}:{{ settings.server.port }}
+        </el-descriptions-item>
         <el-descriptions-item :label="$t('settings.oxnginxVersion')">1.0.0</el-descriptions-item>
       </el-descriptions>
     </el-card>

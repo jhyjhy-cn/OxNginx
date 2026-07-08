@@ -18,7 +18,10 @@
           <div class="layout-preview" :class="'preview-' + opt.value">
             <template v-if="opt.value === 'sidebar-tree'">
               <div class="pv-aside pv-aside-narrow"></div>
-              <div class="pv-body"><div class="pv-header"></div><div class="pv-content"></div></div>
+              <div class="pv-body">
+                <div class="pv-header"></div>
+                <div class="pv-content"></div>
+              </div>
             </template>
             <template v-else>
               <div class="pv-top-header"></div>
@@ -46,12 +49,7 @@
             <el-icon v-if="settingsStore.themeColor === c" :size="12" color="#fff"><Check /></el-icon>
           </span>
         </div>
-        <el-color-picker
-          :model-value="settingsStore.themeColor"
-          @change="handleColorInput"
-          show-alpha
-          size="small"
-        />
+        <el-color-picker :model-value="settingsStore.themeColor" @change="handleColorInput" show-alpha size="small" />
       </div>
     </div>
 
@@ -59,10 +57,7 @@
     <div class="section">
       <div class="section-row">
         <span class="section-title no-margin">{{ t('theme.darkMode') }}</span>
-        <el-switch
-          :model-value="settingsStore.darkMode"
-          @click="settingsStore.toggleDarkMode($event)"
-        >
+        <el-switch :model-value="settingsStore.darkMode" @click="settingsStore.toggleDarkMode($event)">
           <template #active-action><Moon :size="12" /></template>
           <template #inactive-action><Sunny :size="12" /></template>
         </el-switch>
@@ -75,7 +70,7 @@
         <span class="section-title no-margin">{{ t('theme.showTabs') }}</span>
         <el-switch v-model="settingsStore.showTabs" />
       </div>
-      <div v-if="settingsStore.showTabs" class="section-row" style="margin-top: 10px;">
+      <div v-if="settingsStore.showTabs" class="section-row" style="margin-top: 10px">
         <span class="section-title no-margin">{{ t('theme.showTabIcons') }}</span>
         <el-switch v-model="settingsStore.showTabIcons" />
       </div>
@@ -165,7 +160,9 @@ function handleColorInput(color: string | null) {
   border: 2px solid var(--el-border-color);
   border-radius: 8px;
   padding: 8px;
-  transition: border-color .2s, box-shadow .2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -198,21 +195,57 @@ function handleColorInput(color: string | null) {
 }
 
 /* 左侧双栏 预览 */
-.preview-sidebar-double .pv-aside { width: 30%; background: #304156; }
-.preview-sidebar-double .pv-body { flex: 1; display: flex; flex-direction: column; }
-.preview-sidebar-double .pv-header { height: 25%; background: var(--el-fill-color); border-bottom: 1px solid var(--el-border-color-lighter); }
-.preview-sidebar-double .pv-content { flex: 1; background: var(--el-bg-color); }
+.preview-sidebar-double .pv-aside {
+  width: 30%;
+  background: #304156;
+}
+.preview-sidebar-double .pv-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.preview-sidebar-double .pv-header {
+  height: 25%;
+  background: var(--el-fill-color);
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+.preview-sidebar-double .pv-content {
+  flex: 1;
+  background: var(--el-bg-color);
+}
 
 /* 左侧树形 预览 */
-.preview-sidebar-tree .pv-aside-narrow { width: 18%; background: #304156; }
-.preview-sidebar-tree .pv-body { flex: 1; display: flex; flex-direction: column; }
-.preview-sidebar-tree .pv-header { height: 25%; background: var(--el-fill-color); border-bottom: 1px solid var(--el-border-color-lighter); }
-.preview-sidebar-tree .pv-content { flex: 1; background: var(--el-bg-color); }
+.preview-sidebar-tree .pv-aside-narrow {
+  width: 18%;
+  background: #304156;
+}
+.preview-sidebar-tree .pv-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.preview-sidebar-tree .pv-header {
+  height: 25%;
+  background: var(--el-fill-color);
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+.preview-sidebar-tree .pv-content {
+  flex: 1;
+  background: var(--el-bg-color);
+}
 
 /* 顶部树形 预览 */
-.preview-top-tree { flex-direction: column; }
-.preview-top-tree .pv-top-header { height: 25%; background: #304156; }
-.preview-top-tree .pv-content-full { flex: 1; background: var(--el-bg-color); }
+.preview-top-tree {
+  flex-direction: column;
+}
+.preview-top-tree .pv-top-header {
+  height: 25%;
+  background: #304156;
+}
+.preview-top-tree .pv-content-full {
+  flex: 1;
+  background: var(--el-bg-color);
+}
 
 /* 颜色选择 */
 .color-row {
@@ -231,7 +264,9 @@ function handleColorInput(color: string | null) {
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid transparent;
-  transition: border-color .2s, transform .15s;
+  transition:
+    border-color 0.2s,
+    transform 0.15s;
   display: flex;
   align-items: center;
   justify-content: center;

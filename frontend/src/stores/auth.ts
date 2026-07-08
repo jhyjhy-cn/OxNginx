@@ -42,11 +42,9 @@ export const useAuthStore = defineStore('auth', () => {
   const menus = ref<MenuNode[]>(loadJSON<MenuNode[]>(LS.menus, []))
 
   const isAuthenticated = computed(() => !!token.value)
-  let i18nLoaded = false  // ponytail: 防止刷新页面时重复拉 i18n
+  let i18nLoaded = false // ponytail: 防止刷新页面时重复拉 i18n
   // ponytail: super_admin 硬编码短路；前端只走 username==='admin' 一条线
-  const isSuperAdmin = computed(
-    () => username.value === 'admin' || roles.value.includes('super_admin'),
-  )
+  const isSuperAdmin = computed(() => username.value === 'admin' || roles.value.includes('super_admin'))
   const permissionSet = computed(() => new Set(permissions.value))
 
   function hasPermission(code: string) {
@@ -105,7 +103,7 @@ export const useAuthStore = defineStore('auth', () => {
     // 从 DB 拉全量翻译（所有语言），合并到 vue-i18n
     if (!token.value || i18nLoaded) return
     try {
-      const { data } = await api.get('/api/rbac/i18n')  // 不传 locale，返回全量
+      const { data } = await api.get('/api/rbac/i18n') // 不传 locale，返回全量
       if (data.code !== 0 || !data.data) return
       // 按 locale 分组
       const grouped: Record<string, Record<string, string>> = {}

@@ -8,7 +8,10 @@
       layout="total, sizes, prev, pager, next"
       size="small"
       @current-change="$emit('change')"
-      @size-change="page = 1; $emit('change')"
+      @size-change="
+        page = 1
+        $emit('change')
+      "
     />
   </div>
 </template>
@@ -16,14 +19,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-const props = withDefaults(defineProps<{
-  currentPage: number
-  pageSize: number
-  total: number
-  pageSizes?: number[]
-}>(), {
-  pageSizes: () => [10, 20, 50],
-})
+const props = withDefaults(
+  defineProps<{
+    currentPage: number
+    pageSize: number
+    total: number
+    pageSizes?: number[]
+  }>(),
+  {
+    pageSizes: () => [10, 20, 50],
+  }
+)
 
 const emit = defineEmits<{
   'update:currentPage': [value: number]

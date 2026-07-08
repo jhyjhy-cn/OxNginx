@@ -2,8 +2,17 @@
   <div class="rbac-page">
     <el-card>
       <div class="search-bar">
-        <el-input v-model="search" :placeholder="$t('common.search') + ' Key...'" clearable style="width: 260px" @input="onInput" @keyup.enter="doSearch">
-          <template #prefix><el-icon><Search /></el-icon></template>
+        <el-input
+          v-model="search"
+          :placeholder="$t('common.search') + ' Key...'"
+          clearable
+          style="width: 260px"
+          @input="onInput"
+          @keyup.enter="doSearch"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
         </el-input>
         <el-button type="primary" @click="doSearch">{{ $t('common.search') }}</el-button>
         <el-button @click="doReset">{{ $t('common.reset') }}</el-button>
@@ -20,18 +29,9 @@
       <el-table :data="rows" v-loading="loading" @selection-change="onSelect" max-height="calc(100vh - 380px)">
         <el-table-column type="selection" width="48" />
         <el-table-column prop="key" label="Key" min-width="220" fixed sortable />
-        <el-table-column
-          v-for="loc in locales"
-          :key="loc"
-          :label="loc"
-          min-width="200"
-        >
+        <el-table-column v-for="loc in locales" :key="loc" :label="loc" min-width="200">
           <template #default="{ row }">
-            <el-input
-              v-model="row.values[loc]"
-              size="small"
-              @input="row._dirty = true"
-            />
+            <el-input v-model="row.values[loc]" size="small" @input="row._dirty = true" />
           </template>
         </el-table-column>
         <el-table-column :label="$t('common.action')" width="80" fixed="right">
@@ -41,7 +41,13 @@
         </el-table-column>
       </el-table>
 
-      <OnPagination v-model:current-page="currentPage" v-model:page-size="pageSize" :total="total" :page-sizes="[50, 100, 200]" @change="load" />
+      <OnPagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[50, 100, 200]"
+        @change="load"
+      />
     </el-card>
 
     <OnDialog v-model="showAddLocale" :title="$t('rbac.addLocale')" width="400px">
@@ -84,7 +90,12 @@ import OnDialog from '@/components/OnDialog/index.vue'
 
 const { t } = useI18n()
 
-interface I18nRaw { id: number; locale: string; key: string; value: string }
+interface I18nRaw {
+  id: number
+  locale: string
+  key: string
+  value: string
+}
 interface Row {
   key: string
   values: Record<string, string>
@@ -108,11 +119,21 @@ const showAddKey = ref(false)
 const newKey = ref('')
 const newValues = reactive<Record<string, string>>({})
 
-function doSearch() { currentPage.value = 1; load() }
-function doReset() { search.value = ''; currentPage.value = 1; load() }
+function doSearch() {
+  currentPage.value = 1
+  load()
+}
+function doReset() {
+  search.value = ''
+  currentPage.value = 1
+  load()
+}
 
 let timer: ReturnType<typeof setTimeout> | null = null
-function onInput() { if (timer) clearTimeout(timer); timer = setTimeout(doSearch, 300) }
+function onInput() {
+  if (timer) clearTimeout(timer)
+  timer = setTimeout(doSearch, 300)
+}
 
 onMounted(load)
 
@@ -151,7 +172,7 @@ async function load() {
 }
 
 function onSelect(selected: Row[]) {
-  selectedKeys.value = selected.map(r => r.key)
+  selectedKeys.value = selected.map((r) => r.key)
 }
 
 function openAddLocale() {
@@ -194,7 +215,7 @@ async function addKey() {
 }
 
 async function batchSave() {
-  const dirty = rows.value.filter(r => r._dirty)
+  const dirty = rows.value.filter((r) => r._dirty)
   if (!dirty.length) {
     ElMessage.info(t('rbac.noChange'))
     return
@@ -203,13 +224,13 @@ async function batchSave() {
   try {
     for (const loc of locales.value) {
       const entries = dirty
-        .filter(r => r.values[loc] !== undefined && r.values[loc] !== '')
-        .map(r => ({ key: r.key, value: r.values[loc] }))
+        .filter((r) => r.values[loc] !== undefined && r.values[loc] !== '')
+        .map((r) => ({ key: r.key, value: r.values[loc] }))
       if (!entries.length) continue
       await api.post('/api/rbac/i18n', { locale: loc, entries })
     }
     ElMessage.success(t('rbac.savedN', { n: dirty.length }))
-    dirty.forEach(r => (r._dirty = false))
+    dirty.forEach((r) => (r._dirty = false))
   } finally {
     saving.value = false
   }
@@ -228,7 +249,20 @@ async function del(row: Row) {
 </script>
 
 <style scoped>
-.search-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
-.toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
-.total-hint { font-size: 13px; color: var(--el-text-color-secondary); }
+.search-bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.total-hint {
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+}
 </style>

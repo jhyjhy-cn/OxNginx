@@ -9,32 +9,24 @@
     :class="['on-dialog', { 'on-dialog--maximized': maximized }, { 'on-dialog--has-height': props.height }]"
     :style="{
       '--el-dialog-padding-primary': '0',
-      ...(props.height && !maximized ? {
-        height: props.height,
-        maxHeight: props.height,
-        display: 'flex',
-        flexDirection: 'column',
-      } : {})
+      ...(props.height && !maximized
+        ? {
+            height: props.height,
+            maxHeight: props.height,
+            display: 'flex',
+            flexDirection: 'column',
+          }
+        : {}),
     }"
     :body-style="props.height && !maximized ? { flex: '1', overflow: 'auto', display: 'flex', flexDirection: 'column' } : {}"
     @close="handleClose"
   >
     <!-- 自定义标题栏 -->
     <template #header>
-      <div
-        class="on-dialog__header"
-        :style="headerStyle"
-        @mousedown="onDragStart"
-        @dblclick="toggleMaximize"
-      >
+      <div class="on-dialog__header" :style="headerStyle" @mousedown="onDragStart" @dblclick="toggleMaximize">
         <span class="on-dialog__title">{{ title }}</span>
         <div class="on-dialog__actions">
-          <button
-            v-if="maximizable"
-            class="on-dialog__btn"
-            :title="maximized ? '还原' : '最大化'"
-            @click.stop="toggleMaximize"
-          >
+          <button v-if="maximizable" class="on-dialog__btn" :title="maximized ? '还原' : '最大化'" @click.stop="toggleMaximize">
             <el-icon :size="14">
               <FullScreen v-if="!maximized" />
               <CopyDocument v-else />
@@ -83,41 +75,52 @@ function hexToHsl(hex: string): { h: number; s: number; l: number } {
   const r = parseInt(hex.substring(0, 2), 16) / 255
   const g = parseInt(hex.substring(2, 4), 16) / 255
   const b = parseInt(hex.substring(4, 6), 16) / 255
-  const max = Math.max(r, g, b), min = Math.min(r, g, b)
-  let h = 0, s = 0
+  const max = Math.max(r, g, b),
+    min = Math.min(r, g, b)
+  let h = 0,
+    s = 0
   const l = (max + min) / 2
   if (max !== min) {
     const d = max - min
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
     switch (max) {
-      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break
-      case g: h = ((b - r) / d + 2) / 6; break
-      case b: h = ((r - g) / d + 4) / 6; break
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) / 6
+        break
+      case g:
+        h = ((b - r) / d + 2) / 6
+        break
+      case b:
+        h = ((r - g) / d + 4) / 6
+        break
     }
   }
   return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) }
 }
 
-const props = withDefaults(defineProps<{
-  modelValue: boolean
-  title?: string
-  width?: string
-  height?: string
-  maximizable?: boolean
-  closeOnClickModal?: boolean
-  destroyOnClose?: boolean
-}>(), {
-  title: '',
-  width: '600px',
-  height: '',
-  maximizable: true,
-  closeOnClickModal: true,
-  destroyOnClose: false,
-})
+const props = withDefaults(
+  defineProps<{
+    modelValue: boolean
+    title?: string
+    width?: string
+    height?: string
+    maximizable?: boolean
+    closeOnClickModal?: boolean
+    destroyOnClose?: boolean
+  }>(),
+  {
+    title: '',
+    width: '600px',
+    height: '',
+    maximizable: true,
+    closeOnClickModal: true,
+    destroyOnClose: false,
+  }
+)
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
-  'close': []
+  close: []
 }>()
 
 // ========== 最大化 ==========
@@ -226,21 +229,24 @@ function handleClose() {
 }
 
 // 打开时重置
-watch(() => props.modelValue, (val) => {
-  if (val) {
-    maximized.value = false
-    nextTick(() => {
-      const el = dialogRef.value
-      if (el) {
-        el.style.position = ''
-        el.style.transform = ''
-        el.style.left = ''
-        el.style.top = ''
-        el.style.margin = ''
-      }
-    })
+watch(
+  () => props.modelValue,
+  (val) => {
+    if (val) {
+      maximized.value = false
+      nextTick(() => {
+        const el = dialogRef.value
+        if (el) {
+          el.style.position = ''
+          el.style.transform = ''
+          el.style.left = ''
+          el.style.top = ''
+          el.style.margin = ''
+        }
+      })
+    }
   }
-})
+)
 </script>
 
 <style scoped>
@@ -302,7 +308,14 @@ watch(() => props.modelValue, (val) => {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 30%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0.35) 70%, transparent 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.35) 30%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0.35) 70%,
+    transparent 100%
+  );
 }
 
 /* 底部亮线 —— 层次感 */
@@ -313,7 +326,14 @@ watch(() => props.modelValue, (val) => {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.15) 80%, transparent 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 20%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0.15) 80%,
+    transparent 100%
+  );
 }
 
 .on-dialog__title {

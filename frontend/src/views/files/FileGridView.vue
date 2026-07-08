@@ -45,19 +45,50 @@ defineEmits<{
   padding: 16px;
 }
 .file-card {
-  display: flex; flex-direction: column; align-items: center;
-  padding: 16px 8px 12px; border-radius: 8px; cursor: pointer;
-  transition: background 0.15s; border: 1px solid transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border: 1px solid transparent;
 }
-.file-card:hover { background: var(--el-fill-color-light); border-color: var(--el-border-color); }
-.card-icon { margin-bottom: 8px; }
+.file-card:hover {
+  background: var(--el-fill-color-light);
+  border-color: var(--el-border-color);
+}
+.card-icon {
+  margin-bottom: 8px;
+}
 .card-name {
-  font-size: 12px; text-align: center; word-break: break-all;
-  line-height: 1.4; max-height: 2.8em; overflow: hidden;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  font-size: 12px;
+  text-align: center;
+  word-break: break-all;
+  line-height: 1.4;
+  max-height: 2.8em;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
-.card-meta { font-size: 11px; color: var(--el-text-color-placeholder); margin-top: 4px; }
-.calc-link { color: var(--el-color-primary); cursor: pointer; font-size: 11px; }
-.calc-link:hover { text-decoration: underline; }
-.empty-tip { text-align: center; color: var(--el-text-color-placeholder); padding: 60px 0; grid-column: 1 / -1; }
+.card-meta {
+  font-size: 11px;
+  color: var(--el-text-color-placeholder);
+  margin-top: 4px;
+}
+.calc-link {
+  color: var(--el-color-primary);
+  cursor: pointer;
+  font-size: 11px;
+}
+.calc-link:hover {
+  text-decoration: underline;
+}
+.empty-tip {
+  text-align: center;
+  color: var(--el-text-color-placeholder);
+  padding: 60px 0;
+  grid-column: 1 / -1;
+}
 </style>

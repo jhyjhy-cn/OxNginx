@@ -1,12 +1,7 @@
 <template>
   <div class="top-bar-right">
     <!-- 主题色 -->
-    <el-color-picker
-      :model-value="settingsStore.themeColor"
-      @change="handleColorChange"
-      :predefine="presetColors"
-      size="small"
-    />
+    <el-color-picker :model-value="settingsStore.themeColor" @change="handleColorChange" :predefine="presetColors" size="small" />
     <!-- 语言切换 -->
     <el-dropdown @command="handleLanguageChange" trigger="click">
       <OnIcon svgName="translate" :size="18" class="action-icon" />
@@ -33,9 +28,18 @@
       </span>
       <template #dropdown>
         <el-dropdown-menu>
-          <el-dropdown-item command="changeUsername"><el-icon><User /></el-icon>{{ t('layout.changeUsername') }}</el-dropdown-item>
-          <el-dropdown-item command="changePassword"><el-icon><Lock /></el-icon>{{ t('layout.changePassword') }}</el-dropdown-item>
-          <el-dropdown-item divided command="logout"><el-icon><SwitchButton /></el-icon>{{ t('layout.logout') }}</el-dropdown-item>
+          <el-dropdown-item command="changeUsername">
+            <el-icon><User /></el-icon>
+            {{ t('layout.changeUsername') }}
+          </el-dropdown-item>
+          <el-dropdown-item command="changePassword">
+            <el-icon><Lock /></el-icon>
+            {{ t('layout.changePassword') }}
+          </el-dropdown-item>
+          <el-dropdown-item divided command="logout">
+            <el-icon><SwitchButton /></el-icon>
+            {{ t('layout.logout') }}
+          </el-dropdown-item>
         </el-dropdown-menu>
       </template>
     </el-dropdown>

@@ -2,14 +2,7 @@
   <div class="file-manager">
     <!-- 标签页栏 -->
     <div class="fm-tabs">
-      <draggable
-        v-model="sortableTabs"
-        item-key="id"
-        class="fm-tab-list"
-        animation="200"
-        ghost-class="fm-tab-ghost"
-        :force-fallback="true"
-      >
+      <draggable v-model="sortableTabs" item-key="id" class="fm-tab-list" animation="200" ghost-class="fm-tab-ghost" :force-fallback="true">
         <template #item="{ element }">
           <div
             class="fm-tab"
@@ -27,19 +20,13 @@
     </div>
 
     <!-- 标签页内容（v-show 保持状态） -->
-    <div v-for="tab in filesStore.tabs" :key="tab.id"
-         v-show="tab.id === filesStore.activeTabId"
-         class="fm-tab-panel">
+    <div v-for="tab in filesStore.tabs" :key="tab.id" v-show="tab.id === filesStore.activeTabId" class="fm-tab-panel">
       <FileTabPanel :tab-id="tab.id" :initial-path="tab.path" />
     </div>
 
     <!-- 右键菜单 -->
     <Teleport to="body">
-      <div
-        v-if="ctxMenu.visible"
-        class="fm-ctx-menu"
-        :style="{ left: ctxMenu.x + 'px', top: ctxMenu.y + 'px' }"
-      >
+      <div v-if="ctxMenu.visible" class="fm-ctx-menu" :style="{ left: ctxMenu.x + 'px', top: ctxMenu.y + 'px' }">
         <div class="fm-ctx-item" @click="closeTab">
           <el-icon :size="14"><Close /></el-icon>
           <span>{{ $t('tabs.close') }}</span>
@@ -74,12 +61,14 @@ const filesStore = useFilesStore()
 // 拖拽排序（和 TabBar.vue 同模式）
 const sortableTabs = computed({
   get: () => filesStore.tabs,
-  set: (newList) => { filesStore.tabs = newList },
+  set: (newList) => {
+    filesStore.tabs = newList
+  },
 })
 
 // 右键菜单
 const ctxMenu = ref({ visible: false, x: 0, y: 0, tabId: '' })
-const ctxTabIndex = computed(() => filesStore.tabs.findIndex(t => t.id === ctxMenu.value.tabId))
+const ctxTabIndex = computed(() => filesStore.tabs.findIndex((t) => t.id === ctxMenu.value.tabId))
 const canCloseLeft = computed(() => ctxTabIndex.value > 0)
 const canCloseRight = computed(() => ctxTabIndex.value < filesStore.tabs.length - 1)
 const canCloseOther = computed(() => filesStore.tabs.length > 1)
@@ -126,21 +115,106 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.file-manager { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.file-manager {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
 
-.fm-tabs { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--el-bg-color); border-bottom: 1px solid var(--el-border-color-lighter); flex-shrink: 0; }
-.fm-tab-list { display: flex; align-items: center; gap: 6px; overflow-x: auto; }
-.fm-tab { display: flex; align-items: center; gap: 6px; min-width: 120px; max-width: 180px; padding: 6px 10px; font-size: 13px; cursor: grab; border: 1px solid var(--el-border-color-lighter); border-radius: 6px; background: var(--el-fill-color-blank); white-space: nowrap; color: var(--el-text-color-regular); transition: color 0.2s, border-color 0.2s, background 0.2s; user-select: none; -webkit-user-select: none; will-change: transform; }
-.fm-tab:hover { color: var(--el-color-primary); border-color: var(--el-color-primary-light-7); background: var(--el-color-primary-light-9); }
-.fm-tab.active { color: var(--el-color-primary); border-color: var(--el-color-primary); background: var(--el-color-primary-light-9); font-weight: 500; }
-.fm-tab-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.fm-tab-close { font-size: 12px; border-radius: 50%; padding: 1px; cursor: pointer; }
-.fm-tab-close:hover { background: var(--el-color-danger-light-9); color: var(--el-color-danger); }
-.fm-tab-add { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; margin-left: 4px; border: 1px dashed var(--el-border-color); border-radius: 4px; background: transparent; cursor: pointer; font-size: 16px; color: var(--el-text-color-placeholder); flex-shrink: 0; }
-.fm-tab-add:hover { color: var(--el-color-primary); border-color: var(--el-color-primary); }
+.fm-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--el-bg-color);
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  flex-shrink: 0;
+}
+.fm-tab-list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+}
+.fm-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 120px;
+  max-width: 180px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: grab;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 6px;
+  background: var(--el-fill-color-blank);
+  white-space: nowrap;
+  color: var(--el-text-color-regular);
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background 0.2s;
+  user-select: none;
+  -webkit-user-select: none;
+  will-change: transform;
+}
+.fm-tab:hover {
+  color: var(--el-color-primary);
+  border-color: var(--el-color-primary-light-7);
+  background: var(--el-color-primary-light-9);
+}
+.fm-tab.active {
+  color: var(--el-color-primary);
+  border-color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+  font-weight: 500;
+}
+.fm-tab-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fm-tab-close {
+  font-size: 12px;
+  border-radius: 50%;
+  padding: 1px;
+  cursor: pointer;
+}
+.fm-tab-close:hover {
+  background: var(--el-color-danger-light-9);
+  color: var(--el-color-danger);
+}
+.fm-tab-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-left: 4px;
+  border: 1px dashed var(--el-border-color);
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--el-text-color-placeholder);
+  flex-shrink: 0;
+}
+.fm-tab-add:hover {
+  color: var(--el-color-primary);
+  border-color: var(--el-color-primary);
+}
 
-.fm-tab-ghost { opacity: 0.4; cursor: grabbing !important; }
-.fm-tab-panel { flex: 1; min-height: 0; overflow: hidden; }
+.fm-tab-ghost {
+  opacity: 0.4;
+  cursor: grabbing !important;
+}
+.fm-tab-panel {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
 </style>
 
 <style>

@@ -7,14 +7,14 @@
       </div>
 
       <el-tree
-      ref="treeRef"
-      :data="tree"
-      show-checkbox
-      node-key="id"
-      :default-checked-keys="checked"
-      :props="{ label: 'title', children: 'children' }"
-      style="margin-top: 12px"
-    />
+        ref="treeRef"
+        :data="tree"
+        show-checkbox
+        node-key="id"
+        :default-checked-keys="checked"
+        :props="{ label: 'title', children: 'children' }"
+        style="margin-top: 12px"
+      />
     </el-card>
   </div>
 </template>
@@ -41,7 +41,7 @@ onMounted(async () => {
   const { data: md } = await api.get('/api/rbac/menus', { params: { page: 1, page_size: 999 } })
   const list: any[] = md.data?.list || md.data || []
   const map = new Map<number, any>()
-  list.forEach(m => map.set(m.id, { ...m, children: [] as any[] }))
+  list.forEach((m) => map.set(m.id, { ...m, children: [] as any[] }))
   const roots: any[] = []
   for (const m of map.values()) {
     if (m.parent_id && map.has(m.parent_id)) map.get(m.parent_id).children.push(m)
@@ -66,5 +66,9 @@ async function save() {
 </script>
 
 <style scoped>
-.toolbar { display: flex; justify-content: space-between; align-items: center; }
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 </style>

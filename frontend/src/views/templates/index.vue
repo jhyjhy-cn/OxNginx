@@ -26,11 +26,7 @@
     </el-card>
 
     <!-- 添加/编辑对话框 -->
-    <OnDialog
-      v-model="dialogVisible"
-      :title="isEdit ? $t('templates.editTemplate') : $t('templates.addTemplate')"
-      width="700px"
-    >
+    <OnDialog v-model="dialogVisible" :title="isEdit ? $t('templates.editTemplate') : $t('templates.addTemplate')" width="700px">
       <el-form ref="formRef" :model="form" :rules="formRules" label-width="100px">
         <el-form-item :label="$t('templates.templateName')" prop="name">
           <el-input v-model="form.name" :placeholder="$t('templates.namePlaceholder')" />
@@ -39,20 +35,10 @@
           <el-input v-model="form.description" :placeholder="$t('templates.descPlaceholder')" />
         </el-form-item>
         <el-form-item :label="$t('templates.configContent')" prop="config">
-          <el-input
-            v-model="form.config"
-            type="textarea"
-            :rows="15"
-            :placeholder="$t('templates.configPlaceholder')"
-          />
+          <el-input v-model="form.config" type="textarea" :rows="15" :placeholder="$t('templates.configPlaceholder')" />
         </el-form-item>
         <el-form-item :label="$t('templates.variableDef')">
-          <el-input
-            v-model="form.variables"
-            type="textarea"
-            :rows="5"
-            :placeholder="$t('templates.variablePlaceholder')"
-          />
+          <el-input v-model="form.variables" type="textarea" :rows="5" :placeholder="$t('templates.variablePlaceholder')" />
         </el-form-item>
       </el-form>
 
@@ -66,11 +52,7 @@
     <OnDialog v-model="previewVisible" :title="$t('templates.templatePreview')" width="600px" :maximizable="false">
       <div v-if="previewTemplate_">
         <el-form label-width="100px">
-          <el-form-item
-            v-for="variable in templateVariables"
-            :key="variable.name"
-            :label="variable.label || variable.name"
-          >
+          <el-form-item v-for="variable in templateVariables" :key="variable.name" :label="variable.label || variable.name">
             <el-input v-model="previewVars[variable.name]" :placeholder="variable.name" />
           </el-form-item>
         </el-form>
@@ -232,7 +214,7 @@ async function previewTemplate(template: Template) {
   if (template.variables) {
     try {
       const vars: TemplateVariable[] = JSON.parse(template.variables)
-      vars.forEach(v => {
+      vars.forEach((v) => {
         previewVars.value[v.name] = ''
       })
     } catch {}

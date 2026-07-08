@@ -12,7 +12,7 @@ import en from 'element-plus/es/locale/lang/en'
 
 const { locale } = useI18n()
 
-const epLocale = computed(() => locale.value === 'zh-CN' ? zhCn : en)
+const epLocale = computed(() => (locale.value === 'zh-CN' ? zhCn : en))
 </script>
 
 <style>
@@ -35,12 +35,17 @@ const epLocale = computed(() => locale.value === 'zh-CN' ? zhCn : en)
   box-sizing: border-box;
 }
 
-html, body, #app {
+html,
+body,
+#app {
   height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-code, pre, .monaco-editor, .xterm {
+code,
+pre,
+.monaco-editor,
+.xterm {
   font-family: var(--font-mono) !important;
 }
 </style>

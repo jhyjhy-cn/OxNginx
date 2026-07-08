@@ -11,7 +11,16 @@
             </el-icon>
           </div>
           <div class="status-info">
-            <h2>Nginx {{ nginxStatus.running ? $t('dashboard.running') : (nginxStatus.not_installed ? $t('dashboard.notInstalled') : $t('dashboard.stopped')) }}</h2>
+            <h2>
+              Nginx
+              {{
+                nginxStatus.running
+                  ? $t('dashboard.running')
+                  : nginxStatus.not_installed
+                    ? $t('dashboard.notInstalled')
+                    : $t('dashboard.stopped')
+              }}
+            </h2>
             <div class="status-meta">
               <span v-if="nginxStatus.version">{{ $t('dashboard.version') }}: {{ nginxStatus.version }}</span>
               <span v-if="nginxStatus.pid">PID: {{ nginxStatus.pid }}</span>
@@ -20,22 +29,16 @@
           </div>
         </div>
         <div class="status-actions">
-          <el-button
-            v-if="nginxStatus.not_installed"
-            type="primary"
-            :loading="loading.install"
-            @click="installNginx"
-          >
+          <el-button v-if="nginxStatus.not_installed" type="primary" :loading="loading.install" @click="installNginx">
             <el-icon v-if="!loading.install"><Download /></el-icon>
             {{ $t('dashboard.install') }}
           </el-button>
           <template v-else>
-            <el-button
-              :type="nginxStatus.running ? 'danger' : 'success'"
-              :loading="loading.startStop"
-              @click="toggleNginx"
-            >
-              <el-icon v-if="!loading.startStop"><VideoPlay v-if="!nginxStatus.running" /><VideoPause v-else /></el-icon>
+            <el-button :type="nginxStatus.running ? 'danger' : 'success'" :loading="loading.startStop" @click="toggleNginx">
+              <el-icon v-if="!loading.startStop">
+                <VideoPlay v-if="!nginxStatus.running" />
+                <VideoPause v-else />
+              </el-icon>
               {{ nginxStatus.running ? $t('dashboard.stop') : $t('dashboard.start') }}
             </el-button>
             <el-button :loading="loading.restart" @click="restartNginx">
@@ -277,7 +280,6 @@ function connectWs() {
 
   ws.onerror = () => ws?.close()
 }
-
 
 async function fetchSystemInfo() {
   try {
@@ -685,9 +687,19 @@ async function installNginx() {
   animation: fadeIn 0.4s ease-out;
 }
 
-.stat-card:nth-child(1) { animation-delay: 0.05s; }
-.stat-card:nth-child(2) { animation-delay: 0.1s; }
-.stat-card:nth-child(3) { animation-delay: 0.15s; }
-.stat-card:nth-child(4) { animation-delay: 0.2s; }
-.stat-card:nth-child(5) { animation-delay: 0.25s; }
+.stat-card:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.stat-card:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.stat-card:nth-child(3) {
+  animation-delay: 0.15s;
+}
+.stat-card:nth-child(4) {
+  animation-delay: 0.2s;
+}
+.stat-card:nth-child(5) {
+  animation-delay: 0.25s;
+}
 </style>

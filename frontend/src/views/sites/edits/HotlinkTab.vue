@@ -24,14 +24,14 @@
 </template>
 
 <script setup lang="ts">
-import type { HotlinkCfg } from "../types";
+import type { HotlinkCfg } from '../types'
 
 // hotlink 由父组件传入，直接修改（对象引用）
 defineProps<{
-  hotlink: HotlinkCfg;
-}>();
+  hotlink: HotlinkCfg
+}>()
 
 defineEmits<{
-  save: [];
-}>();
+  save: []
+}>()
 </script>

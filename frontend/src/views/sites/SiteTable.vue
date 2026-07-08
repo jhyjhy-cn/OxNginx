@@ -1,10 +1,5 @@
 <template>
-  <el-table
-    :data="sites"
-    style="width: 100%"
-    v-loading="loading"
-    @selection-change="(val: Site[]) => emit('selection-change', val)"
-  >
+  <el-table :data="sites" style="width: 100%" v-loading="loading" @selection-change="(val: Site[]) => emit('selection-change', val)">
     <el-table-column type="selection" width="55" />
     <!-- 网站名 -->
     <el-table-column prop="name" :label="$t('sites.siteName')" width="150">
@@ -61,7 +56,9 @@
             <el-dropdown-menu>
               <el-dropdown-item command="ip" :class="{ active: trafficMetric === 'ip' }">{{ $t('sites.traffic.ip') }}</el-dropdown-item>
               <el-dropdown-item command="pv" :class="{ active: trafficMetric === 'pv' }">{{ $t('sites.traffic.pv') }}</el-dropdown-item>
-              <el-dropdown-item command="request" :class="{ active: trafficMetric === 'request' }">{{ $t('sites.traffic.request') }}</el-dropdown-item>
+              <el-dropdown-item command="request" :class="{ active: trafficMetric === 'request' }">
+                {{ $t('sites.traffic.request') }}
+              </el-dropdown-item>
               <el-dropdown-item command="uv" :class="{ active: trafficMetric === 'uv' }">{{ $t('sites.traffic.uv') }}</el-dropdown-item>
             </el-dropdown-menu>
           </template>

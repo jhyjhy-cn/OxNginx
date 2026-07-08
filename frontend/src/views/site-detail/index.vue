@@ -30,13 +30,7 @@
 
         <div style="margin-top: 20px">
           <h3>{{ $t('siteDetail.generatedConfig') }}</h3>
-          <el-input
-            v-model="configContent"
-            type="textarea"
-            :rows="15"
-            readonly
-            style="margin-top: 10px"
-          />
+          <el-input v-model="configContent" type="textarea" :rows="15" readonly style="margin-top: 10px" />
         </div>
 
         <!-- 备份管理 -->

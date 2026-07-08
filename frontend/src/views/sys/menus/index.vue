@@ -2,17 +2,26 @@
   <div class="rbac-page">
     <el-card>
       <div class="search-bar">
-        <el-input v-model="keyword" :placeholder="$t('common.search')" clearable style="width: 240px" @input="onInput" @keyup.enter="doSearch" />
+        <el-input
+          v-model="keyword"
+          :placeholder="$t('common.search')"
+          clearable
+          style="width: 240px"
+          @input="onInput"
+          @keyup.enter="doSearch"
+        />
         <el-button type="primary" @click="doSearch">{{ $t('common.search') }}</el-button>
         <el-button @click="doReset">{{ $t('common.reset') }}</el-button>
       </div>
 
       <div class="toolbar">
         <el-button type="primary" @click="openCreate(null)">
-          <el-icon><Plus /></el-icon>{{ $t('common.add') }}
+          <el-icon><Plus /></el-icon>
+          {{ $t('common.add') }}
         </el-button>
         <el-button type="danger" :disabled="!selectedIds.length" @click="batchDelete">
-          <el-icon><Delete /></el-icon>{{ $t('rbac.batchDelete') }} ({{ selectedIds.length }})
+          <el-icon><Delete /></el-icon>
+          {{ $t('rbac.batchDelete') }} ({{ selectedIds.length }})
         </el-button>
         <el-button @click="load">{{ $t('common.refresh') }}</el-button>
         <span class="hint" style="margin-left: auto">{{ $t('rbac.hintMenuRefresh') }}</span>
@@ -30,7 +39,7 @@
         <el-table-column type="selection" width="48" />
         <el-table-column prop="name" :label="$t('rbac.colName')" min-width="160">
           <template #default="{ row }">
-            <el-icon v-if="row.icon" style="margin-right: 4px; vertical-align: middle;"><component :is="row.icon" /></el-icon>
+            <el-icon v-if="row.icon" style="margin-right: 4px; vertical-align: middle"><component :is="row.icon" /></el-icon>
             <span>{{ row.name }}</span>
           </template>
         </el-table-column>
@@ -43,7 +52,9 @@
         <el-table-column prop="component" :label="$t('rbac.colComponent')" min-width="140" />
         <el-table-column prop="type" :label="$t('rbac.colType')" width="80">
           <template #default="{ row }">
-            <el-tag size="small" :type="typeColor(row.type)">{{ $t(row.type === 'M' ? 'rbac.typeM' : row.type === 'C' ? 'rbac.typeC' : 'rbac.typeF') }}</el-tag>
+            <el-tag size="small" :type="typeColor(row.type)">
+              {{ $t(row.type === 'M' ? 'rbac.typeM' : row.type === 'C' ? 'rbac.typeC' : 'rbac.typeF') }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="permission" :label="$t('rbac.colPermission')" min-width="180" />
@@ -63,7 +74,13 @@
         </el-table-column>
       </el-table>
 
-      <OnPagination v-model:current-page="currentPage" v-model:page-size="pageSize" :total="total" :page-sizes="[50, 100, 200]" @change="load" />
+      <OnPagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[50, 100, 200]"
+        @change="load"
+      />
     </el-card>
 
     <OnDialog v-model="dialogVisible" :title="form.id ? $t('common.edit') : $t('common.add')" width="600px">
@@ -153,9 +170,7 @@ const total = ref(0)
 
 const parentOptions = computed(() => {
   const filter = (nodes: Menu[]): Menu[] =>
-    nodes
-      .filter(n => n.type !== 'F')
-      .map(n => ({ ...n, children: n.children ? filter(n.children) : [] }))
+    nodes.filter((n) => n.type !== 'F').map((n) => ({ ...n, children: n.children ? filter(n.children) : [] }))
   return filter(allMenus.value)
 })
 
@@ -185,11 +200,21 @@ function typeColor(t: string) {
   return t === 'M' ? 'success' : t === 'C' ? undefined : 'info'
 }
 
-function doSearch() { currentPage.value = 1; load() }
-function doReset() { keyword.value = ''; currentPage.value = 1; load() }
+function doSearch() {
+  currentPage.value = 1
+  load()
+}
+function doReset() {
+  keyword.value = ''
+  currentPage.value = 1
+  load()
+}
 
 let timer: ReturnType<typeof setTimeout> | null = null
-function onInput() { if (timer) clearTimeout(timer); timer = setTimeout(doSearch, 300) }
+function onInput() {
+  if (timer) clearTimeout(timer)
+  timer = setTimeout(doSearch, 300)
+}
 
 onMounted(load)
 
@@ -203,7 +228,7 @@ async function load() {
     const list: Menu[] = data.data.list || data.data
     total.value = data.data.total || list.length
     const map = new Map<number, Menu>()
-    list.forEach(m => map.set(m.id, { ...m, children: [] }))
+    list.forEach((m) => map.set(m.id, { ...m, children: [] }))
     const roots: Menu[] = []
     for (const m of map.values()) {
       if (m.parent_id && map.has(m.parent_id)) {
@@ -281,9 +306,7 @@ async function submit() {
       permission: form.permission || null,
       sort: form.sort,
     }
-    const { data } = form.id
-      ? await api.put(`/api/rbac/menus/${form.id}`, payload)
-      : await api.post('/api/rbac/menus', payload)
+    const { data } = form.id ? await api.put(`/api/rbac/menus/${form.id}`, payload) : await api.post('/api/rbac/menus', payload)
     if (data.code === 0) {
       ElMessage.success('ok')
       dialogVisible.value = false
@@ -298,11 +321,7 @@ async function submit() {
 
 async function del(row: Menu) {
   try {
-    await ElMessageBox.confirm(
-      `${t('common.confirmDelete')} ${t('rbac.deleteChildrenHint')}`,
-      t('common.tip'),
-      { type: 'warning' },
-    )
+    await ElMessageBox.confirm(`${t('common.confirmDelete')} ${t('rbac.deleteChildrenHint')}`, t('common.tip'), { type: 'warning' })
     const { data } = await api.delete(`/api/rbac/menus/${row.id}`)
     if (data.code === 0) {
       ElMessage.success('ok')
@@ -316,11 +335,7 @@ async function del(row: Menu) {
 async function batchDelete() {
   if (!selectedIds.value.length) return
   try {
-    await ElMessageBox.confirm(
-      t('rbac.batchDeleteConfirm', { n: selectedIds.value.length }),
-      t('common.tip'),
-      { type: 'warning' },
-    )
+    await ElMessageBox.confirm(t('rbac.batchDeleteConfirm', { n: selectedIds.value.length }), t('common.tip'), { type: 'warning' })
     const { data } = await api.post('/api/rbac/menus/batch-delete', selectedIds.value)
     if (data.code === 0) {
       ElMessage.success(data.data || 'ok')
@@ -335,7 +350,20 @@ async function batchDelete() {
 </script>
 
 <style scoped>
-.search-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
-.toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
-.hint { font-size: 12px; color: var(--el-text-color-secondary); }
+.search-bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.hint {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
 </style>

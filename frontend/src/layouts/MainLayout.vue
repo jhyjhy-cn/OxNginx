@@ -1,5 +1,10 @@
 <template>
-  <component :is="activeLayout" @open-theme-drawer="showThemeDrawer = true" @change-username="showUsernameDialog = true" @change-password="showPasswordDialog = true" />
+  <component
+    :is="activeLayout"
+    @open-theme-drawer="showThemeDrawer = true"
+    @change-username="showUsernameDialog = true"
+    @change-password="showPasswordDialog = true"
+  />
 
   <!-- 主题配置抽屉 -->
   <ThemeDrawer :visible="showThemeDrawer" @close="showThemeDrawer = false" />
@@ -76,7 +81,11 @@ const passwordRules = computed(() => ({
   newPassword: [{ required: true, message: t('layout.enterNewPassword'), trigger: 'blur' }],
   confirmPassword: [
     { required: true, message: t('layout.enterConfirmPassword'), trigger: 'blur' },
-    { validator: (_rule: unknown, value: string, callback: (error?: Error) => void) => value === passwordForm.newPassword ? callback() : callback(new Error(t('layout.passwordMismatch'))), trigger: 'blur' },
+    {
+      validator: (_rule: unknown, value: string, callback: (error?: Error) => void) =>
+        value === passwordForm.newPassword ? callback() : callback(new Error(t('layout.passwordMismatch'))),
+      trigger: 'blur',
+    },
   ],
 }))
 

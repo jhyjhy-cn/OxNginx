@@ -8,12 +8,7 @@
 function getMaxRadius(x: number, y: number): number {
   const w = window.innerWidth
   const h = window.innerHeight
-  return Math.max(
-    Math.hypot(x, y),
-    Math.hypot(w - x, y),
-    Math.hypot(x, h - y),
-    Math.hypot(w - x, h - y),
-  )
+  return Math.max(Math.hypot(x, y), Math.hypot(w - x, y), Math.hypot(x, h - y), Math.hypot(w - x, h - y))
 }
 
 export function toggleDarkWithAnimation(isDark: boolean, event?: MouseEvent) {
@@ -38,28 +33,32 @@ export function toggleDarkWithAnimation(isDark: boolean, event?: MouseEvent) {
 
     if (isDark) {
       // 禁用双方默认动画：old 不再淡出，new 不再淡入
-      document.documentElement.animate({ opacity: [1, 1] }, {
-        duration: 400, pseudoElement: '::view-transition-old(root)', fill: 'forwards',
-      })
-      document.documentElement.animate({ opacity: [1, 1] }, {
-        duration: 400, pseudoElement: '::view-transition-new(root)', fill: 'forwards',
-      })
+      document.documentElement.animate(
+        { opacity: [1, 1] },
+        {
+          duration: 400,
+          pseudoElement: '::view-transition-old(root)',
+          fill: 'forwards',
+        }
+      )
+      document.documentElement.animate(
+        { opacity: [1, 1] },
+        {
+          duration: 400,
+          pseudoElement: '::view-transition-new(root)',
+          fill: 'forwards',
+        }
+      )
       // old 亮色快照从外向内收缩，露出底下 new 暗色快照
       document.documentElement.animate(
-        { clipPath: [
-          `circle(${radius}px at ${x}px ${y}px)`,
-          `circle(0px at ${x}px ${y}px)`,
-        ] },
-        { duration: 400, easing: 'ease-in', pseudoElement: '::view-transition-old(root)', fill: 'forwards' },
+        { clipPath: [`circle(${radius}px at ${x}px ${y}px)`, `circle(0px at ${x}px ${y}px)`] },
+        { duration: 400, easing: 'ease-in', pseudoElement: '::view-transition-old(root)', fill: 'forwards' }
       )
     } else {
       // new 亮色快照从按钮向外展开，覆盖 old 暗色快照
       document.documentElement.animate(
-        { clipPath: [
-          `circle(0px at ${x}px ${y}px)`,
-          `circle(${radius}px at ${x}px ${y}px)`,
-        ] },
-        { duration: 400, easing: 'ease-out', pseudoElement: '::view-transition-new(root)' },
+        { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
+        { duration: 400, easing: 'ease-out', pseudoElement: '::view-transition-new(root)' }
       )
     }
   })

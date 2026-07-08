@@ -6,10 +6,17 @@
       </el-button>
       <span v-else />
       <el-button type="primary" size="small" :loading="creating" @click="createBackup">
-        <el-icon><Plus /></el-icon> {{ $t('sites.backupSite') }}
+        <el-icon><Plus /></el-icon>
+        {{ $t('sites.backupSite') }}
       </el-button>
     </div>
-    <el-table :data="list" v-loading="tableLoading" style="width: 100%; height: 400px" height="400" @selection-change="(val: BackupFile[]) => selected = val">
+    <el-table
+      :data="list"
+      v-loading="tableLoading"
+      style="width: 100%; height: 400px"
+      height="400"
+      @selection-change="(val: BackupFile[]) => (selected = val)"
+    >
       <el-table-column type="selection" width="45" />
       <el-table-column prop="filename" :label="$t('sites.backupFilename')" min-width="180" show-overflow-tooltip />
       <el-table-column :label="$t('sites.backupPath')" min-width="160" show-overflow-tooltip>
@@ -83,12 +90,15 @@ const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
 
-watch(() => props.visible, (val) => {
-  if (val) {
-    page.value = 1
-    fetchList()
+watch(
+  () => props.visible,
+  (val) => {
+    if (val) {
+      page.value = 1
+      fetchList()
+    }
   }
-})
+)
 
 async function fetchList() {
   if (!props.site) return
@@ -140,11 +150,7 @@ function downloadBackup(filename: string) {
 async function deleteBackup(filename: string) {
   if (!props.site) return
   try {
-    await ElMessageBox.confirm(
-      t('sites.confirmDeleteBackup', { name: filename }),
-      t('common.tip'),
-      { type: 'warning' },
-    )
+    await ElMessageBox.confirm(t('sites.confirmDeleteBackup', { name: filename }), t('common.tip'), { type: 'warning' })
     const res = await api.delete(`/api/sites/${props.site.id}/backups/${encodeURIComponent(filename)}`)
     if (res.data.code === 0) {
       ElMessage.success(t('sites.backupDeleted'))
@@ -163,11 +169,9 @@ async function deleteBackup(filename: string) {
 async function batchDeleteBackups() {
   if (!props.site || selected.value.length === 0) return
   try {
-    await ElMessageBox.confirm(
-      t('sites.confirmBatchDeleteBackup', { count: selected.value.length }),
-      t('common.warning'),
-      { type: 'warning' },
-    )
+    await ElMessageBox.confirm(t('sites.confirmBatchDeleteBackup', { count: selected.value.length }), t('common.warning'), {
+      type: 'warning',
+    })
     const res = await api.post(`/api/sites/${props.site.id}/backups/batch-delete`, {
       filenames: selected.value.map((b) => b.filename),
     })
@@ -191,9 +195,7 @@ function openFileManager(path: string) {
   const filesStore = useFilesStore()
   tabStore.addTab({ path: '/files', title: 'menu.files', closable: true })
   const normalized = path.replace(/\\/g, '/').replace(/\/+$/, '')
-  const existing = filesStore.tabs.find(
-    (t) => t.path.replace(/\\/g, '/').replace(/\/+$/, '') === normalized,
-  )
+  const existing = filesStore.tabs.find((t) => t.path.replace(/\\/g, '/').replace(/\/+$/, '') === normalized)
   if (existing) {
     filesStore.setActiveTab(existing.id)
   } else {

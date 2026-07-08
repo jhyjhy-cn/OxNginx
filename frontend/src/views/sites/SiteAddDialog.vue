@@ -96,7 +96,7 @@ const rules = {
 }
 
 const domainPlaceholder = computed(
-  () => `${t('sites.domainHint')}\n${t('sites.domainFormatIp')}\n${t('sites.domainFormatPort')}\n${t('sites.domainFormatIpv6')}`,
+  () => `${t('sites.domainHint')}\n${t('sites.domainFormatIp')}\n${t('sites.domainFormatPort')}\n${t('sites.domainFormatIpv6')}`
 )
 
 function extractPort(domains: string): string {
@@ -118,19 +118,22 @@ function onDomainsInput() {
 }
 
 // 打开时重置表单
-watch(() => props.visible, (val) => {
-  if (val) {
-    form.name = ''
-    form.server_name = ''
-    form.ssl = false
-    form.certificate_path = ''
-    form.key_path = ''
-    form.proxy_pass = ''
-    form.root_path = ''
-    form.remark = ''
-    form.expire_time = ''
+watch(
+  () => props.visible,
+  (val) => {
+    if (val) {
+      form.name = ''
+      form.server_name = ''
+      form.ssl = false
+      form.certificate_path = ''
+      form.key_path = ''
+      form.proxy_pass = ''
+      form.root_path = ''
+      form.remark = ''
+      form.expire_time = ''
+    }
   }
-})
+)
 
 async function submit() {
   const valid = await formRef.value?.validate().catch(() => false)

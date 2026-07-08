@@ -4,87 +4,88 @@ import { toggleDarkWithAnimation } from '@/utils/theme-transition'
 
 export type LayoutMode = 'sidebar-tree' | 'top-tree'
 
-export const useSettingsStore = defineStore('settings', () => {
-  const locale = ref<'zh-CN' | 'en-US'>('zh-CN')
-  const themeColor = ref('#409EFF')
-  const darkMode = ref(false)
-  const layoutMode = ref<LayoutMode>('sidebar-tree')
-  const showTabs = ref(true)
-  const showTabIcons = ref(true)
-  const sidebarCollapsed = ref(false)
+export const useSettingsStore = defineStore(
+  'settings',
+  () => {
+    const locale = ref<'zh-CN' | 'en-US'>('zh-CN')
+    const themeColor = ref('#409EFF')
+    const darkMode = ref(false)
+    const layoutMode = ref<LayoutMode>('sidebar-tree')
+    const showTabs = ref(true)
+    const showTabIcons = ref(true)
+    const sidebarCollapsed = ref(false)
 
-  function setLocale(val: 'zh-CN' | 'en-US') {
-    locale.value = val
-  }
-
-  function setThemeColor(color: string) {
-    themeColor.value = color
-    applyThemeColor(color)
-  }
-
-  function toggleDarkMode(event?: MouseEvent) {
-    darkMode.value = !darkMode.value
-    toggleDarkWithAnimation(darkMode.value, event)
-  }
-
-  /** 应用主题色到 CSS 变量 */
-  function applyThemeColor(hex: string) {
-    const el = document.documentElement
-    el.style.setProperty('--el-color-primary', hex)
-    // 生成 light-3 ~ light-9 的浅色
-    for (let i = 1; i <= 9; i++) {
-      el.style.setProperty(
-        `--el-color-primary-light-${i}`,
-        mixColor(hex, '#ffffff', i * 10)
-      )
+    function setLocale(val: 'zh-CN' | 'en-US') {
+      locale.value = val
     }
-    // 生成 dark-2 的深色
-    el.style.setProperty('--el-color-primary-dark-2', mixColor(hex, '#000000', 20))
-  }
 
-  /** 应用暗黑模式 */
-  function applyDarkMode(isDark: boolean) {
-    const el = document.documentElement
-    if (isDark) {
-      el.classList.add('dark')
-    } else {
-      el.classList.remove('dark')
+    function setThemeColor(color: string) {
+      themeColor.value = color
+      applyThemeColor(color)
     }
-  }
 
-  /** 设置布局模式 */
-  function setLayoutMode(mode: LayoutMode) {
-    layoutMode.value = mode
-  }
+    function toggleDarkMode(event?: MouseEvent) {
+      darkMode.value = !darkMode.value
+      toggleDarkWithAnimation(darkMode.value, event)
+    }
 
-  function toggleSidebar() {
-    sidebarCollapsed.value = !sidebarCollapsed.value
-  }
+    /** 应用主题色到 CSS 变量 */
+    function applyThemeColor(hex: string) {
+      const el = document.documentElement
+      el.style.setProperty('--el-color-primary', hex)
+      // 生成 light-3 ~ light-9 的浅色
+      for (let i = 1; i <= 9; i++) {
+        el.style.setProperty(`--el-color-primary-light-${i}`, mixColor(hex, '#ffffff', i * 10))
+      }
+      // 生成 dark-2 的深色
+      el.style.setProperty('--el-color-primary-dark-2', mixColor(hex, '#000000', 20))
+    }
 
-  /** 初始化：从持久化 state 恢复到 DOM */
-  function initTheme() {
-    applyThemeColor(themeColor.value)
-    applyDarkMode(darkMode.value)
-  }
+    /** 应用暗黑模式 */
+    function applyDarkMode(isDark: boolean) {
+      const el = document.documentElement
+      if (isDark) {
+        el.classList.add('dark')
+      } else {
+        el.classList.remove('dark')
+      }
+    }
 
-  return {
-    locale,
-    themeColor,
-    darkMode,
-    layoutMode,
-    showTabs,
-    showTabIcons,
-    sidebarCollapsed,
-    setLocale,
-    setThemeColor,
-    toggleDarkMode,
-    setLayoutMode,
-    toggleSidebar,
-    initTheme,
+    /** 设置布局模式 */
+    function setLayoutMode(mode: LayoutMode) {
+      layoutMode.value = mode
+    }
+
+    function toggleSidebar() {
+      sidebarCollapsed.value = !sidebarCollapsed.value
+    }
+
+    /** 初始化：从持久化 state 恢复到 DOM */
+    function initTheme() {
+      applyThemeColor(themeColor.value)
+      applyDarkMode(darkMode.value)
+    }
+
+    return {
+      locale,
+      themeColor,
+      darkMode,
+      layoutMode,
+      showTabs,
+      showTabIcons,
+      sidebarCollapsed,
+      setLocale,
+      setThemeColor,
+      toggleDarkMode,
+      setLayoutMode,
+      toggleSidebar,
+      initTheme,
+    }
+  },
+  {
+    persist: true,
   }
-}, {
-  persist: true,
-})
+)
 
 /**
  * 将颜色与白色/黑色按比例混合

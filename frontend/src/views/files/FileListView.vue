@@ -20,7 +20,11 @@
     </el-table-column>
     <el-table-column :label="t('files.permissions') + ' / ' + t('files.owner')" width="200">
       <template #default="{ row }">
-        <span v-if="row.permissions || row.owner">{{ row.permissions }}<template v-if="row.permissions && row.owner"> / </template>{{ row.owner }}</span>
+        <span v-if="row.permissions || row.owner">
+          {{ row.permissions }}
+          <template v-if="row.permissions && row.owner">/</template>
+          {{ row.owner }}
+        </span>
         <span v-else>-</span>
       </template>
     </el-table-column>
@@ -36,7 +40,15 @@
       <template #default="{ row }">
         <div class="note-cell" @mouseenter="$emit('note-enter', row)" @mouseleave="$emit('note-leave', row)">
           <template v-if="hoverNotePath === row.path">
-            <el-input :model-value="editingNote" @update:model-value="$emit('note-update', $event)" size="small" :placeholder="t('files.notePlaceholder')" @keyup.enter="$emit('note-save', row)" @blur="$emit('note-save', row)" autofocus />
+            <el-input
+              :model-value="editingNote"
+              @update:model-value="$emit('note-update', $event)"
+              size="small"
+              :placeholder="t('files.notePlaceholder')"
+              @keyup.enter="$emit('note-save', row)"
+              @blur="$emit('note-save', row)"
+              autofocus
+            />
           </template>
           <template v-else>
             <span class="note-text" :class="{ empty: !row.note }">{{ row.note || '-' }}</span>
@@ -83,12 +95,40 @@ const { t } = useI18n()
 </script>
 
 <style scoped>
-.file-name-cell { display: flex; align-items: center; gap: 8px; }
-.file-icon { flex-shrink: 0; }
-.file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.file-name.is-dir { color: var(--el-color-primary); cursor: pointer; }
-.note-tag { flex-shrink: 0; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
-.note-cell { min-height: 24px; display: flex; align-items: center; }
-.note-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.note-text.empty { color: var(--el-text-color-placeholder); }
+.file-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.file-icon {
+  flex-shrink: 0;
+}
+.file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-name.is-dir {
+  color: var(--el-color-primary);
+  cursor: pointer;
+}
+.note-tag {
+  flex-shrink: 0;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.note-cell {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+}
+.note-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.note-text.empty {
+  color: var(--el-text-color-placeholder);
+}
 </style>

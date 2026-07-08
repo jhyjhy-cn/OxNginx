@@ -109,9 +109,15 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     if (!tabId || filesStore.activeTabId === tabId) {
       fetchFiles()
     } else {
-      const stop = watch(() => filesStore.activeTabId, (id) => {
-        if (id === tabId) { fetchFiles(); stop() }
-      })
+      const stop = watch(
+        () => filesStore.activeTabId,
+        (id) => {
+          if (id === tabId) {
+            fetchFiles()
+            stop()
+          }
+        }
+      )
     }
     document.addEventListener('click', closeContextMenu)
   })
@@ -124,13 +130,19 @@ export function useFileManager(initialPath?: string, tabId?: string) {
   let searchTimer: ReturnType<typeof setTimeout> | null = null
   watch(searchQuery, () => {
     if (searchTimer) clearTimeout(searchTimer)
-    searchTimer = setTimeout(() => { currentPage.value = 1; fetchFiles() }, 300)
+    searchTimer = setTimeout(() => {
+      currentPage.value = 1
+      fetchFiles()
+    }, 300)
   })
 
   // 翻页 / 切换每页条数
   watch([currentPage, pageSize], () => fetchFiles())
 
-  function closeContextMenu() { contextMenu.visible = false; closePathDropdown() }
+  function closeContextMenu() {
+    contextMenu.visible = false
+    closePathDropdown()
+  }
 
   // ===== API =====
   async function fetchFiles() {
@@ -168,10 +180,17 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     try {
       const { data } = await api.get('/api/files/roots')
       if (data.code === 0) sharedDrives.value = data.data
-    } catch { drivesLoaded = false }  // 失败时允许重试
+    } catch {
+      drivesLoaded = false
+    } // 失败时允许重试
   }
 
-  function handleDriveChange(drive: string) { currentPath.value = drive.replace(/\\\\\?\\/, '').replace(/\\/g, '/'); currentPage.value = 1; searchQuery.value = ''; fetchFiles() }
+  function handleDriveChange(drive: string) {
+    currentPath.value = drive.replace(/\\\\\?\\/, '').replace(/\\/g, '/')
+    currentPage.value = 1
+    searchQuery.value = ''
+    fetchFiles()
+  }
 
   async function calcTotalSize() {
     calcTotalLoading.value = true
@@ -179,8 +198,11 @@ export function useFileManager(initialPath?: string, tabId?: string) {
       const { data } = await api.post('/api/files/size', { path: currentPath.value })
       if (data.code === 0) totalSize.value = data.data.size
       else ElMessage.error(data.message)
-    } catch { ElMessage.error(t('common.operationFailed')) }
-    finally { calcTotalLoading.value = false }
+    } catch {
+      ElMessage.error(t('common.operationFailed'))
+    } finally {
+      calcTotalLoading.value = false
+    }
   }
 
   async function calcFileSize(row: FileItem) {
@@ -189,8 +211,11 @@ export function useFileManager(initialPath?: string, tabId?: string) {
       const { data } = await api.post('/api/files/size', { path: row.path })
       if (data.code === 0) row._size = data.data.size
       else ElMessage.error(data.message)
-    } catch { ElMessage.error(t('common.operationFailed')) }
-    finally { row._calcLoading = false }
+    } catch {
+      ElMessage.error(t('common.operationFailed'))
+    } finally {
+      row._calcLoading = false
+    }
   }
 
   // ===== 工具 =====
@@ -207,9 +232,24 @@ export function useFileManager(initialPath?: string, tabId?: string) {
   }
 
   const extIconMap: Record<string, string> = {
-    pdf: 'pdf', doc: 'word', docx: 'word', ppt: 'ppt', pptx: 'ppt',
-    xls: 'excel', xlsx: 'excel', js: 'js', mjs: 'js', json: 'json',
-    java: 'java', c: 'c', h: 'c', cpp: 'cpp', cc: 'cpp', cxx: 'cpp', hpp: 'cpp', py: 'python',
+    pdf: 'pdf',
+    doc: 'word',
+    docx: 'word',
+    ppt: 'ppt',
+    pptx: 'ppt',
+    xls: 'excel',
+    xlsx: 'excel',
+    js: 'js',
+    mjs: 'js',
+    json: 'json',
+    java: 'java',
+    c: 'c',
+    h: 'c',
+    cpp: 'cpp',
+    cc: 'cpp',
+    cxx: 'cpp',
+    hpp: 'cpp',
+    py: 'python',
   }
 
   function getFileIcon(row: FileItem): string {
@@ -218,10 +258,20 @@ export function useFileManager(initialPath?: string, tabId?: string) {
   }
 
   // ===== 导航 =====
-  function goBack() { if (currentParent.value) { currentPath.value = currentParent.value; currentPage.value = 1; searchQuery.value = ''; fetchFiles() } }
+  function goBack() {
+    if (currentParent.value) {
+      currentPath.value = currentParent.value
+      currentPage.value = 1
+      searchQuery.value = ''
+      fetchFiles()
+    }
+  }
   function goToInputPath() {
     if (!inputPath.value) return
-    const normalized = inputPath.value.replace(/\\\\\?\\/, '').replace(/\\/g, '/').replace(/\/+/g, '/')
+    const normalized = inputPath.value
+      .replace(/\\\\\?\\/, '')
+      .replace(/\\/g, '/')
+      .replace(/\/+/g, '/')
     currentPath.value = normalized
     inputPath.value = ''
     pathInputFocused.value = false
@@ -231,7 +281,10 @@ export function useFileManager(initialPath?: string, tabId?: string) {
   }
 
   async function togglePathDropdown(level: number, event: MouseEvent) {
-    if (pathDropdown.visible && pathDropdown.level === level) { pathDropdown.visible = false; return }
+    if (pathDropdown.visible && pathDropdown.level === level) {
+      pathDropdown.visible = false
+      return
+    }
     const seg = pathSegments.value[level]
     if (!seg) return
     const targetPath = seg.path
@@ -244,11 +297,11 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     try {
       const { data } = await api.post('/api/files/list', { path: targetPath })
       if (data.code === 0) {
-        pathDropdown.dirs = data.data.items
-          .filter((f: FileItem) => f.is_dir)
-          .map((f: FileItem) => ({ name: f.name, path: f.path }))
+        pathDropdown.dirs = data.data.items.filter((f: FileItem) => f.is_dir).map((f: FileItem) => ({ name: f.name, path: f.path }))
       }
-    } catch { pathDropdown.dirs = [] }
+    } catch {
+      pathDropdown.dirs = []
+    }
   }
 
   function navigateToSegment(path: string) {
@@ -259,23 +312,35 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     fetchFiles()
   }
 
-  function closePathDropdown() { pathDropdown.visible = false }
+  function closePathDropdown() {
+    pathDropdown.visible = false
+  }
 
   function openDriveDropdown(event: MouseEvent) {
-    if (pathDropdown.visible && pathDropdown.level === -1) { pathDropdown.visible = false; return }
+    if (pathDropdown.visible && pathDropdown.level === -1) {
+      pathDropdown.visible = false
+      return
+    }
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
     pathDropdown.x = rect.left
     pathDropdown.y = rect.bottom + 4
     pathDropdown.level = -1
-    pathDropdown.dirs = drives.value.map(d => {
+    pathDropdown.dirs = drives.value.map((d) => {
       const letter = d.replace(/[^A-Za-z]/g, '').toUpperCase()
       return { name: letter ? letter + '盘' : d, path: d.replace(/\\/g, '/') + '/' }
     })
     pathDropdown.visible = true
   }
 
-  function handleDblClick(row: FileItem) { row.is_dir ? enterDir(row) : handleEdit(row) }
-  function enterDir(row: FileItem) { currentPath.value = row.path.replace(/\\\\\?\\/, '').replace(/\\/g, '/'); currentPage.value = 1; searchQuery.value = ''; fetchFiles() }
+  function handleDblClick(row: FileItem) {
+    row.is_dir ? enterDir(row) : handleEdit(row)
+  }
+  function enterDir(row: FileItem) {
+    currentPath.value = row.path.replace(/\\\\\?\\/, '').replace(/\\/g, '/')
+    currentPage.value = 1
+    searchQuery.value = ''
+    fetchFiles()
+  }
 
   function handleContextMenu(row: FileItem, colOrEvent: unknown, tableEvent?: MouseEvent) {
     const event = tableEvent || (colOrEvent instanceof MouseEvent ? colOrEvent : null)
@@ -288,53 +353,104 @@ export function useFileManager(initialPath?: string, tabId?: string) {
   }
 
   // ===== CRUD =====
-  function handleCreate(cmd: string) { createDialog.isDir = cmd === 'folder'; createDialog.name = ''; createDialog.visible = true }
+  function handleCreate(cmd: string) {
+    createDialog.isDir = cmd === 'folder'
+    createDialog.name = ''
+    createDialog.visible = true
+  }
 
   async function submitCreate() {
-    if (!createDialog.name) { ElMessage.warning(createDialog.isDir ? t('files.enterFolderName') : t('files.enterFileName')); return }
+    if (!createDialog.name) {
+      ElMessage.warning(createDialog.isDir ? t('files.enterFolderName') : t('files.enterFileName'))
+      return
+    }
     const url = createDialog.isDir ? '/api/files/mkdir' : '/api/files/touch'
     try {
       const { data } = await api.post(url, { path: currentPath.value, name: createDialog.name })
-      if (data.code === 0) { ElMessage.success(t('files.createSuccess')); createDialog.visible = false; fetchFiles() }
-      else ElMessage.error(data.message)
-    } catch { ElMessage.error(t('common.operationFailed')) }
+      if (data.code === 0) {
+        ElMessage.success(t('files.createSuccess'))
+        createDialog.visible = false
+        fetchFiles()
+      } else ElMessage.error(data.message)
+    } catch {
+      ElMessage.error(t('common.operationFailed'))
+    }
   }
 
-  function handleRename(row: FileItem) { renameDialog.path = row.path; renameDialog.newName = row.name; renameDialog.visible = true; contextMenu.visible = false }
+  function handleRename(row: FileItem) {
+    renameDialog.path = row.path
+    renameDialog.newName = row.name
+    renameDialog.visible = true
+    contextMenu.visible = false
+  }
 
   async function submitRename() {
-    if (!renameDialog.newName) { ElMessage.warning(t('files.enterNewName')); return }
+    if (!renameDialog.newName) {
+      ElMessage.warning(t('files.enterNewName'))
+      return
+    }
     try {
       const { data } = await api.post('/api/files/rename', { path: renameDialog.path, new_name: renameDialog.newName })
-      if (data.code === 0) { ElMessage.success(t('files.renameSuccess')); renameDialog.visible = false; fetchFiles() }
-      else ElMessage.error(data.message)
-    } catch { ElMessage.error(t('common.operationFailed')) }
+      if (data.code === 0) {
+        ElMessage.success(t('files.renameSuccess'))
+        renameDialog.visible = false
+        fetchFiles()
+      } else ElMessage.error(data.message)
+    } catch {
+      ElMessage.error(t('common.operationFailed'))
+    }
   }
 
   async function handleEdit(row: FileItem) {
     if (row.is_dir) return
     contextMenu.visible = false
-    if (row.size > 5 * 1024 * 1024) { ElMessage.warning(t('files.fileTooLarge')); return }
+    if (row.size > 5 * 1024 * 1024) {
+      ElMessage.warning(t('files.fileTooLarge'))
+      return
+    }
     try {
       const { data } = await api.post('/api/files/read', { path: row.path })
       if (data.code === 0) {
-        if (data.data.is_binary) { ElMessage.warning(t('files.notEditable')); return }
-        editDialog.path = row.path; editDialog.content = data.data.content; editDialog.visible = true
-      }
-      else ElMessage.error(data.message)
-    } catch { ElMessage.error(t('files.readError')) }
+        if (data.data.is_binary) {
+          ElMessage.warning(t('files.notEditable'))
+          return
+        }
+        editDialog.path = row.path
+        editDialog.content = data.data.content
+        editDialog.visible = true
+      } else ElMessage.error(data.message)
+    } catch {
+      ElMessage.error(t('files.readError'))
+    }
   }
 
   async function submitEdit() {
     try {
       const { data } = await api.post('/api/files/write', { path: editDialog.path, content: editDialog.content })
-      if (data.code === 0) { ElMessage.success(t('files.saveSuccess')); editDialog.visible = false; fetchFiles() }
-      else ElMessage.error(data.message)
-    } catch { ElMessage.error(t('common.operationFailed')) }
+      if (data.code === 0) {
+        ElMessage.success(t('files.saveSuccess'))
+        editDialog.visible = false
+        fetchFiles()
+      } else ElMessage.error(data.message)
+    } catch {
+      ElMessage.error(t('common.operationFailed'))
+    }
   }
 
-  function handleCopy(row: FileItem) { moveDialog.source = row.path; moveDialog.destination = ''; moveDialog.isCopy = true; moveDialog.visible = true; contextMenu.visible = false }
-  function handleMove(row: FileItem) { moveDialog.source = row.path; moveDialog.destination = ''; moveDialog.isCopy = false; moveDialog.visible = true; contextMenu.visible = false }
+  function handleCopy(row: FileItem) {
+    moveDialog.source = row.path
+    moveDialog.destination = ''
+    moveDialog.isCopy = true
+    moveDialog.visible = true
+    contextMenu.visible = false
+  }
+  function handleMove(row: FileItem) {
+    moveDialog.source = row.path
+    moveDialog.destination = ''
+    moveDialog.isCopy = false
+    moveDialog.visible = true
+    contextMenu.visible = false
+  }
 
   async function submitMove() {
     const url = moveDialog.isCopy ? '/api/files/copy' : '/api/files/move'
@@ -351,9 +467,13 @@ export function useFileManager(initialPath?: string, tabId?: string) {
       }
       if (successCount > 0) {
         ElMessage.success(moveDialog.isCopy ? t('files.copySuccess') : t('files.moveSuccess'))
-        moveDialog.visible = false; selectedFiles.value = []; fetchFiles()
+        moveDialog.visible = false
+        selectedFiles.value = []
+        fetchFiles()
       }
-    } catch { ElMessage.error(t('common.operationFailed')) }
+    } catch {
+      ElMessage.error(t('common.operationFailed'))
+    }
   }
 
   async function handleDelete(row: FileItem) {
@@ -361,9 +481,13 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     try {
       await ElMessageBox.confirm(t('files.confirmDelete', { name: row.name }), t('common.warning'), { type: 'warning' })
       const { data } = await api.delete('/api/files/delete', { data: { path: row.path } })
-      if (data.code === 0) { ElMessage.success(t('files.deleteSuccess')); fetchFiles() }
-      else ElMessage.error(data.message)
-    } catch { /* 取消 */ }
+      if (data.code === 0) {
+        ElMessage.success(t('files.deleteSuccess'))
+        fetchFiles()
+      } else ElMessage.error(data.message)
+    } catch {
+      /* 取消 */
+    }
   }
 
   function handleCompressSingle(row: FileItem) {
@@ -371,25 +495,43 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     const isWin = navigator.platform.toLowerCase().includes('win')
     compressDialog.name = row.name + (isWin ? '.zip' : '.tar.gz')
     compressDialog.format = isWin ? 'zip' : 'tar.gz'
-    compressDialog.visible = true; contextMenu.visible = false
+    compressDialog.visible = true
+    contextMenu.visible = false
   }
 
   async function submitCompress() {
-    if (!compressDialog.name) { ElMessage.warning(t('files.enterCompressName')); return }
+    if (!compressDialog.name) {
+      ElMessage.warning(t('files.enterCompressName'))
+      return
+    }
     const dest = currentPath.value.replace(/[\\/]+$/, '') + '/' + compressDialog.name
     try {
-      const { data } = await api.post('/api/files/compress', { paths: compressDialog.paths, destination: dest, format: compressDialog.format })
-      if (data.code === 0) { ElMessage.success(t('files.compressSuccess')); compressDialog.visible = false; fetchFiles() }
-      else ElMessage.error(data.message)
-    } catch { ElMessage.error(t('common.operationFailed')) }
+      const { data } = await api.post('/api/files/compress', {
+        paths: compressDialog.paths,
+        destination: dest,
+        format: compressDialog.format,
+      })
+      if (data.code === 0) {
+        ElMessage.success(t('files.compressSuccess'))
+        compressDialog.visible = false
+        fetchFiles()
+      } else ElMessage.error(data.message)
+    } catch {
+      ElMessage.error(t('common.operationFailed'))
+    }
   }
 
   function handleExtract(row: FileItem) {
     const dest = currentPath.value.replace(/[\\/]+$/, '') + '/' + row.name.replace(/\.(zip|tar\.gz|tgz)$/i, '')
-    api.post('/api/files/extract', { path: row.path, destination: dest }).then(({ data }) => {
-      if (data.code === 0) { ElMessage.success(t('files.extractSuccess')); fetchFiles() }
-      else ElMessage.error(data.message)
-    }).catch(() => ElMessage.error(t('common.operationFailed')))
+    api
+      .post('/api/files/extract', { path: row.path, destination: dest })
+      .then(({ data }) => {
+        if (data.code === 0) {
+          ElMessage.success(t('files.extractSuccess'))
+          fetchFiles()
+        } else ElMessage.error(data.message)
+      })
+      .catch(() => ElMessage.error(t('common.operationFailed')))
     contextMenu.visible = false
   }
 
@@ -401,16 +543,24 @@ export function useFileManager(initialPath?: string, tabId?: string) {
       const g = (perm[4] === 'r' ? 4 : 0) + (perm[5] === 'w' ? 2 : 0) + (perm[6] === 'x' ? 1 : 0)
       const w = (perm[7] === 'r' ? 4 : 0) + (perm[8] === 'w' ? 2 : 0) + (perm[9] === 'x' ? 1 : 0)
       chmodDialog.mode = `${o}${g}${w}`
-    } else { chmodDialog.mode = '644' }
-    chmodDialog.visible = true; contextMenu.visible = false
+    } else {
+      chmodDialog.mode = '644'
+    }
+    chmodDialog.visible = true
+    contextMenu.visible = false
   }
 
   async function submitChmod() {
     try {
       const { data } = await api.post('/api/files/chmod', { path: chmodDialog.path, mode: chmodDialog.mode })
-      if (data.code === 0) { ElMessage.success(t('files.permissionSuccess')); chmodDialog.visible = false; fetchFiles() }
-      else ElMessage.error(data.message)
-    } catch { ElMessage.error(t('common.operationFailed')) }
+      if (data.code === 0) {
+        ElMessage.success(t('files.permissionSuccess'))
+        chmodDialog.visible = false
+        fetchFiles()
+      } else ElMessage.error(data.message)
+    } catch {
+      ElMessage.error(t('common.operationFailed'))
+    }
   }
 
   function handleDownload(row: FileItem) {
@@ -418,29 +568,53 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     const a = document.createElement('a')
     a.href = `/api/files/download?path=${encodeURIComponent(row.path)}`
     a.download = row.name
-    document.body.appendChild(a); a.click(); document.body.removeChild(a)
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
   }
 
-  function handleProperties(row: FileItem) { contextMenu.visible = false; propDialog.item = row; propDialog.visible = true }
+  function handleProperties(row: FileItem) {
+    contextMenu.visible = false
+    propDialog.item = row
+    propDialog.visible = true
+  }
 
   // ===== 选中 & 批量 =====
-  function handleSelectionChange(rows: FileItem[]) { selectedFiles.value = rows }
+  function handleSelectionChange(rows: FileItem[]) {
+    selectedFiles.value = rows
+  }
 
   function handleBatchCommand(cmd: string) {
-    const paths = selectedFiles.value.map(f => f.path)
+    const paths = selectedFiles.value.map((f) => f.path)
     switch (cmd) {
       case 'copy':
-        moveDialog.source = paths.join('|'); moveDialog.destination = ''; moveDialog.isCopy = true; moveDialog.visible = true; break
+        moveDialog.source = paths.join('|')
+        moveDialog.destination = ''
+        moveDialog.isCopy = true
+        moveDialog.visible = true
+        break
       case 'move':
-        moveDialog.source = paths.join('|'); moveDialog.destination = ''; moveDialog.isCopy = false; moveDialog.visible = true; break
+        moveDialog.source = paths.join('|')
+        moveDialog.destination = ''
+        moveDialog.isCopy = false
+        moveDialog.visible = true
+        break
       case 'compress': {
         const isWin = navigator.platform.toLowerCase().includes('win')
-        compressDialog.paths = paths; compressDialog.name = 'archive' + (isWin ? '.zip' : '.tar.gz')
-        compressDialog.format = isWin ? 'zip' : 'tar.gz'; compressDialog.visible = true; break
+        compressDialog.paths = paths
+        compressDialog.name = 'archive' + (isWin ? '.zip' : '.tar.gz')
+        compressDialog.format = isWin ? 'zip' : 'tar.gz'
+        compressDialog.visible = true
+        break
       }
       case 'chmod':
-        chmodDialog.path = paths[0]; chmodDialog.mode = '644'; chmodDialog.visible = true; break
-      case 'delete': batchDelete(); break
+        chmodDialog.path = paths[0]
+        chmodDialog.mode = '644'
+        chmodDialog.visible = true
+        break
+      case 'delete':
+        batchDelete()
+        break
     }
   }
 
@@ -450,42 +624,113 @@ export function useFileManager(initialPath?: string, tabId?: string) {
       for (const f of selectedFiles.value) {
         await api.delete('/api/files/delete', { data: { path: f.path } })
       }
-      ElMessage.success(t('files.deleteSuccess')); selectedFiles.value = []; fetchFiles()
-    } catch { /* 取消 */ }
+      ElMessage.success(t('files.deleteSuccess'))
+      selectedFiles.value = []
+      fetchFiles()
+    } catch {
+      /* 取消 */
+    }
   }
 
   // ===== 备注 =====
-  function handleNoteEnter(row: FileItem) { hoverNotePath.value = row.path; editingNote.value = row.note || '' }
-  function handleNoteLeave(row: FileItem) { if (editingNote.value !== (row.note || '')) saveInlineNote(row); hoverNotePath.value = '' }
+  function handleNoteEnter(row: FileItem) {
+    hoverNotePath.value = row.path
+    editingNote.value = row.note || ''
+  }
+  function handleNoteLeave(row: FileItem) {
+    if (editingNote.value !== (row.note || '')) saveInlineNote(row)
+    hoverNotePath.value = ''
+  }
   async function saveInlineNote(row: FileItem) {
-    if (editingNote.value === (row.note || '')) { hoverNotePath.value = ''; return }
+    if (editingNote.value === (row.note || '')) {
+      hoverNotePath.value = ''
+      return
+    }
     try {
       const { data } = await api.post('/api/files/note', { path: row.path, note: editingNote.value })
       if (data.code === 0) row.note = editingNote.value || null
-    } catch { /* 静默 */ }
+    } catch {
+      /* 静默 */
+    }
     hoverNotePath.value = ''
   }
 
   // ===== 返回 =====
   return {
     // 状态
-    loading, currentPath, currentParent, files, inputPath, searchQuery, viewMode,
-    filteredFiles, currentPage, pageSize, filteredPagedFiles,
-    dirCount, fileCount, total, totalSize, calcTotalLoading,
-    drives, currentDrive, currentDriveLabel, contextMenu, selectedFiles,
-    createDialog, renameDialog, moveDialog, compressDialog, chmodDialog,
-    hoverNotePath, editingNote, editDialog, propDialog,
-    pathInputFocused, pathDropdown, pathSegments,
+    loading,
+    currentPath,
+    currentParent,
+    files,
+    inputPath,
+    searchQuery,
+    viewMode,
+    filteredFiles,
+    currentPage,
+    pageSize,
+    filteredPagedFiles,
+    dirCount,
+    fileCount,
+    total,
+    totalSize,
+    calcTotalLoading,
+    drives,
+    currentDrive,
+    currentDriveLabel,
+    contextMenu,
+    selectedFiles,
+    createDialog,
+    renameDialog,
+    moveDialog,
+    compressDialog,
+    chmodDialog,
+    hoverNotePath,
+    editingNote,
+    editDialog,
+    propDialog,
+    pathInputFocused,
+    pathDropdown,
+    pathSegments,
     // 方法
-    fetchFiles, fetchDrives, handleDriveChange, calcTotalSize, calcFileSize,
-    formatSize, isArchive, getFileIcon,
-    goBack, goToInputPath, handleDblClick, enterDir, handleContextMenu, closeContextMenu,
-    togglePathDropdown, navigateToSegment, closePathDropdown, openDriveDropdown,
-    handleCreate, submitCreate, handleRename, submitRename, handleEdit, submitEdit,
-    handleCopy, handleMove, submitMove, handleDelete,
-    handleCompressSingle, submitCompress, handleExtract,
-    handleChmod, submitChmod, handleDownload, handleProperties,
-    handleSelectionChange, handleBatchCommand,
-    handleNoteEnter, handleNoteLeave, saveInlineNote,
+    fetchFiles,
+    fetchDrives,
+    handleDriveChange,
+    calcTotalSize,
+    calcFileSize,
+    formatSize,
+    isArchive,
+    getFileIcon,
+    goBack,
+    goToInputPath,
+    handleDblClick,
+    enterDir,
+    handleContextMenu,
+    closeContextMenu,
+    togglePathDropdown,
+    navigateToSegment,
+    closePathDropdown,
+    openDriveDropdown,
+    handleCreate,
+    submitCreate,
+    handleRename,
+    submitRename,
+    handleEdit,
+    submitEdit,
+    handleCopy,
+    handleMove,
+    submitMove,
+    handleDelete,
+    handleCompressSingle,
+    submitCompress,
+    handleExtract,
+    handleChmod,
+    submitChmod,
+    handleDownload,
+    handleProperties,
+    handleSelectionChange,
+    handleBatchCommand,
+    handleNoteEnter,
+    handleNoteLeave,
+    saveInlineNote,
   }
 }

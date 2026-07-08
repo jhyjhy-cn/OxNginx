@@ -105,13 +105,13 @@ defineEmits<{
   flex-shrink: 0;
 }
 .header-right :deep(.action-icon) {
-  color: hsla(0,0%,100%,.65);
+  color: hsla(0, 0%, 100%, 0.65);
 }
 .header-right :deep(.action-icon:hover) {
   color: #fff;
 }
 .header-right :deep(.user-trigger) {
-  color: hsla(0,0%,100%,.65);
+  color: hsla(0, 0%, 100%, 0.65);
 }
 .logo {
   display: flex;

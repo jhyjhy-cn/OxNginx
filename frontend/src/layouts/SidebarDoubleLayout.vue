@@ -15,7 +15,10 @@
             <li
               v-else
               class="menu-item"
-              :class="{ active: route.path === item.path || (item.path !== '/dashboard' && item.path !== '/settings' && route.path.startsWith(item.path)) }"
+              :class="{
+                active:
+                  route.path === item.path || (item.path !== '/dashboard' && item.path !== '/settings' && route.path.startsWith(item.path)),
+              }"
               @click="router.push(item.path)"
             >
               <el-icon :size="18"><component :is="item.icon" /></el-icon>
@@ -42,7 +45,7 @@
             <el-breadcrumb-item v-if="route.path !== '/dashboard'">
               {{ t('menu.dashboard') }}
             </el-breadcrumb-item>
-            <el-breadcrumb-item v-for="name in route.matched.map(r => r.meta?.title as string).filter(Boolean)" :key="name">
+            <el-breadcrumb-item v-for="name in route.matched.map((r) => r.meta?.title as string).filter(Boolean)" :key="name">
               {{ t(name) }}
             </el-breadcrumb-item>
           </el-breadcrumb>
@@ -112,7 +115,7 @@ const flatMenus = computed(() => {
 
 const collapsedWidth = 64
 const expandedWidth = 200
-const sidebarWidth = computed(() => settingsStore.sidebarCollapsed ? collapsedWidth : expandedWidth)
+const sidebarWidth = computed(() => (settingsStore.sidebarCollapsed ? collapsedWidth : expandedWidth))
 
 const sidebarStyle = computed(() => ({
   width: `${sidebarWidth.value}px`,
@@ -145,7 +148,9 @@ defineEmits<{
   flex-direction: column;
   height: 100vh;
   flex-shrink: 0;
-  transition: width 0.28s ease, min-width 0.28s ease;
+  transition:
+    width 0.28s ease,
+    min-width 0.28s ease;
   overflow: hidden;
 }
 

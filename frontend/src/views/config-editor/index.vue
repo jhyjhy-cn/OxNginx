@@ -14,11 +14,7 @@
           </template>
 
           <div class="file-list">
-            <div
-              class="file-item"
-              :class="{ active: currentFile === 'main' }"
-              @click="loadMainConfig"
-            >
+            <div class="file-item" :class="{ active: currentFile === 'main' }" @click="loadMainConfig">
               <el-icon><Document /></el-icon>
               <span>nginx.conf</span>
             </div>
@@ -35,11 +31,7 @@
             >
               <el-icon><Document /></el-icon>
               <span class="file-name">{{ file.name }}</span>
-              <el-tag
-                :type="file.enabled ? 'success' : 'info'"
-                size="small"
-                class="file-status"
-              >
+              <el-tag :type="file.enabled ? 'success' : 'info'" size="small" class="file-status">
                 {{ file.enabled ? $t('common.enabled') : $t('common.disabled') }}
               </el-tag>
             </div>
@@ -54,22 +46,13 @@
             <div class="card-header">
               <span>{{ currentFileKey ? $t(currentFileKey) : currentFileName }}</span>
               <div class="editor-actions">
-                <el-button
-                  v-if="currentFile && currentFile !== 'main'"
-                  size="small"
-                  @click="toggleConfig"
-                >
+                <el-button v-if="currentFile && currentFile !== 'main'" size="small" @click="toggleConfig">
                   {{ currentFileEnabled ? $t('common.disabled') : $t('common.enabled') }}
                 </el-button>
                 <el-button type="primary" size="small" @click="saveConfig" :loading="saving">
                   {{ $t('config.save') }}
                 </el-button>
-                <el-button
-                  v-if="currentFile && currentFile !== 'main'"
-                  type="danger"
-                  size="small"
-                  @click="deleteConfig"
-                >
+                <el-button v-if="currentFile && currentFile !== 'main'" type="danger" size="small" @click="deleteConfig">
                   {{ $t('config.delete') }}
                 </el-button>
               </div>
@@ -188,7 +171,7 @@ async function loadSiteConfig(name: string) {
   currentFile.value = name
   currentFileName.value = name
   currentFileKey.value = '' // 实际文件名不需要翻译
-  currentFileEnabled.value = configFiles.value.find(f => f.name === name)?.enabled || false
+  currentFileEnabled.value = configFiles.value.find((f) => f.name === name)?.enabled || false
 
   try {
     const response = await api.get(`/api/config/file/${name}`)
@@ -250,11 +233,7 @@ async function deleteConfig() {
   if (!currentFile.value || currentFile.value === 'main') return
 
   try {
-    await ElMessageBox.confirm(
-      t('config.deleteConfirm', { name: currentFile.value }),
-      t('common.tip'),
-      { type: 'warning' }
-    )
+    await ElMessageBox.confirm(t('config.deleteConfirm', { name: currentFile.value }), t('common.tip'), { type: 'warning' })
 
     const response = await api.delete(`/api/config/file/${currentFile.value}`)
     if (response.data.code === 0) {

@@ -1,6 +1,10 @@
 <template>
   <el-container class="layout-container">
-    <el-aside :width="settingsStore.sidebarCollapsed ? '64px' : '220px'" class="sidebar" :style="{ backgroundColor: sidebarBg, '--menu-active-bg': menuActiveBg }">
+    <el-aside
+      :width="settingsStore.sidebarCollapsed ? '64px' : '220px'"
+      class="sidebar"
+      :style="{ backgroundColor: sidebarBg, '--menu-active-bg': menuActiveBg }"
+    >
       <div class="logo" :class="{ collapsed: settingsStore.sidebarCollapsed }" :style="{ borderBottomColor: borderColor }">
         <el-icon :size="20" color="#fff"><Promotion /></el-icon>
         <span v-show="!settingsStore.sidebarCollapsed">OxNginx</span>
@@ -97,7 +101,7 @@ defineEmits<{
 }
 .sidebar {
   overflow: hidden;
-  transition: width .3s;
+  transition: width 0.3s;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -114,7 +118,7 @@ defineEmits<{
   color: #fff;
   font-size: 18px;
   font-weight: 600;
-  border-bottom: 1px solid hsla(0,0%,100%,.1);
+  border-bottom: 1px solid hsla(0, 0%, 100%, 0.1);
   flex-shrink: 0;
 }
 .logo.collapsed {
@@ -126,12 +130,12 @@ defineEmits<{
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  border-top: 1px solid hsla(0,0%,100%,.1);
+  border-top: 1px solid hsla(0, 0%, 100%, 0.1);
   background: inherit;
   flex-shrink: 0;
 }
 .collapse-btn:hover {
-  background: hsla(0,0%,100%,.05);
+  background: hsla(0, 0%, 100%, 0.05);
 }
 .right-container {
   flex-direction: column;

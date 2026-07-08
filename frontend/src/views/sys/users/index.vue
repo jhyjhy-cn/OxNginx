@@ -2,7 +2,14 @@
   <div class="rbac-page">
     <el-card>
       <div class="search-bar">
-        <el-input v-model="keyword" :placeholder="$t('common.search')" clearable style="width: 240px" @input="onInput" @keyup.enter="doSearch" />
+        <el-input
+          v-model="keyword"
+          :placeholder="$t('common.search')"
+          clearable
+          style="width: 240px"
+          @input="onInput"
+          @keyup.enter="doSearch"
+        />
         <el-button type="primary" @click="doSearch">{{ $t('common.search') }}</el-button>
         <el-button @click="doReset">{{ $t('common.reset') }}</el-button>
       </div>
@@ -25,8 +32,9 @@
         <el-table-column :label="$t('common.action')" width="200">
           <template #default="{ row }">
             <el-button size="small" @click="resetPwd(row)">{{ $t('rbac.resetPassword') }}</el-button>
-            <el-button size="small" type="danger" :disabled="row.username === 'admin'"
-              @click="del(row)">{{ $t('common.delete') }}</el-button>
+            <el-button size="small" type="danger" :disabled="row.username === 'admin'" @click="del(row)">
+              {{ $t('common.delete') }}
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -69,11 +77,21 @@ const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
 
-function doSearch() { currentPage.value = 1; load() }
-function doReset() { keyword.value = ''; currentPage.value = 1; load() }
+function doSearch() {
+  currentPage.value = 1
+  load()
+}
+function doReset() {
+  keyword.value = ''
+  currentPage.value = 1
+  load()
+}
 
 let timer: ReturnType<typeof setTimeout> | null = null
-function onInput() { if (timer) clearTimeout(timer); timer = setTimeout(doSearch, 300) }
+function onInput() {
+  if (timer) clearTimeout(timer)
+  timer = setTimeout(doSearch, 300)
+}
 
 onMounted(load)
 
@@ -119,13 +137,25 @@ async function del(row: any) {
   try {
     await ElMessageBox.confirm(t('common.confirmDelete'), t('common.tip'), { type: 'warning' })
     const { data } = await api.delete(`/api/rbac/users/${row.id}`)
-    if (data.code === 0) { ElMessage.success('ok'); load() }
-    else ElMessage.error(data.message)
+    if (data.code === 0) {
+      ElMessage.success('ok')
+      load()
+    } else ElMessage.error(data.message)
   } catch {}
 }
 </script>
 
 <style scoped>
-.search-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
-.toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+.search-bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
 </style>

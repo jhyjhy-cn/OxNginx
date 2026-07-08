@@ -189,7 +189,12 @@ const { locale } = useI18n()
 
 // 同步 i18n locale 与持久化 store
 locale.value = settingsStore.locale
-watch(() => settingsStore.locale, (val) => { locale.value = val })
+watch(
+  () => settingsStore.locale,
+  (val) => {
+    locale.value = val
+  }
+)
 
 // 主题色预设
 const themeColors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#9B59B6', '#00BCD4']
@@ -229,9 +234,7 @@ const pwdForm = reactive({
 
 const pwdRules: FormRules = {
   oldPassword: [{ required: true, message: '请输入旧密码', trigger: 'blur' }],
-  newPassword: [
-    { required: true, message: '请输入新密码', trigger: 'blur' },
-  ],
+  newPassword: [{ required: true, message: '请输入新密码', trigger: 'blur' }],
   confirmPassword: [
     { required: true, message: '请再次输入新密码', trigger: 'blur' },
     {

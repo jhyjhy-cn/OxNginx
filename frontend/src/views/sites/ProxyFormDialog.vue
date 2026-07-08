@@ -61,19 +61,22 @@ const rules = {
   target_url: [{ required: true, message: '请输入目标URL', trigger: 'blur' }],
 }
 
-watch(() => props.visible, (val) => {
-  if (val && props.proxy) {
-    form.name = props.proxy.name
-    form.proxy_dir = props.proxy.proxy_dir
-    form.target_url = props.proxy.target_url
-    form.cache = props.proxy.cache === 1
-  } else if (val) {
-    form.name = ''
-    form.proxy_dir = '/'
-    form.target_url = ''
-    form.cache = false
+watch(
+  () => props.visible,
+  (val) => {
+    if (val && props.proxy) {
+      form.name = props.proxy.name
+      form.proxy_dir = props.proxy.proxy_dir
+      form.target_url = props.proxy.target_url
+      form.cache = props.proxy.cache === 1
+    } else if (val) {
+      form.name = ''
+      form.proxy_dir = '/'
+      form.target_url = ''
+      form.cache = false
+    }
   }
-})
+)
 
 async function submit() {
   const valid = await formRef.value?.validate().catch(() => false)

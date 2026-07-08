@@ -32,11 +32,7 @@
         >
           <el-icon v-if="settingsStore.showTabIcons" :size="12"><component :is="getTabIcon(element.path)" /></el-icon>
           <span class="tab-title">{{ t(element.title) }}</span>
-          <el-icon
-            class="tab-close"
-            :size="12"
-            @click.stop="closeTab(element)"
-          >
+          <el-icon class="tab-close" :size="12" @click.stop="closeTab(element)">
             <Close />
           </el-icon>
         </div>
@@ -45,21 +41,13 @@
 
     <!-- 右键菜单 -->
     <Teleport to="body">
-      <div
-        v-if="contextMenu.visible"
-        class="tab-context-menu"
-        :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
-      >
+      <div v-if="contextMenu.visible" class="tab-context-menu" :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }">
         <div class="menu-item" @click="handleRefresh">
           <el-icon :size="14"><Refresh /></el-icon>
           <span>{{ t('tabs.refresh') }}</span>
         </div>
         <div class="menu-divider" />
-        <div
-          class="menu-item"
-          :class="{ disabled: !contextMenu.tab?.closable }"
-          @click="handleClose"
-        >
+        <div class="menu-item" :class="{ disabled: !contextMenu.tab?.closable }" @click="handleClose">
           <el-icon :size="14"><Close /></el-icon>
           <span>{{ t('tabs.close') }}</span>
         </div>
@@ -127,7 +115,7 @@ onUnmounted(() => unwatch())
 
 // ========== 可排序标签（排除 Dashboard） ==========
 const sortableTabs = computed({
-  get: () => tabStore.tabs.filter(t => t.closable),
+  get: () => tabStore.tabs.filter((t) => t.closable),
   set: (newList) => {
     tabStore.tabs = [tabStore.tabs[0], ...newList]
   },
@@ -246,7 +234,9 @@ function handleCloseOther() {
   cursor: grab;
   white-space: nowrap;
   flex-shrink: 0;
-  transition: color 0.2s, background 0.2s;
+  transition:
+    color 0.2s,
+    background 0.2s;
   user-select: none;
   will-change: transform;
 }

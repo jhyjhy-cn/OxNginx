@@ -8,10 +8,13 @@
             <el-button-group v-if="selectedSites.length > 0" style="margin-right: 12px">
               <el-button size="small" @click="batchEnable">{{ $t('sites.batchEnable') }} ({{ selectedSites.length }})</el-button>
               <el-button size="small" @click="batchDisable">{{ $t('sites.batchDisable') }} ({{ selectedSites.length }})</el-button>
-              <el-button size="small" type="danger" @click="batchDelete">{{ $t('sites.batchDelete') }} ({{ selectedSites.length }})</el-button>
+              <el-button size="small" type="danger" @click="batchDelete">
+                {{ $t('sites.batchDelete') }} ({{ selectedSites.length }})
+              </el-button>
             </el-button-group>
             <el-button type="primary" @click="addVisible = true">
-              <el-icon><Plus /></el-icon> {{ $t('sites.addSite') }}
+              <el-icon><Plus /></el-icon>
+              {{ $t('sites.addSite') }}
             </el-button>
           </div>
         </div>
@@ -26,9 +29,9 @@
         @toggle="toggleSite"
         @deploy-ssl="deploySSL"
         @delete="onDelete"
-        @selection-change="(val: Site[]) => selectedSites = val"
+        @selection-change="(val: Site[]) => (selectedSites = val)"
         @open-file-manager="openFileManager"
-        @update:traffic-metric="(v: string) => trafficMetric = v as any"
+        @update:traffic-metric="(v: string) => (trafficMetric = v as any)"
       />
     </el-card>
 
@@ -41,17 +44,9 @@
       @saved="fetchSites"
     />
 
-    <SiteDeleteDialog
-      v-model:visible="deleteVisible"
-      :site="deleteTarget"
-      @deleted="fetchSites"
-    />
+    <SiteDeleteDialog v-model:visible="deleteVisible" :site="deleteTarget" @deleted="fetchSites" />
 
-    <SiteBackupDialog
-      v-model:visible="backupVisible"
-      :site="backupTarget"
-      @refresh="fetchSites"
-    />
+    <SiteBackupDialog v-model:visible="backupVisible" :site="backupTarget" @refresh="fetchSites" />
   </div>
 </template>
 
@@ -74,10 +69,7 @@ import SiteBackupDialog from './SiteBackupDialog.vue'
 const { t } = useI18n()
 const router = useRouter()
 
-const {
-  sites, selectedSites, loading, trafficMetric,
-  fetchSites, toggleSite, batchEnable, batchDisable, batchDelete,
-} = useSites()
+const { sites, selectedSites, loading, trafficMetric, fetchSites, toggleSite, batchEnable, batchDisable, batchDelete } = useSites()
 
 // ---- 弹窗状态 ----
 const addVisible = ref(false)
@@ -109,11 +101,7 @@ function onOpenBackup(site: Site) {
 
 async function deploySSL(site: Site) {
   try {
-    await ElMessageBox.confirm(
-      t('sites.sslDeployConfirm', { domain: site.server_name }),
-      t('sites.sslDeploy'),
-      { type: 'warning' },
-    )
+    await ElMessageBox.confirm(t('sites.sslDeployConfirm', { domain: site.server_name }), t('sites.sslDeploy'), { type: 'warning' })
     const response = await api.post(`/api/sites/${site.id}/deploy-ssl`)
     if (response.data.code === 0) {
       ElMessage.success(t('sites.sslDeploySuccess'))
@@ -123,9 +111,7 @@ async function deploySSL(site: Site) {
     }
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(
-        error.response?.data?.message || error.message || t('sites.deployFailed'),
-      )
+      ElMessage.error(error.response?.data?.message || error.message || t('sites.deployFailed'))
     }
   }
 }
@@ -135,9 +121,7 @@ function openFileManager(path: string) {
   const filesStore = useFilesStore()
   tabStore.addTab({ path: '/files', title: 'menu.files', closable: true })
   const normalized = path.replace(/\\/g, '/').replace(/\/+$/, '')
-  const existing = filesStore.tabs.find(
-    (t) => t.path.replace(/\\/g, '/').replace(/\/+$/, '') === normalized,
-  )
+  const existing = filesStore.tabs.find((t) => t.path.replace(/\\/g, '/').replace(/\/+$/, '') === normalized)
   if (existing) {
     filesStore.setActiveTab(existing.id)
   } else {

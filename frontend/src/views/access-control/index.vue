@@ -43,11 +43,7 @@
     </el-card>
 
     <!-- 添加/编辑对话框 -->
-    <OnDialog
-      v-model="dialogVisible"
-      :title="isEdit ? $t('access.editRule') : $t('access.addRule')"
-      width="500px"
-    >
+    <OnDialog v-model="dialogVisible" :title="isEdit ? $t('access.editRule') : $t('access.addRule')" width="500px">
       <el-form ref="formRef" :model="form" :rules="validationRules" label-width="100px">
         <el-form-item :label="$t('access.ruleType')" prop="rule_type">
           <el-select v-model="form.rule_type" style="width: 100%" @change="onRuleTypeChange">
@@ -78,12 +74,7 @@
 
         <el-form-item :label="$t('access.site')">
           <el-select v-model="form.site_id" style="width: 100%" clearable :placeholder="$t('access.global')">
-            <el-option
-              v-for="site in sites"
-              :key="site.id"
-              :label="site.name"
-              :value="site.id"
-            />
+            <el-option v-for="site in sites" :key="site.id" :label="site.name" :value="site.id" />
           </el-select>
         </el-form-item>
 
@@ -195,7 +186,7 @@ onMounted(() => {
 })
 
 function getSiteName(siteId: number): string {
-  const site = sites.value.find(s => s.id === siteId)
+  const site = sites.value.find((s) => s.id === siteId)
   return site ? site.name : `#${siteId}`
 }
 

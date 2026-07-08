@@ -36,11 +36,7 @@
     </el-card>
 
     <!-- 添加/编辑对话框 -->
-    <OnDialog
-      v-model="dialogVisible"
-      :title="isEdit ? $t('upstreams.editUpstream') : $t('upstreams.addUpstream')"
-      width="700px"
-    >
+    <OnDialog v-model="dialogVisible" :title="isEdit ? $t('upstreams.editUpstream') : $t('upstreams.addUpstream')" width="700px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
         <el-form-item :label="$t('upstreams.name')" prop="name">
           <el-input v-model="form.name" :placeholder="$t('upstreams.namePlaceholder')" :disabled="isEdit" />
@@ -62,7 +58,11 @@
         <div v-for="(server, index) in form.servers" :key="index" class="server-item">
           <el-row :gutter="12">
             <el-col :span="8">
-              <el-form-item :label="$t('upstreams.address') + ' ' + (index + 1)" :prop="'servers.' + index + '.address'" :rules="{ required: true, message: () => t('upstreams.enterAddress'), trigger: 'blur' }">
+              <el-form-item
+                :label="$t('upstreams.address') + ' ' + (index + 1)"
+                :prop="'servers.' + index + '.address'"
+                :rules="{ required: true, message: () => t('upstreams.enterAddress'), trigger: 'blur' }"
+              >
                 <el-input v-model="server.address" placeholder="127.0.0.1:8080" />
               </el-form-item>
             </el-col>

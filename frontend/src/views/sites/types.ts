@@ -34,13 +34,13 @@ export interface RewriteRule {
 }
 
 export interface RedirectRule {
-  enabled: boolean           // 开启重定向
-  keep_params: boolean       // 保留URL参数
-  redirect_type: string      // 'type' (域名类型) 或 'path' (路径)
-  redirect_method: number    // 301 永久重定向 / 302 临时重定向
-  domains: string[]          // 重定向域名列表（多选）
-  target_url: string         // 目标URL
-  status: string             // 'enabled' 或 'disabled'
+  enabled: boolean // 开启重定向
+  keep_params: boolean // 保留URL参数
+  redirect_type: string // 'type' (域名类型) 或 'path' (路径)
+  redirect_method: number // 301 永久重定向 / 302 临时重定向
+  domains: string[] // 重定向域名列表（多选）
+  target_url: string // 目标URL
+  status: string // 'enabled' 或 'disabled'
 }
 
 export interface HotlinkCfg {

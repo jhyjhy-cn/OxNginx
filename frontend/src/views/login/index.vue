@@ -14,19 +14,20 @@
           <div
             class="character purple-character"
             :style="{
-              height: (isTyping || (form.password.length > 0 && !showPassword)) ? '440px' : '400px',
-              transform: (form.password.length > 0 && showPassword)
-                ? 'skewX(0deg)'
-                : (isTyping || (form.password.length > 0 && !showPassword))
-                  ? `skewX(${purpleSkew - 10}deg) translateX(40px)`
-                  : `skewX(${purpleSkew}deg)`
+              height: isTyping || (form.password.length > 0 && !showPassword) ? '440px' : '400px',
+              transform:
+                form.password.length > 0 && showPassword
+                  ? 'skewX(0deg)'
+                  : isTyping || (form.password.length > 0 && !showPassword)
+                    ? `skewX(${purpleSkew - 10}deg) translateX(40px)`
+                    : `skewX(${purpleSkew}deg)`,
             }"
           >
             <div
               class="eyes"
               :style="{
-                left: (form.password.length > 0 && showPassword) ? '25px' : `${55 + purpleFaceX}px`,
-                top: (form.password.length > 0 && showPassword) ? '40px' : `${45 + purpleFaceY}px`
+                left: form.password.length > 0 && showPassword ? '25px' : `${55 + purpleFaceX}px`,
+                top: form.password.length > 0 && showPassword ? '40px' : `${45 + purpleFaceY}px`,
               }"
             >
               <div class="eye" :class="{ blinking: isPurpleBlinking }">
@@ -42,18 +43,19 @@
           <div
             class="character black-character"
             :style="{
-              transform: (form.password.length > 0 && showPassword)
-                ? 'skewX(0deg)'
-                : isLookingAtEachOther
-                  ? `skewX(${blackSkew * 1.5 + 8}deg) translateX(15px)`
-                  : `skewX(${blackSkew}deg)`
+              transform:
+                form.password.length > 0 && showPassword
+                  ? 'skewX(0deg)'
+                  : isLookingAtEachOther
+                    ? `skewX(${blackSkew * 1.5 + 8}deg) translateX(15px)`
+                    : `skewX(${blackSkew}deg)`,
             }"
           >
             <div
               class="eyes"
               :style="{
-                left: (form.password.length > 0 && showPassword) ? '18px' : `${32 + blackFaceX}px`,
-                top: (form.password.length > 0 && showPassword) ? '35px' : `${40 + blackFaceY}px`
+                left: form.password.length > 0 && showPassword ? '18px' : `${32 + blackFaceX}px`,
+                top: form.password.length > 0 && showPassword ? '35px' : `${40 + blackFaceY}px`,
               }"
             >
               <div class="eye" :class="{ blinking: isBlackBlinking }">
@@ -66,15 +68,12 @@
           </div>
 
           <!-- 橙色半圆 -->
-          <div
-            class="character orange-character"
-            :style="{ transform: `skewX(${orangeSkew}deg)` }"
-          >
+          <div class="character orange-character" :style="{ transform: `skewX(${orangeSkew}deg)` }">
             <div
               class="pupil-only-eyes"
               :style="{
-                left: (form.password.length > 0 && showPassword) ? '60px' : `${95 + orangeFaceX}px`,
-                top: (form.password.length > 0 && showPassword) ? '95px' : `${105 + orangeFaceY}px`
+                left: form.password.length > 0 && showPassword ? '60px' : `${95 + orangeFaceX}px`,
+                top: form.password.length > 0 && showPassword ? '95px' : `${105 + orangeFaceY}px`,
               }"
             >
               <div class="pupil-only" :style="getPupilOnlyStyle()"></div>
@@ -83,15 +82,12 @@
           </div>
 
           <!-- 黄色圆顶 -->
-          <div
-            class="character yellow-character"
-            :style="{ transform: `skewX(${yellowSkew}deg)` }"
-          >
+          <div class="character yellow-character" :style="{ transform: `skewX(${yellowSkew}deg)` }">
             <div
               class="pupil-only-eyes"
               :style="{
-                left: (form.password.length > 0 && showPassword) ? '22px' : `${55 + yellowFaceX}px`,
-                top: (form.password.length > 0 && showPassword) ? '45px' : `${55 + yellowFaceY}px`
+                left: form.password.length > 0 && showPassword ? '22px' : `${55 + yellowFaceX}px`,
+                top: form.password.length > 0 && showPassword ? '45px' : `${55 + yellowFaceY}px`,
               }"
             >
               <div class="pupil-only" :style="getPupilOnlyStyle()"></div>
@@ -100,8 +96,8 @@
             <div
               class="mouth-line"
               :style="{
-                left: (form.password.length > 0 && showPassword) ? '18px' : `${48 + yellowFaceX}px`,
-                top: (form.password.length > 0 && showPassword) ? '105px' : `${110 + yellowFaceY}px`
+                left: form.password.length > 0 && showPassword ? '18px' : `${48 + yellowFaceX}px`,
+                top: form.password.length > 0 && showPassword ? '105px' : `${110 + yellowFaceY}px`,
               }"
             ></div>
           </div>
@@ -125,12 +121,7 @@
     <div class="right-section">
       <!-- 右上角工具栏 -->
       <div class="login-toolbar">
-        <el-color-picker
-          :model-value="settingsStore.themeColor"
-          @change="handleColorChange"
-          :predefine="presetColors"
-          size="small"
-        />
+        <el-color-picker :model-value="settingsStore.themeColor" @change="handleColorChange" :predefine="presetColors" size="small" />
         <el-dropdown @command="handleLanguageChange" trigger="click">
           <OnIcon svgName="translate" :size="18" class="toolbar-icon" />
           <template #dropdown>
@@ -152,13 +143,7 @@
           <p>{{ $t('login.subtitle') }}</p>
         </div>
 
-        <el-form
-          ref="formRef"
-          :model="form"
-          :rules="rules"
-          class="login-form"
-          @submit.prevent="handleLogin"
-        >
+        <el-form ref="formRef" :model="form" :rules="rules" class="login-form" @submit.prevent="handleLogin">
           <el-form-item prop="username">
             <label class="form-label">{{ $t('login.username') }}</label>
             <el-input
@@ -191,13 +176,7 @@
           </el-form-item>
 
           <el-form-item>
-            <el-button
-              :loading="loading"
-              type="primary"
-              size="large"
-              class="login-button"
-              @click="handleLogin"
-            >
+            <el-button :loading="loading" type="primary" size="large" class="login-button" @click="handleLogin">
               {{ loading ? $t('login.loginBtn') + '...' : $t('login.loginBtn') }}
             </el-button>
           </el-form-item>
@@ -285,16 +264,26 @@ let blinkTimeout: ReturnType<typeof setTimeout> | null = null
 
 function getPupilStyle(character: string) {
   const offset = pupilOffsets.value[character as keyof typeof pupilOffsets.value]
-  let x = offset.x, y = offset.y
-  if (form.password.length > 0 && showPassword.value) { x = -3; y = -3 }
-  else if (isLookingAtEachOther.value) { x = 2; y = 3 }
+  let x = offset.x,
+    y = offset.y
+  if (form.password.length > 0 && showPassword.value) {
+    x = -3
+    y = -3
+  } else if (isLookingAtEachOther.value) {
+    x = 2
+    y = 3
+  }
   return { transform: `translate(${x}px, ${y}px)` }
 }
 
 function getPupilOnlyStyle() {
   const offset = pupilOffsets.value.orange
-  let x = offset.x, y = offset.y
-  if (form.password.length > 0 && showPassword.value) { x = -4; y = -3 }
+  let x = offset.x,
+    y = offset.y
+  if (form.password.length > 0 && showPassword.value) {
+    x = -4
+    y = -3
+  }
   return { transform: `translate(${x}px, ${y}px)` }
 }
 
@@ -339,7 +328,10 @@ function schedulePurpleBlink() {
   const delay = Math.random() * 4000 + 3000
   blinkTimeout = setTimeout(() => {
     isPurpleBlinking.value = true
-    setTimeout(() => { isPurpleBlinking.value = false; schedulePurpleBlink() }, 150)
+    setTimeout(() => {
+      isPurpleBlinking.value = false
+      schedulePurpleBlink()
+    }, 150)
   }, delay)
 }
 
@@ -347,14 +339,19 @@ function scheduleBlackBlink() {
   const delay = Math.random() * 4000 + 3000
   setTimeout(() => {
     isBlackBlinking.value = true
-    setTimeout(() => { isBlackBlinking.value = false; scheduleBlackBlink() }, 150)
+    setTimeout(() => {
+      isBlackBlinking.value = false
+      scheduleBlackBlink()
+    }, 150)
   }, delay)
 }
 
 function onUsernameFocus() {
   isTyping.value = true
   isLookingAtEachOther.value = true
-  setTimeout(() => { isLookingAtEachOther.value = false }, 800)
+  setTimeout(() => {
+    isLookingAtEachOther.value = false
+  }, 800)
 }
 
 function onUsernameBlur() {
@@ -504,7 +501,7 @@ onUnmounted(() => {
   left: 60px;
   width: 200px;
   height: 400px;
-  background-color: #6C3FF5;
+  background-color: #6c3ff5;
   border-radius: 14px 14px 0 0;
   z-index: 1;
 }
@@ -534,7 +531,7 @@ onUnmounted(() => {
 .purple-character .pupil {
   width: 10px;
   height: 10px;
-  background: #2D2D2D;
+  background: #2d2d2d;
   border-radius: 50%;
   transition: transform 0.1s ease-out;
 }
@@ -543,7 +540,7 @@ onUnmounted(() => {
   left: 250px;
   width: 130px;
   height: 310px;
-  background-color: #2D2D2D;
+  background-color: #2d2d2d;
   border-radius: 10px 10px 0 0;
   z-index: 2;
 }
@@ -573,7 +570,7 @@ onUnmounted(() => {
 .black-character .pupil {
   width: 9px;
   height: 9px;
-  background: #2D2D2D;
+  background: #2d2d2d;
   border-radius: 50%;
   transition: transform 0.1s ease-out;
 }
@@ -582,7 +579,7 @@ onUnmounted(() => {
   left: 0;
   width: 260px;
   height: 220px;
-  background-color: #FF9B6B;
+  background-color: #ff9b6b;
   border-radius: 130px 130px 0 0;
   z-index: 3;
 }
@@ -597,7 +594,7 @@ onUnmounted(() => {
 .orange-character .pupil-only {
   width: 18px;
   height: 18px;
-  background: #2D2D2D;
+  background: #2d2d2d;
   border-radius: 50%;
   transition: transform 0.1s ease-out;
 }
@@ -606,7 +603,7 @@ onUnmounted(() => {
   right: 30px;
   width: 150px;
   height: 250px;
-  background-color: #E8D754;
+  background-color: #e8d754;
   border-radius: 75px 75px 0 0;
   z-index: 4;
 }
@@ -621,7 +618,7 @@ onUnmounted(() => {
 .yellow-character .pupil-only {
   width: 18px;
   height: 18px;
-  background: #2D2D2D;
+  background: #2d2d2d;
   border-radius: 50%;
   transition: transform 0.1s ease-out;
 }
@@ -630,7 +627,7 @@ onUnmounted(() => {
   position: absolute;
   width: 70px;
   height: 5px;
-  background: #2D2D2D;
+  background: #2d2d2d;
   border-radius: 3px;
   transition: all 0.2s ease-out;
 }
@@ -639,8 +636,7 @@ onUnmounted(() => {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
   background-size: 20px 20px;
 }
 

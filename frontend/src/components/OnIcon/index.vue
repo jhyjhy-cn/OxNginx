@@ -8,13 +8,7 @@
     <component :is="svgComponent" />
   </el-icon>
   <!-- SVG Sprite（vite-plugin-svg-icons） -->
-  <svg
-    v-else
-    aria-hidden="true"
-    class="on-icon-svg"
-    :class="className"
-    :style="svgStyle"
-  >
+  <svg v-else aria-hidden="true" class="on-icon-svg" :class="className" :style="svgStyle">
     <use :xlink:href="symbolId" />
   </svg>
 </template>
@@ -38,36 +32,42 @@ const svgModules = import.meta.glob('@/assets/svgs/*.svg', { eager: true }) as R
 const svgMap: Record<string, Component> = {}
 for (const [path, mod] of Object.entries(svgModules)) {
   // 从路径提取文件名（不含扩展名）：/src/assets/svgs/translate.svg → translate
-  const name = path.split('/').pop()!.replace(/\.svg$/, '')
+  const name = path
+    .split('/')
+    .pop()!
+    .replace(/\.svg$/, '')
   svgMap[name] = mod.default
 }
 
-const props = withDefaults(defineProps<{
-  /** Element Plus 图标名称 */
-  name?: string
-  /** SVG 文件名（不含路径和扩展名），自动从 src/assets/svgs/ 查找 */
-  svgName?: string
-  /** SVG Vue 组件（手动传入） */
-  svg?: Component
-  /** 尺寸，数字为 px，字符串直接作为 CSS 值 */
-  size?: number | string
-  /** 颜色 */
-  color?: string
-  /** 自定义 class */
-  className?: string
-  /** 自定义 style */
-  style?: string
-  /** SVG Sprite 前缀 */
-  prefix?: string
-}>(), {
-  name: '',
-  svgName: '',
-  size: 16,
-  color: '',
-  className: '',
-  style: '',
-  prefix: 'icon',
-})
+const props = withDefaults(
+  defineProps<{
+    /** Element Plus 图标名称 */
+    name?: string
+    /** SVG 文件名（不含路径和扩展名），自动从 src/assets/svgs/ 查找 */
+    svgName?: string
+    /** SVG Vue 组件（手动传入） */
+    svg?: Component
+    /** 尺寸，数字为 px，字符串直接作为 CSS 值 */
+    size?: number | string
+    /** 颜色 */
+    color?: string
+    /** 自定义 class */
+    className?: string
+    /** 自定义 style */
+    style?: string
+    /** SVG Sprite 前缀 */
+    prefix?: string
+  }>(),
+  {
+    name: '',
+    svgName: '',
+    size: 16,
+    color: '',
+    className: '',
+    style: '',
+    prefix: 'icon',
+  }
+)
 
 /** 最终的 SVG 组件（svgName 自动查找优先，其次手动传入的 svg） */
 const svgComponent = computed(() => {
@@ -81,13 +81,11 @@ const isEpIcon = computed(() => !!props.name && !props.name.startsWith('svg:'))
 /** Element Plus 图标组件名称（支持 kebab-case → PascalCase） */
 const epIconName = computed(() => {
   const raw = props.name
-  return raw in EpIcons
-    ? raw
-    : raw.replace(/(^|-)(\w)/g, (_, _sep, c: string) => c.toUpperCase())
+  return raw in EpIcons ? raw : raw.replace(/(^|-)(\w)/g, (_, _sep, c: string) => c.toUpperCase())
 })
 
 /** 尺寸转数字 */
-const sizeNum = computed(() => typeof props.size === 'number' ? props.size : parseInt(props.size) || 16)
+const sizeNum = computed(() => (typeof props.size === 'number' ? props.size : parseInt(props.size) || 16))
 
 /** SVG Sprite symbolId */
 const symbolId = computed(() => {
