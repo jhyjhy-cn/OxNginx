@@ -8,10 +8,7 @@
       layout="total, sizes, prev, pager, next"
       size="small"
       @current-change="$emit('change')"
-      @size-change="
-        page = 1
-        $emit('change')
-      "
+      @size-change="onSizeChange"
     />
   </div>
 </template>
@@ -46,6 +43,11 @@ const size = computed({
   get: () => props.pageSize,
   set: (v) => emit('update:pageSize', v),
 })
+
+function onSizeChange() {
+  page.value = 1
+  emit('change')
+}
 </script>
 
 <style scoped>

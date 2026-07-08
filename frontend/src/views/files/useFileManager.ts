@@ -266,6 +266,10 @@ export function useFileManager(initialPath?: string, tabId?: string) {
       fetchFiles()
     }
   }
+  function startEditPath() {
+    pathInputFocused.value = true
+    inputPath.value = currentPath.value
+  }
   function goToInputPath() {
     if (!inputPath.value) return
     const normalized = inputPath.value
@@ -702,6 +706,7 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     getFileIcon,
     goBack,
     goToInputPath,
+    startEditPath,
     handleDblClick,
     enterDir,
     handleContextMenu,

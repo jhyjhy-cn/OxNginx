@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc && vite build",
+    "format": "oxfmt --write \"src/**/*.{vue,ts,tsx,js,jsx,json,css,scss}\"",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -28,7 +29,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.0",
-    "prettier": "^3.9.4",
+    "oxfmt": "^0.58.0",
     "typescript": "^5.9.0",
     "unplugin-auto-import": "^0.18.0",
     "unplugin-vue-components": "^32.0.0",

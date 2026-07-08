@@ -10,14 +10,7 @@
         </button>
         <button v-else class="path-seg-btn" @click.stop="fm.navigateToSegment('/')">根目录</button>
         <!-- 面包屑视图（未聚焦） -->
-        <div
-          v-if="!fm.pathInputFocused.value"
-          class="path-breadcrumb"
-          @dblclick="
-            fm.pathInputFocused.value = true
-            fm.inputPath.value = fm.currentPath.value
-          "
-        >
+        <div v-if="!fm.pathInputFocused.value" class="path-breadcrumb" @dblclick="fm.startEditPath()">
           <template v-for="(seg, i) in fm.pathSegments.value" :key="seg.path">
             <button v-if="i > 0" class="path-sep" @click.stop="fm.togglePathDropdown(i - 1, $event)">›</button>
             <button class="path-seg-btn" @click.stop="fm.navigateToSegment(seg.path)">{{ seg.name }}</button>
