@@ -54,6 +54,9 @@ pub fn build(state: AppState) -> Router {
         .route("/api/nginx/install", post(api::nginx_api::install))
         .route("/api/log/access", get(api::log_api::access_log))
         .route("/api/log/error", get(api::log_api::error_log))
+        .route("/api/log/operation", get(api::log_api::list_operation_logs))
+        .route("/api/log/login", get(api::log_api::list_login_logs))
+        .route("/api/log/login/export", get(api::log_api::export_login_logs))
         .route("/api/backups/:id", get(api::backup_api::list_backups))
         .route("/api/backups/:id", post(api::backup_api::create_backup))
         .route("/api/backups/:id", delete(api::backup_api::delete_backup))
@@ -110,7 +113,6 @@ pub fn build(state: AppState) -> Router {
         .route("/api/rbac/i18n/messages", get(api::rbac_api::get_i18n_messages))
         .layer(from_fn_with_state(state.clone(), middleware::auth_middleware));
 
-    // 管理员路由（需 super_admin / username=='admin'）
     let admin_routes = Router::new()
         .route("/api/rbac/users", get(api::rbac_api::list_users).post(api::rbac_api::create_user))
         .route("/api/rbac/users/:id", put(api::rbac_api::update_user).delete(api::rbac_api::delete_user))

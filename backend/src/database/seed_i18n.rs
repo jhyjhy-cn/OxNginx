@@ -1096,6 +1096,15 @@ pub async fn seed_i18n(pool: &SqlitePool) -> Result<()> {
         ("zh-CN", "rbac.noChange", "无修改"),
         ("zh-CN", "rbac.savedN", "已保存 {n} 条"),
         ("zh-CN", "rbac.hintMenuRefresh", "新增/修改菜单后,刷新页面或重启服务生效"),
+        // 登录日志列
+        ("zh-CN", "log.ip", "地址"),
+        ("zh-CN", "log.os", "操作系统"),
+        ("zh-CN", "log.browser", "浏览器"),
+        ("zh-CN", "log.type", "类型"),
+        ("zh-CN", "log.login", "登录"),
+        ("zh-CN", "log.logout", "退出"),
+        ("zh-CN", "log.loginSuccess", "登录成功"),
+        ("zh-CN", "log.loginFailed", "登录失败"),
         ("en-US", "rbac.colCode", "Code"),
         ("en-US", "rbac.colRemark", "Remark"),
         ("en-US", "rbac.colRoles", "Roles"),
@@ -1110,6 +1119,14 @@ pub async fn seed_i18n(pool: &SqlitePool) -> Result<()> {
         ("en-US", "rbac.noChange", "No changes"),
         ("en-US", "rbac.savedN", "Saved {n} items"),
         ("en-US", "rbac.hintMenuRefresh", "After adding/editing menus, refresh the page or restart the service to take effect"),
+        ("en-US", "log.ip", "IP"),
+        ("en-US", "log.os", "OS"),
+        ("en-US", "log.browser", "Browser"),
+        ("en-US", "log.type", "Type"),
+        ("en-US", "log.login", "Login"),
+        ("en-US", "log.logout", "Logout"),
+        ("en-US", "log.loginSuccess", "Login Success"),
+        ("en-US", "log.loginFailed", "Login Failed"),
     ];
 
     let mut tx = pool.begin().await?;

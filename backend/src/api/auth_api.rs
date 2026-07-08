@@ -1,4 +1,4 @@
-use axum::{extract::{Extension, State}, http::header, Json};
+use axum::{extract::{ConnectInfo, Extension, State}, http::header, Json};
 use serde_json::json;
 
 use crate::dto::{ApiResponse, ChangePasswordRequest, ChangeUsernameRequest, LoginRequest, LoginResponse};
@@ -15,8 +15,16 @@ pub async fn get_public_key(State(state): State<AppState>) -> Json<serde_json::V
 /// 用户登录
 pub async fn login(
     State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
+    headers: header::HeaderMap,
     Json(req): Json<LoginRequest>,
 ) -> Json<serde_json::Value> {
+    // 提取 IP 和 UA
+    let ip = crate::util::ua_parser::extract_ip(&headers, Some(addr));
+    let ua = headers.get(header::USER_AGENT).and_then(|v| v.to_str().ok()).unwrap_or("").to_string();
+    let browser = crate::util::ua_parser::parse_browser(&ua);
+    let os = crate::util::ua_parser::parse_os(&ua);
+
     // RSA 解密密码
     let password = match crate::auth::rsa_decrypt(&state.rsa_private_key, &req.encrypted_password) {
         Ok(p) => p,
@@ -33,7 +41,10 @@ pub async fn login(
 
     let user = match user {
         Ok(Some(u)) => u,
-        Ok(None) => return Json(json!(ApiResponse::<()>::error("用户名或密码错误"))),
+        Ok(None) => {
+            let _ = crate::service::log_service::log_login(state.db.pool(), &req.username, Some(&ip), Some(&os), Some(&browser), Some(&ua), "login", "failed").await;
+            return Json(json!(ApiResponse::<()>::error("用户名或密码错误")));
+        }
         Err(e) => {
             tracing::error!("数据库错误: {}", e);
             return Json(json!(ApiResponse::<()>::error(format!("数据库错误: {}", e))));
@@ -43,7 +54,10 @@ pub async fn login(
     // 验证密码
     match crate::auth::verify_password(&password, &user.password) {
         Ok(true) => {}
-        _ => return Json(json!(ApiResponse::<()>::error("用户名或密码错误"))),
+        _ => {
+            let _ = crate::service::log_service::log_login(state.db.pool(), &req.username, Some(&ip), Some(&os), Some(&browser), Some(&ua), "login", "failed").await;
+            return Json(json!(ApiResponse::<()>::error("用户名或密码错误")));
+        }
     };
 
     let config = state.get_config();
@@ -57,10 +71,13 @@ pub async fn login(
     )
     .await
     {
-        Ok(token) => Json(json!(ApiResponse::success(LoginResponse {
-            token,
-            username: user.username,
-        }))),
+        Ok(token) => {
+            let _ = crate::service::log_service::log_login(state.db.pool(), &user.username, Some(&ip), Some(&os), Some(&browser), Some(&ua), "login", "success").await;
+            Json(json!(ApiResponse::success(LoginResponse {
+                token,
+                username: user.username,
+            })))
+        }
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("生成token失败: {}", e)))),
     }
 }
@@ -73,7 +90,10 @@ pub async fn logout(State(state): State<AppState>, headers: header::HeaderMap) -
         .and_then(|v| v.strip_prefix("Bearer "));
 
     if let Some(token) = token {
-        let _ = crate::service::token_service::delete_token(state.db.pool(), token).await;
+        if let Ok(Some(username)) = crate::service::token_service::verify_token(state.db.pool(), token).await {
+            let _ = crate::service::token_service::delete_token(state.db.pool(), token).await;
+            let _ = crate::service::log_service::log_login(state.db.pool(), &username, None, None, None, None, "logout", "success").await;
+        }
     }
 
     Json(json!(ApiResponse::success("ok")))

@@ -4,7 +4,6 @@ use std::sync::{Arc, Mutex};
 use sysinfo::{System, Pid};
 use tokio::sync::broadcast;
 
-/// 应用共享状态
 pub struct AppState {
     pub db: Database,
     pub config: Arc<Mutex<AppConfig>>,
@@ -30,18 +29,15 @@ impl Clone for AppState {
 }
 
 impl AppState {
-    /// 获取配置的克隆副本（不跨 await 点持有锁）
     pub fn get_config(&self) -> AppConfig {
         self.config.lock().unwrap().clone()
     }
 
-    /// 更新配置
     pub fn update_config(&self, new_config: AppConfig) {
         let mut config = self.config.lock().unwrap();
         *config = new_config;
     }
 
-    /// 创建新的 AppState 实例
     pub fn new(db: Database, config: AppConfig, rsa_private_key: rsa::RsaPrivateKey, rsa_public_key_b64: String) -> Self {
         let (dashboard_tx, _) = broadcast::channel(16);
         AppState {

@@ -1,41 +1,49 @@
 <template>
   <div class="logs">
     <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>{{ $t('logs.title') }}</span>
-          <div>
-            <el-radio-group v-model="logType" @change="fetchLogs">
-              <el-radio-button label="access">{{ $t('logs.accessLog') }}</el-radio-button>
-              <el-radio-button label="error">{{ $t('logs.errorLog') }}</el-radio-button>
-            </el-radio-group>
-            <el-button style="margin-left: 12px" @click="fetchLogs">
-              <el-icon><Refresh /></el-icon>
-              {{ $t('common.refresh') }}
-            </el-button>
-          </div>
-        </div>
-      </template>
+      <!-- 搜索栏 -->
+      <el-form inline class="search-bar">
+        <el-form-item>
+          <el-radio-group v-model="logType" @change="fetchLogs">
+            <el-radio-button value="access">{{ $t('logs.accessLog') }}</el-radio-button>
+            <el-radio-button value="error">{{ $t('logs.errorLog') }}</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="fetchLogs">
+            <el-icon><Refresh /></el-icon>
+            {{ $t('common.refresh') }}
+          </el-button>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="success" @click="downloadLog">
+            <el-icon><Download /></el-icon>
+            {{ $t('common.download') }}
+          </el-button>
+        </el-form-item>
+      </el-form>
 
-      <div class="log-content" v-loading="loading">
-        <pre v-if="logs.length">{{ logs.join('\n') }}</pre>
-        <el-empty v-else :description="$t('logs.noLog')" />
-      </div>
+      <!-- 列表 -->
+      <el-table :data="tableData" v-loading="loading" :row-style="{ height: '50px' }" max-height="calc(100vh - 300px)">
+        <el-table-column prop="line" label="#" width="60" />
+        <el-table-column prop="content" :label="$t('logs.title')" min-width="800" show-overflow-tooltip />
+      </el-table>
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { Refresh, Download } from '@element-plus/icons-vue'
 import api from '@/api'
 
 const logType = ref('access')
 const logs = ref<string[]>([])
 const loading = ref(false)
 
-onMounted(() => {
-  fetchLogs()
-})
+const tableData = computed(() => logs.value.map((content, i) => ({ line: i + 1, content })))
+
+onMounted(fetchLogs)
 
 async function fetchLogs() {
   loading.value = true
@@ -44,36 +52,26 @@ async function fetchLogs() {
     if (response.data.code === 0) {
       logs.value = response.data.data?.lines || []
     }
-  } catch (error) {
-    console.error('获取日志失败:', error)
+  } catch {
+    // ignore
   } finally {
     loading.value = false
   }
 }
+
+function downloadLog() {
+  const blob = new Blob([logs.value.join('\n')], { type: 'text/plain;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${logType.value}_log.txt`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 </script>
 
 <style scoped>
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.log-content {
-  background: #1e1e1e;
-  color: #d4d4d4;
-  padding: 16px;
-  border-radius: 4px;
-  max-height: 600px;
-  overflow-y: auto;
-}
-
-.log-content pre {
-  margin: 0;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 12px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-wrap: break-word;
+.search-bar {
+  margin-bottom: 12px;
 }
 </style>

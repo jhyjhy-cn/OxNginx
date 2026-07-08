@@ -99,6 +99,7 @@ fn main() -> anyhow::Result<()> {
         tracing::info!("[3/4] 生成 RSA 密钥对...");
         let (rsa_private_key, rsa_public_key_b64) = crate::auth::generate_rsa_keypair()?;
         tracing::info!("[3/4] RSA 密钥对已生成");
+
         let state = AppState::new(db, config.clone(), rsa_private_key, rsa_public_key_b64);
         api::dashboard_ws::start_push_task(state.clone());
 
@@ -110,7 +111,7 @@ fn main() -> anyhow::Result<()> {
         let listener = tokio::net::TcpListener::bind(&addr).await?;
         tracing::info!("OxNginx 启动于 http://{}", addr);
 
-        axum::serve(listener, app).await?;
+        axum::serve(listener, app.into_make_service_with_connect_info::<std::net::SocketAddr>()).await?;
 
         Ok::<(), anyhow::Error>(())
     })?;

@@ -290,6 +290,27 @@ impl Database {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES sys_users(id) ON DELETE CASCADE
             );
+
+            CREATE TABLE IF NOT EXISTS sys_operation_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
+                action TEXT NOT NULL,
+                target TEXT,
+                ip TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS sys_login_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
+                ip TEXT,
+                os TEXT,
+                browser TEXT,
+                user_agent TEXT,
+                type TEXT NOT NULL DEFAULT 'login',
+                status TEXT NOT NULL DEFAULT 'success',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
             "#,
         )
         .execute(&self.pool)
