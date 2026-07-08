@@ -1367,6 +1367,7 @@ dependencies = [
  "futures-util",
  "hex",
  "num_cpus",
+ "ox-nginx-macros",
  "portable-pty",
  "rand",
  "rsa",
@@ -1387,6 +1388,14 @@ dependencies = [
  "uzers",
  "winapi",
  "zip",
+]
+
+[[package]]
+name = "ox-nginx-macros"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn 2.0.118",
 ]
 
 [[package]]

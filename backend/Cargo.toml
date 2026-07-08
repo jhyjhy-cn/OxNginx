@@ -21,6 +21,9 @@ opt-level = "z"
 strip = true
 
 [dependencies]
+# 宏
+ox-nginx-macros = { path = "macros" }
+
 # Web框架
 axum = { version = "0.7", features = ["macros", "ws"] }
 tokio = { version = "1", features = ["full", "process"] }

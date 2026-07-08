@@ -7,8 +7,14 @@ pub struct OperationLog {
     pub id: i64,
     pub username: String,
     pub action: String,
-    pub target: Option<String>,
+    pub method: Option<String>,
+    pub uri: Option<String>,
     pub ip: Option<String>,
+    pub status: String,
+    pub cost_ms: Option<i64>,
+    pub request_body: Option<String>,
+    pub response_body: Option<String>,
+    pub error_msg: Option<String>,
     pub created_at: Option<chrono::NaiveDateTime>,
 }
 
@@ -26,16 +32,13 @@ pub struct LoginLog {
     pub created_at: Option<chrono::NaiveDateTime>,
 }
 
-pub async fn log_operation(pool: &SqlitePool, username: &str, action: &str, target: Option<&str>, ip: Option<&str>) -> Result<()> {
-    sqlx::query("INSERT INTO sys_operation_logs (username, action, target, ip) VALUES (?, ?, ?, ?)")
-        .bind(username).bind(action).bind(target).bind(ip)
-        .execute(pool).await?;
+pub async fn log_operation(pool: &SqlitePool, username: &str, action: &str, method: Option<&str>, uri: Option<&str>, ip: Option<&str>, status: &str, cost_ms: Option<i64>, request_body: Option<&str>, response_body: Option<&str>, error_msg: Option<&str>) -> Result<()> {
+    sqlx::query(
+        "INSERT INTO sys_operation_logs (username, action, method, uri, ip, status, cost_ms, request_body, response_body, error_msg) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+    .bind(username).bind(action).bind(method).bind(uri).bind(ip).bind(status).bind(cost_ms).bind(request_body).bind(response_body).bind(error_msg)
+    .execute(pool).await?;
     Ok(())
-}
-
-/// 便捷记录（忽略错误，不阻塞业务）
-pub async fn log_op(pool: &SqlitePool, username: &str, action: &str) {
-    let _ = log_operation(pool, username, action, None, None).await;
 }
 
 pub async fn list_operation_logs(pool: &SqlitePool, page: i64, page_size: i64) -> Result<(Vec<OperationLog>, i64)> {

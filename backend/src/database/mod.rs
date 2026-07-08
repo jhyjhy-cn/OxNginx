@@ -295,8 +295,14 @@ impl Database {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT NOT NULL,
                 action TEXT NOT NULL,
-                target TEXT,
+                method TEXT,
+                uri TEXT,
                 ip TEXT,
+                status TEXT NOT NULL DEFAULT 'success',
+                cost_ms INTEGER,
+                request_body TEXT,
+                response_body TEXT,
+                error_msg TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
 
