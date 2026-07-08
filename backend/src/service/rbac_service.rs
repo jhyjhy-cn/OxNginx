@@ -7,7 +7,7 @@ use sqlx::{Row, SqlitePool};
 
 use crate::auth;
 use crate::dto::MenuNode;
-use crate::model::{Dept, Dict, DictItem, I18nEntry, Menu, Post, Role, User};
+use crate::model::{Dept, Dict, DictItem, I18nEntry, Menu, Post, Role};
 
 // ============== 用户 RBAC 信息 ==============
 
@@ -42,7 +42,8 @@ pub async fn user_is_super_admin(pool: &SqlitePool, username: &str) -> Result<bo
     Ok(count > 0)
 }
 
-/// ponytail: 业务级按钮权限按需查 DB
+/// ponytail: 业务级按钮权限按需查 DB（暂未使用，保留备用）
+#[allow(dead_code)]
 pub async fn check_permission(pool: &SqlitePool, username: &str, perm: &str) -> Result<bool> {
     if username == "admin" {
         return Ok(true);
@@ -191,33 +192,6 @@ pub struct UserListItem {
     pub created_at: Option<chrono::NaiveDateTime>,
 }
 
-pub async fn list_users(pool: &SqlitePool) -> Result<Vec<UserListItem>> {
-    let rows = sqlx::query(
-        "SELECT u.id, u.username, u.dept_id, u.post_id, u.disabled, u.status, u.created_at,
-                GROUP_CONCAT(r.name, ',') AS roles
-         FROM sys_users u
-         LEFT JOIN sys_user_roles ur ON u.id = ur.user_id
-         LEFT JOIN sys_roles r ON ur.role_id = r.id
-         GROUP BY u.id
-         ORDER BY u.id",
-    )
-    .fetch_all(pool)
-    .await?;
-    Ok(rows
-        .into_iter()
-        .map(|r| UserListItem {
-            id: r.get("id"),
-            username: r.get("username"),
-            dept_id: r.get("dept_id"),
-            post_id: r.get("post_id"),
-            disabled: r.get("disabled"),
-            status: r.get("status"),
-            roles: r.get::<Option<String>, _>("roles").unwrap_or_default(),
-            created_at: r.get("created_at"),
-        })
-        .collect())
-}
-
 /// 分页查询用户列表
 pub async fn list_users_paged(pool: &SqlitePool, page: i64, page_size: i64, keyword: Option<&str>) -> Result<(Vec<UserListItem>, i64)> {
     let offset = (page - 1).max(0) * page_size;
@@ -323,12 +297,6 @@ pub async fn reset_password(pool: &SqlitePool, id: i64, new_password: &str) -> R
 
 // ============== 角色 CRUD ==============
 
-pub async fn list_roles(pool: &SqlitePool) -> Result<Vec<Role>> {
-    Ok(sqlx::query_as::<_, Role>("SELECT * FROM sys_roles ORDER BY id")
-        .fetch_all(pool)
-        .await?)
-}
-
 /// 分页查询角色
 pub async fn list_roles_paged(pool: &SqlitePool, page: i64, page_size: i64, keyword: Option<&str>) -> Result<(Vec<Role>, i64)> {
     let offset = (page - 1).max(0) * page_size;
@@ -402,12 +370,6 @@ pub async fn set_role_menus(pool: &SqlitePool, role_id: i64, menu_ids: &[i64]) -
 
 // ============== 部门 CRUD ==============
 
-pub async fn list_depts(pool: &SqlitePool) -> Result<Vec<Dept>> {
-    Ok(sqlx::query_as::<_, Dept>("SELECT * FROM sys_depts ORDER BY sort, id")
-        .fetch_all(pool)
-        .await?)
-}
-
 /// 分页查询部门
 pub async fn list_depts_paged(pool: &SqlitePool, page: i64, page_size: i64, keyword: Option<&str>) -> Result<(Vec<Dept>, i64)> {
     let offset = (page - 1).max(0) * page_size;
@@ -461,12 +423,6 @@ pub async fn delete_dept(pool: &SqlitePool, id: i64) -> Result<bool> {
 }
 
 // ============== 岗位 CRUD ==============
-
-pub async fn list_posts(pool: &SqlitePool) -> Result<Vec<Post>> {
-    Ok(sqlx::query_as::<_, Post>("SELECT * FROM sys_posts ORDER BY sort, id")
-        .fetch_all(pool)
-        .await?)
-}
 
 /// 分页查询岗位
 pub async fn list_posts_paged(pool: &SqlitePool, page: i64, page_size: i64, keyword: Option<&str>) -> Result<(Vec<Post>, i64)> {
@@ -644,14 +600,6 @@ pub async fn delete_menus(pool: &SqlitePool, ids: &[i64]) -> Result<usize> {
 pub async fn delete_menu(pool: &SqlitePool, id: i64) -> Result<bool> {
     let n = delete_menus(pool, &[id]).await?;
     Ok(n > 0)
-}
-
-/// 从 username + password 直接拿 User（登录用）
-pub async fn get_user_by_username(pool: &SqlitePool, username: &str) -> Result<Option<User>> {
-    Ok(sqlx::query_as::<_, User>("SELECT * FROM sys_users WHERE username=?")
-        .bind(username)
-        .fetch_optional(pool)
-        .await?)
 }
 
 // ============== 国际化 ==============

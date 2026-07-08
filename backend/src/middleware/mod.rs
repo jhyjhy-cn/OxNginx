@@ -31,6 +31,7 @@ pub async fn logging_middleware(request: Request, next: Next) -> Response {
 #[derive(Clone, Debug)]
 pub struct TokenInfo {
     pub username: String,
+    #[allow(dead_code)]
     pub user_id: i64,
 }
 
@@ -53,6 +54,13 @@ pub async fn auth_middleware(
     // 查数据库验证 token
     match crate::service::token_service::verify_token_full(state.db.pool(), token_str).await {
         Ok(Some(token)) => {
+            // 滑动续期（fire-and-forget，不阻塞请求）
+            let expires_hours = state.get_config().auth.token_expires_hours as i64;
+            let pool = state.db.pool().clone();
+            let tk = token_str.to_string();
+            tokio::spawn(async move {
+                let _ = crate::service::token_service::refresh_token(&pool, &tk, expires_hours).await;
+            });
             let mut request = request;
             request.extensions_mut().insert(TokenInfo {
                 username: token.username,

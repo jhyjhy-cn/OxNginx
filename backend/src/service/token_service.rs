@@ -90,7 +90,22 @@ pub async fn delete_user_tokens(pool: &SqlitePool, user_id: i64) -> Result<()> {
     Ok(())
 }
 
+/// 滑动续期：验证通过后延长过期时间
+pub async fn refresh_token(pool: &SqlitePool, token_str: &str, expires_hours: i64) -> Result<()> {
+    let new_expires = chrono::Utc::now()
+        .checked_add_signed(Duration::hours(expires_hours))
+        .unwrap()
+        .naive_utc();
+    sqlx::query("UPDATE sys_tokens SET expires_at = ? WHERE token = ?")
+        .bind(new_expires)
+        .bind(token_str)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
 /// 清理过期 token（可选，定期调用）
+#[allow(dead_code)]
 pub async fn cleanup_expired_tokens(pool: &SqlitePool) -> Result<u64> {
     let now = chrono::Utc::now().naive_utc();
     let result = sqlx::query("DELETE FROM sys_tokens WHERE expires_at <= ?")
