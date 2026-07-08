@@ -202,6 +202,7 @@ import { setupDynamicRoutes } from '@/router'
 import { ElMessage } from 'element-plus'
 import { View, Hide, Moon, Sunny } from '@element-plus/icons-vue'
 import { useSettingsStore } from '@/stores/settings'
+import { encryptPassword } from '@/utils/crypto'
 import api from '@/api'
 
 const { t, locale } = useI18n()
@@ -393,9 +394,10 @@ async function handleSetup() {
 
   loading.value = true
   try {
+    const encrypted = await encryptPassword(form.password)
     const response = await api.post('/api/setup', {
       username: form.username,
-      password: form.password,
+      encrypted_password: encrypted,
     })
     if (response.data.code === 0) {
       ElMessage.success(t('login.initSuccess'))

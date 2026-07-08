@@ -18,6 +18,7 @@ pub fn build(state: AppState) -> Router {
         .route("/api/logout", post(api::auth_api::logout))
         .route("/api/setup", post(api::auth_api::setup))
         .route("/api/setup/status", get(api::auth_api::setup_status))
+        .route("/api/auth/public-key", get(api::auth_api::get_public_key))
         .route("/api/terminal/ws", get(api::terminal_api::terminal_ws))
         .route("/api/dashboard/ws", get(api::dashboard_ws::dashboard_ws));
 

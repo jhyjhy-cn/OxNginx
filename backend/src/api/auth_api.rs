@@ -5,11 +5,24 @@ use crate::dto::{ApiResponse, ChangePasswordRequest, ChangeUsernameRequest, Logi
 use crate::middleware::TokenInfo;
 use crate::AppState;
 
+/// 获取 RSA 公钥（公开接口）
+pub async fn get_public_key(State(state): State<AppState>) -> Json<serde_json::Value> {
+    Json(json!(ApiResponse::success(serde_json::json!({
+        "public_key": state.rsa_public_key_b64
+    }))))
+}
+
 /// 用户登录
 pub async fn login(
     State(state): State<AppState>,
     Json(req): Json<LoginRequest>,
 ) -> Json<serde_json::Value> {
+    // RSA 解密密码
+    let password = match crate::auth::rsa_decrypt(&state.rsa_private_key, &req.encrypted_password) {
+        Ok(p) => p,
+        Err(_) => return Json(json!(ApiResponse::<()>::error("密码解密失败"))),
+    };
+
     // 查询用户
     let user = sqlx::query_as::<_, crate::model::User>(
         "SELECT * FROM sys_users WHERE username = ?",
@@ -20,9 +33,7 @@ pub async fn login(
 
     let user = match user {
         Ok(Some(u)) => u,
-        Ok(None) => {
-            return Json(json!(ApiResponse::<()>::error("用户名或密码错误")));
-        }
+        Ok(None) => return Json(json!(ApiResponse::<()>::error("用户名或密码错误"))),
         Err(e) => {
             tracing::error!("数据库错误: {}", e);
             return Json(json!(ApiResponse::<()>::error(format!("数据库错误: {}", e))));
@@ -30,18 +41,14 @@ pub async fn login(
     };
 
     // 验证密码
-    match crate::auth::verify_password(&req.password, &user.password) {
+    match crate::auth::verify_password(&password, &user.password) {
         Ok(true) => {}
-        _ => {
-            return Json(json!(ApiResponse::<()>::error("用户名或密码错误")));
-        }
+        _ => return Json(json!(ApiResponse::<()>::error("用户名或密码错误"))),
     };
 
-    // 获取过期时间配置
     let config = state.get_config();
-    let expires_hours = config.auth.jwt_expires_hours as i64;
+    let expires_hours = config.auth.token_expires_hours as i64;
 
-    // 生成 token并存库
     match crate::service::token_service::create_token(
         state.db.pool(),
         user.id,
@@ -50,25 +57,10 @@ pub async fn login(
     )
     .await
     {
-        Ok(token) => {
-            // ponytail: 登录即拿 RBAC 信息，省一次 /me 请求
-            let (roles, permissions, menus) = match crate::service::rbac_service::get_rbac_info(
-                state.db.pool(),
-                &user.username,
-            )
-            .await
-            {
-                Ok(v) => v,
-                Err(_) => (vec![], vec![], vec![]),
-            };
-            Json(json!(ApiResponse::success(LoginResponse {
-                token,
-                username: user.username,
-                roles,
-                permissions,
-                menus,
-            })))
-        }
+        Ok(token) => Json(json!(ApiResponse::success(LoginResponse {
+            token,
+            username: user.username,
+        }))),
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("生成token失败: {}", e)))),
     }
 }
@@ -226,7 +218,6 @@ pub async fn setup(
     State(state): State<AppState>,
     Json(req): Json<LoginRequest>,
 ) -> Json<serde_json::Value> {
-    // 检查是否已有用户
     let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sys_users")
         .fetch_one(state.db.pool())
         .await
@@ -236,15 +227,17 @@ pub async fn setup(
         return Json(json!(ApiResponse::<()>::error("管理员账户已存在")));
     }
 
-    // 哈希密码
-    let hashed_password = match crate::auth::hash_password(&req.password) {
-        Ok(h) => h,
-        Err(e) => {
-            return Json(json!(ApiResponse::<()>::error(format!("密码哈希失败: {}", e))));
-        }
+    // RSA 解密密码
+    let password = match crate::auth::rsa_decrypt(&state.rsa_private_key, &req.encrypted_password) {
+        Ok(p) => p,
+        Err(_) => return Json(json!(ApiResponse::<()>::error("密码解密失败"))),
     };
 
-    // 创建用户
+    let hashed_password = match crate::auth::hash_password(&password) {
+        Ok(h) => h,
+        Err(e) => return Json(json!(ApiResponse::<()>::error(format!("密码哈希失败: {}", e)))),
+    };
+
     let result = sqlx::query("INSERT INTO sys_users (username, password) VALUES (?, ?)")
         .bind(&req.username)
         .bind(&hashed_password)
@@ -253,7 +246,6 @@ pub async fn setup(
 
     match result {
         Ok(_) => {
-            // ponytail: 首用户自动绑 super_admin 角色
             let _ = crate::database::seed::run(state.db.pool()).await;
             Json(json!(ApiResponse::success("管理员账户创建成功")))
         }

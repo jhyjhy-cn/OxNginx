@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/api'
 import { mergeI18nMessages } from '@/i18n'
+import { encryptPassword } from '@/utils/crypto'
 
 export interface MenuNode {
   id: number
@@ -58,22 +59,20 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function login(usernameInput: string, password: string) {
+    const encrypted = await encryptPassword(password)
     const response = await api.post('/api/login', {
       username: usernameInput,
-      password,
+      encrypted_password: encrypted,
     })
 
     if (response.data.code === 0) {
       const d = response.data.data
       token.value = d.token
       username.value = d.username
-      roles.value = d.roles ?? []
-      permissions.value = d.permissions ?? []
-      menus.value = d.menus ?? []
       localStorage.setItem(LS.token, token.value)
       localStorage.setItem(LS.username, username.value)
-      persistRbac()
-      // ponytail: 登录成功立即合并 DB 翻译,避免 Dashboard 首帧缺 key
+      // 登录只返回 token，RBAC 信息单独拉取
+      await fetchRbacInfo()
       await fetchI18n()
       return true
     }
@@ -120,6 +119,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function logout() {
+    // 先调后端删除 sys_tokens 记录（fire-and-forget，不影响本地清理）
+    const tokenCopy = token.value
+    if (tokenCopy) {
+      api.post('/api/logout', null, { headers: { Authorization: `Bearer ${tokenCopy}` } }).catch(() => {})
+    }
     token.value = ''
     username.value = ''
     roles.value = []

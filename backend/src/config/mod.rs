@@ -84,8 +84,13 @@ fn default_acme_home() -> String {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct AuthConfig {
-    pub jwt_secret: String,
-    pub jwt_expires_hours: u64,
+    /// Token 过期时间（小时），默认 24
+    #[serde(default = "default_token_expires_hours")]
+    pub token_expires_hours: u64,
+}
+
+fn default_token_expires_hours() -> u64 {
+    24
 }
 
 #[derive(Debug, Deserialize, Clone)]

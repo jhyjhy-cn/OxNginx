@@ -95,7 +95,9 @@ fn main() -> anyhow::Result<()> {
         tracing::info!("数据库初始化完成");
 
         // 创建应用状态 & 构建路由
-        let state = AppState::new(db, config.clone());
+        let (rsa_private_key, rsa_public_key_b64) = crate::auth::generate_rsa_keypair()?;
+        tracing::info!("RSA 密钥对已生成");
+        let state = AppState::new(db, config.clone(), rsa_private_key, rsa_public_key_b64);
         api::dashboard_ws::start_push_task(state.clone());
         let app = app::router::build(state);
 

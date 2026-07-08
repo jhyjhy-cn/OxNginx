@@ -87,12 +87,6 @@ pub fn first_run_setup(exe_dir: &Path) -> anyhow::Result<()> {
     ))?;
 
     // 生成 config.toml
-    let jwt_secret = {
-        use rand::Rng;
-        let mut rng = rand::thread_rng();
-        let bytes: Vec<u8> = (0..32).map(|_| rng.gen()).collect();
-        base64_encode(&bytes)
-    };
 
     // Windows zip 里 nginx.exe 在根目录，Linux 编译的在 sbin/
     let nginx_bin = if cfg!(windows) {
@@ -127,8 +121,7 @@ bin = ""
 home = ""
 
 [auth]
-jwt_secret = "{jwt}"
-jwt_expires_hours = 24
+token_expires_hours = 24
 
 [log]
 level = "debug"
@@ -141,7 +134,6 @@ max_size_mb = 10
         ssl = ssl_dir,
         root = wwwroot,
         logs = base_root.join("wwwlogs").to_string_lossy().replace('\\', "/"),
-        jwt = jwt_secret,
     ))?;
 
     // 注册 Windows 服务
@@ -213,12 +205,6 @@ pub fn generate_default_config(config_path: &str, exe_dir: &Path) -> anyhow::Res
     }
 
     let db_path = exe_dir.join("datas").join("data.db");
-    let jwt_secret = {
-        use rand::Rng;
-        let mut rng = rand::thread_rng();
-        let bytes: Vec<u8> = (0..32).map(|_| rng.gen()).collect();
-        base64_encode(&bytes)
-    };
 
     #[cfg(target_os = "windows")]
     let (nginx_bin, nginx_conf, sites_enabled) = {
@@ -259,8 +245,7 @@ bin = ""
 home = ""
 
 [auth]
-jwt_secret = "{jwt}"
-jwt_expires_hours = 24
+token_expires_hours = 24
 
 [log]
 level = "debug"
@@ -271,7 +256,6 @@ max_size_mb = 10
         conf = nginx_conf,
         se = sites_enabled,
         base = exe_dir.to_string_lossy().replace('\\', "/"),
-        jwt = jwt_secret,
     ))?;
 
     for dir in &["datas", "wwwroot", "wwwlogs/nginx", "wwwlogs/panel", "ssl", "backup"] {

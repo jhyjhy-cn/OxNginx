@@ -58,17 +58,14 @@ impl<T: Serialize> ApiResponse<T> {
 #[derive(Debug, Deserialize)]
 pub struct LoginRequest {
     pub username: String,
-    pub password: String,
+    pub encrypted_password: String,
 }
 
-/// 登录响应
+/// 登录响应（只返回 token + username）
 #[derive(Debug, Serialize)]
 pub struct LoginResponse {
     pub token: String,
     pub username: String,
-    pub roles: Vec<String>,
-    pub permissions: Vec<String>,
-    pub menus: Vec<MenuNode>,
 }
 
 /// 修改密码请求

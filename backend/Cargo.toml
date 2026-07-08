@@ -39,6 +39,8 @@ sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "chrono"
 argon2 = "0.5"
 rand = "0.8"
 hex = "0.4"
+rsa = "0.9"
+base64 = "0.22"
 
 # 配置
 toml = "0.8"
