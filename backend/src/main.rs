@@ -1,27 +1,15 @@
 // Windows: 隐藏控制台（仅在release版本生效）
 #![cfg_attr(all(target_os = "windows", not(debug_assertions)), windows_subsystem = "windows")]
 
-mod api;
 mod app;
-mod audit;
-mod auth;
-mod backup;
-mod config;
-mod database;
-mod dto;
-mod middleware;
-mod model;
-mod nginx;
-mod service;
-mod ssl;
+mod modules;
 mod startup;
-mod util;
 
 // re-export，保持其他模块 `use crate::AppState` 不变
 pub use app::state::AppState;
 
-use crate::config::AppConfig;
-use crate::database::Database;
+use crate::modules::common::config::AppConfig;
+use crate::modules::common::database::Database;
 
 const BANNER: &str = r#"
 ////////////////////////////////////////////////////////////////////
@@ -98,16 +86,16 @@ fn main() -> anyhow::Result<()> {
 
         // 创建应用状态 & 构建路由
         tracing::info!("[3/4] 生成 RSA 密钥对...");
-        let (rsa_private_key, rsa_public_key_b64) = crate::auth::generate_rsa_keypair()?;
+        let (rsa_private_key, rsa_public_key_b64) = crate::modules::common::auth::generate_rsa_keypair()?;
         tracing::info!("[3/4] RSA 密钥对已生成");
 
         let state = AppState::new(db, config.clone(), rsa_private_key, rsa_public_key_b64);
-        api::dashboard_ws::start_push_task(state.clone());
+        modules::dashboard::controller::dashboard_ws::start_push_task(state.clone());
 
         // 启动操作日志后台批量写库 worker
         tracing::info!("[3.5/4] 启动操作日志 worker...");
-        let audit_rx = crate::audit::sender::init();
-        crate::audit::worker::spawn(audit_rx, state.db.pool().clone());
+        let audit_rx = crate::modules::common::audit::sender::init();
+        crate::modules::common::audit::worker::spawn(audit_rx, state.db.pool().clone());
         tracing::info!("[3.5/4] 操作日志 worker 已启动");
 
         tracing::info!("[4/4] 构建路由...");

@@ -1,5 +1,5 @@
-use crate::config::AppConfig;
-use crate::database::Database;
+use crate::modules::common::config::AppConfig;
+use crate::modules::common::database::Database;
 use std::sync::{Arc, Mutex};
 use sysinfo::{System, Pid};
 use tokio::sync::broadcast;
