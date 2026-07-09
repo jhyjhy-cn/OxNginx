@@ -133,7 +133,7 @@ async fn handle_socket(socket: WebSocket, cols: Option<u16>, rows: Option<u16>, 
 
     let send_task = tokio::spawn(async move {
         while let Some(data) = rx.recv().await {
-            if ws_sender.send(Message::Binary(data)).await.is_err() {
+            if ws_sender.send(Message::Binary(data.into())).await.is_err() {
                 break;
             }
         }

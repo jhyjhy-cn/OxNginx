@@ -37,12 +37,12 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
 
     // 立即推送一次当前数据
     let data = collect_dashboard_data(&state).await;
-    let _ = sender.send(Message::Text(data)).await;
+    let _ = sender.send(Message::Text(data.into())).await;
 
     // 转发广播消息到 WebSocket
     let send_task = tokio::spawn(async move {
         while let Ok(data) = rx.recv().await {
-            if sender.send(Message::Text(data)).await.is_err() {
+            if sender.send(Message::Text(data.into())).await.is_err() {
                 break;
             }
         }

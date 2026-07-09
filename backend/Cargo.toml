@@ -25,14 +25,14 @@ strip = true
 ox-nginx-macros = { path = "macros" }
 
 # Web框架
-axum = { version = "0.7", features = ["macros", "ws"] }
+axum = { version = "0.8", features = ["macros", "ws"] }
 tokio = { version = "1", features = ["full", "process"] }
-tower = "0.4"
-tower-http = { version = "0.5", features = ["cors", "fs"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "fs"] }
 
 # 序列化
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde_json = "1.0"
 futures-util = "0.3"
 
 # 数据库
@@ -46,7 +46,7 @@ rsa = "0.9"
 base64 = "0.22"
 
 # 配置
-toml = "0.8"
+toml = "1"
 
 # 日志
 tracing = "0.1"
@@ -55,13 +55,13 @@ tracing-appender = "0.2"
 
 # 错误处理
 anyhow = "1"
-thiserror = "1"
+thiserror = "2"
 
 # UUID
 uuid = { version = "1", features = ["v4"] }
 
 # 时间
-chrono = { version = "0.4", features = ["serde", "clock"] }
+chrono = { version = "0.4", features = ["serde"] }
 
 # 系统信息
 num_cpus = "1"
@@ -83,4 +83,4 @@ uzers = "0.12"
 winapi = { version = "0.3", features = ["winuser", "libloaderapi", "consoleapi"] }
 
 # 伪终端
-portable-pty = "0.8"
+portable-pty = "0.9"
