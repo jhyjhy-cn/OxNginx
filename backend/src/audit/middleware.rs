@@ -68,13 +68,7 @@ pub async fn audit_middleware(
         }
     };
 
-    // 执行后续中间件和 handler
-    // 注意：auth middleware 在外层，会在 next.run() 之前执行并注入 TokenInfo
-    // 但 TokenInfo 不会自动传递到 request，所以我们需要通过 Clone 特性传递
-    // 实际上，由于 auth 在外层，next.run() 执行完后 auth 已经完成
-    // 但 request 被消费了，TokenInfo 需要从其他地方获取
-
-    // 简化方案：在 next.run() 之前把 TokenInfo 克隆出来
+    // 从 TokenInfo 获取 username
     let username = request
         .extensions()
         .get::<TokenInfo>()
@@ -109,6 +103,9 @@ pub async fn audit_middleware(
         ctx_data.error.clone()
     };
 
+    // 读取响应体并重建响应
+    let (response, resp_body_log) = collect_response_body(response).await;
+
     let mut ev = AuditEvent::now(trace_id);
     ev.username = username;
     ev.module = ctx_data.module.unwrap_or_default();
@@ -119,10 +116,29 @@ pub async fn audit_middleware(
     ev.status = status_str.into();
     ev.duration_ms = duration_ms;
     ev.request_body = req_body_log;
+    ev.response_body = resp_body_log;
     ev.error_msg = error_msg;
     sender::submit(ev).await;
 
     response
+}
+
+/// 读取响应体并重建响应
+async fn collect_response_body(response: Response) -> (Response, Option<String>) {
+    let (parts, body) = response.into_parts();
+
+    // 使用 body::to_bytes 收集 body
+    match body::to_bytes(body, 2 * 1024 * 1024).await {
+        Ok(bytes) => {
+            let resp_body_log = truncate_str(&bytes);
+            let new_body = Body::from(bytes);
+            (Response::from_parts(parts, new_body), resp_body_log)
+        }
+        Err(_) => {
+            // 无法读取 body
+            (Response::from_parts(parts, Body::empty()), None)
+        }
+    }
 }
 
 fn should_skip_body(headers: &HeaderMap) -> bool {

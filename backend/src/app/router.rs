@@ -114,8 +114,8 @@ pub fn build(state: AppState) -> Router {
         .route("/api/rbac/me", get(api::rbac_api::me))
         .route("/api/rbac/i18n/messages", get(api::rbac_api::get_i18n_messages))
         .route("/api/rbac/i18n", get(api::rbac_api::list_i18n))  // 读，全局可用
-        .layer(from_fn_with_state(state.clone(), audit::middleware::audit_middleware)) // 内层（后执行，读取 auth 注入的数据）
-        .layer(from_fn_with_state(state.clone(), middleware::auth_middleware));         // 外层（先执行，注入 TokenInfo）
+        .layer(from_fn_with_state(state.clone(), audit::middleware::audit_middleware)) // 先添加 = 后执行
+        .layer(from_fn_with_state(state.clone(), middleware::auth_middleware));         // 后添加 = 先执行 = 注入 TokenInfo
 
     let admin_routes = Router::new()
         .route("/api/rbac/users", get(api::rbac_api::list_users).post(api::rbac_api::create_user))
@@ -140,9 +140,9 @@ pub fn build(state: AppState) -> Router {
         .route("/api/rbac/dicts/:id", get(api::rbac_api::get_dict).put(api::rbac_api::update_dict).delete(api::rbac_api::delete_dict))
         .route("/api/rbac/dicts/:dict_id/items", post(api::rbac_api::create_dict_item))
         .route("/api/rbac/dict-items/:id", put(api::rbac_api::update_dict_item).delete(api::rbac_api::delete_dict_item))
-        .layer(from_fn_with_state(state.clone(), audit::middleware::audit_middleware)) // 最内层（最后执行）
-        .layer(from_fn_with_state(state.clone(), middleware::auth_middleware))          // 中间层
-        .layer(from_fn_with_state(state.clone(), middleware::require_admin));          // 最外层（最先执行）
+        .layer(from_fn_with_state(state.clone(), audit::middleware::audit_middleware)) // 先添加 = 第3执行
+        .layer(from_fn_with_state(state.clone(), middleware::auth_middleware))          // 第2添加 = 第2执行
+        .layer(from_fn_with_state(state.clone(), middleware::require_admin));                       // 最后添加 = 第1执行
 
     // 静态文件服务（前端 SPA）
     // 使用 exe 所在目录下的 static 目录
