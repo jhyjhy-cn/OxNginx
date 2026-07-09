@@ -72,7 +72,7 @@
 
     <!-- 创建/编辑弹窗 -->
     <OnDialog v-model="showForm" :title="formTitle" width="600px">
-      <OnForm :model="form">
+      <OnForm ref="formRef" :model="form">
         <OnFormGrid :fields="formFields" :model="form" />
       </OnForm>
       <template #footer>
@@ -89,7 +89,6 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from "vue";
-import { useI18n } from "vue-i18n";
 import api from "@/api";
 import OnForm from "@/components/OnForm/OnForm/index.vue";
 import OnFormGrid from "@/components/OnForm/OnFormGrid/index.vue";
@@ -100,7 +99,6 @@ import OnTable from "@/components/OnTable/index.vue";
 import { useCrud, useMessage } from "@/hooks";
 
 const { confirm, success, error } = useMessage();
-const { t } = useI18n();
 
 // 部门树
 const deptTree = ref<any[]>([]);
@@ -123,6 +121,7 @@ function handleDeptNodeClick(node: any) {
 const showForm = ref(false);
 const isEdit = ref(false);
 const editingId = ref<number | null>(null);
+const formRef = ref<InstanceType<typeof OnForm>>();
 
 const form = reactive({
   nickname: "",
@@ -160,15 +159,15 @@ searchForm.dept_id = null;
 
 // 性别选项
 const genderOptions = [
-  { label: "user.male", value: "male" },
-  { label: "user.female", value: "female" },
-  { label: "user.secret", value: "secret" },
+  { label: "男", value: "male" },
+  { label: "女", value: "female" },
+  { label: "保密", value: "secret" },
 ];
 
 const genderLabels: Record<string, string> = {
-  male: "user.male",
-  female: "user.female",
-  secret: "user.secret",
+  male: "男",
+  female: "女",
+  secret: "保密",
 };
 
 // 岗位列表
@@ -195,7 +194,7 @@ async function loadRoles() {
 
 // 搜索栏字段
 const searchFields: FormField[] = [
-  { prop: "keyword", label: "login.username", type: "input", span: 6 },
+  { prop: "username", label: "login.username", type: "input", span: 6 },
   { prop: "phone", label: "user.phone", type: "input", span: 6 },
   {
     prop: "status",
@@ -284,6 +283,7 @@ const formFields = computed<FormField[]>(() => {
       prop: "dept_id",
       label: "rbac.department",
       type: "select",
+      required: true,
       options: deptOptions.value,
     },
     { prop: "phone", label: "user.phone", type: "input" },
@@ -306,6 +306,12 @@ const formFields = computed<FormField[]>(() => {
       label: "rbac.roles",
       type: "select",
       multiple: true,
+      required: true,
+      rules: [{
+        validator: (_: any, v: number[], cb: (e?: Error) => void) =>
+          v?.length ? cb() : cb(new Error("请选择角色")),
+        trigger: "change",
+      }],
       options: roleOptions.value,
     },
     { prop: "remark", label: "common.remark", type: "textarea" },
@@ -373,8 +379,12 @@ async function openEdit(row: any) {
 }
 
 async function submit() {
-  if (!form.username) return error("login.username");
-  if (!isEdit.value && !form.password) return error("login.password");
+  if (!formRef.value) return;
+  try {
+    await formRef.value.validate();
+  } catch {
+    return; // el-form 校验失败会自动红字提示
+  }
 
   const payload: Record<string, any> = {
     username: form.username,
@@ -395,7 +405,7 @@ async function submit() {
       ? await api.put(`/api/rbac/users/${editingId.value}`, payload)
       : await api.post("/api/rbac/users", payload);
     if (data.code === 0) {
-      success("common.success");
+      success(isEdit.value ? "rbac.userUpdateSuccess" : "rbac.userCreateSuccess");
       showForm.value = false;
       load();
     } else {

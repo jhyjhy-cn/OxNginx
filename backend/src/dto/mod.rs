@@ -311,12 +311,40 @@ pub struct PageQuery {
 pub struct UserQuery {
     pub page: Option<i64>,
     pub page_size: Option<i64>,
+    #[serde(default, deserialize_with = "empty_str_opt")]
     pub keyword: Option<String>,
+    #[serde(default, deserialize_with = "empty_str_opt")]
+    pub username: Option<String>,
+    #[serde(default, deserialize_with = "empty_str_opt_i64")]
     pub dept_id: Option<i64>,
+    #[serde(default, deserialize_with = "empty_str_opt")]
     pub phone: Option<String>,
+    #[serde(default, deserialize_with = "empty_str_opt")]
     pub status: Option<String>,
+    #[serde(default, deserialize_with = "empty_str_opt")]
     pub start_date: Option<String>,
+    #[serde(default, deserialize_with = "empty_str_opt")]
     pub end_date: Option<String>,
+}
+
+fn empty_str_opt<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = Option::<String>::deserialize(deserializer)?;
+    Ok(opt.filter(|s| !s.is_empty()))
+}
+
+fn empty_str_opt_i64<'de, D>(deserializer: D) -> Result<Option<i64>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = Option::<String>::deserialize(deserializer)?;
+    match opt {
+        Some(s) if s.is_empty() => Ok(None),
+        Some(s) => s.parse::<i64>().map(Some).map_err(serde::de::Error::custom),
+        None => Ok(None),
+    }
 }
 
 /// 分页响应

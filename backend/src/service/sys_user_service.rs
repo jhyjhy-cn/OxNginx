@@ -180,73 +180,68 @@ pub async fn list_users_paged(
     let page_size = query.page_size.unwrap_or(20).max(1);
     let offset = (page - 1).max(0) * page_size;
 
-    let has_kw = query.keyword.is_some();
-    let has_dept = query.dept_id.is_some();
-    let has_phone = query.phone.is_some();
-    let has_status = query.status.is_some();
-    let has_start = query.start_date.is_some();
-    let has_end = query.end_date.is_some();
+    let mut where_clause = String::from(" WHERE 1=1");
+    let mut binds: Vec<String> = Vec::new();
+    let mut int_binds: Vec<i64> = Vec::new();
+    let mut dis_binds: Vec<i32> = Vec::new();
+    if let Some(kw) = &query.keyword {
+        where_clause.push_str(" AND (u.username LIKE ? OR u.nickname LIKE ?)");
+        binds.push(format!("%{}%", kw));
+        binds.push(format!("%{}%", kw));
+    } else if let Some(un) = &query.username {
+        where_clause.push_str(" AND u.username LIKE ?");
+        binds.push(format!("%{}%", un));
+    }
+    if let Some(d) = query.dept_id {
+        where_clause.push_str(" AND u.dept_id=?");
+        int_binds.push(d);
+    }
+    if let Some(p) = &query.phone {
+        where_clause.push_str(" AND u.phone LIKE ?");
+        binds.push(format!("%{}%", p));
+    }
+    if let Some(s) = &query.status {
+        where_clause.push_str(" AND u.disabled=?");
+        dis_binds.push(if s == "enabled" { 0 } else { 1 });
+    }
+    if let Some(s) = &query.start_date {
+        where_clause.push_str(" AND u.created_at>=?");
+        binds.push(s.clone());
+    }
+    if let Some(e) = &query.end_date {
+        where_clause.push_str(" AND u.created_at<?");
+        binds.push(e.clone());
+    }
 
     // 计数 SQL
-    let mut count_q = sqlx::query_scalar::<_, i64>(
+    let count_sql = format!(
         "SELECT COUNT(DISTINCT u.id) FROM sys_users u
          LEFT JOIN sys_depts d ON u.dept_id=d.id
-         LEFT JOIN sys_posts p ON u.post_id=p.id
-         WHERE 1=1"
+         LEFT JOIN sys_posts p ON u.post_id=p.id{}",
+        where_clause
     );
-    if has_kw {
-        count_q = count_q.bind(format!("%{}%", query.keyword.as_ref().unwrap()));
-        count_q = count_q.bind(format!("%{}%", query.keyword.as_ref().unwrap()));
-    }
-    if has_dept {
-        count_q = count_q.bind(query.dept_id.unwrap());
-    }
-    if has_phone {
-        count_q = count_q.bind(format!("%{}%", query.phone.as_ref().unwrap()));
-    }
-    if has_status {
-        let dis = if query.status.as_ref().unwrap() == "enabled" { 0i32 } else { 1i32 };
-        count_q = count_q.bind(dis);
-    }
-    if has_start {
-        count_q = count_q.bind(query.start_date.as_ref().unwrap().as_str());
-    }
-    if has_end {
-        count_q = count_q.bind(query.end_date.as_ref().unwrap().as_str());
-    }
+    let mut count_q = sqlx::query_scalar::<_, i64>(&count_sql);
+    for b in &binds { count_q = count_q.bind(b); }
+    for i in &int_binds { count_q = count_q.bind(*i); }
+    for d in &dis_binds { count_q = count_q.bind(*d); }
     let total = count_q.fetch_one(pool).await?;
 
     // 列表 SQL
-    let mut list_q = sqlx::query(
+    let list_sql = format!(
         "SELECT u.id, u.username, u.nickname, u.phone, u.email, u.gender, u.remark,
                 u.dept_id, d.name as dept_name,
                 u.post_id, p.name as post_name,
                 u.disabled, u.created_at
          FROM sys_users u
          LEFT JOIN sys_depts d ON u.dept_id=d.id
-         LEFT JOIN sys_posts p ON u.post_id=p.id
-         WHERE 1=1"
+         LEFT JOIN sys_posts p ON u.post_id=p.id{}
+         ORDER BY u.id DESC LIMIT ? OFFSET ?",
+        where_clause
     );
-    if has_kw {
-        list_q = list_q.bind(format!("%{}%", query.keyword.as_ref().unwrap()));
-        list_q = list_q.bind(format!("%{}%", query.keyword.as_ref().unwrap()));
-    }
-    if has_dept {
-        list_q = list_q.bind(query.dept_id.unwrap());
-    }
-    if has_phone {
-        list_q = list_q.bind(format!("%{}%", query.phone.as_ref().unwrap()));
-    }
-    if has_status {
-        let dis = if query.status.as_ref().unwrap() == "enabled" { 0i32 } else { 1i32 };
-        list_q = list_q.bind(dis);
-    }
-    if has_start {
-        list_q = list_q.bind(query.start_date.as_ref().unwrap().as_str());
-    }
-    if has_end {
-        list_q = list_q.bind(query.end_date.as_ref().unwrap().as_str());
-    }
+    let mut list_q = sqlx::query(&list_sql);
+    for b in &binds { list_q = list_q.bind(b); }
+    for i in &int_binds { list_q = list_q.bind(*i); }
+    for d in &dis_binds { list_q = list_q.bind(*d); }
     list_q = list_q.bind(page_size).bind(offset);
 
     let rows = list_q.fetch_all(pool).await?;

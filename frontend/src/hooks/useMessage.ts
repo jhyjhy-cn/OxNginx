@@ -1,25 +1,19 @@
-import { getCurrentInstance } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 type MsgType = 'success' | 'warning' | 'error' | 'info'
 
-function t(key: string): string {
-  const instance = getCurrentInstance()
-  if (instance?.proxy) {
-    return instance.proxy.$t(key) as string
-  }
-  return key
-}
-
-function i18n(key: string, params?: Record<string, any>): string {
-  const msg = t(key)
-  if (params) {
-    return msg.replace(/\{(\w+)\}/g, (_, k) => String(params[k] ?? `{${k}}`))
-  }
-  return msg
-}
-
 export function useMessage() {
+  const { t } = useI18n()
+
+  function i18n(key: string, params?: Record<string, any>): string {
+    const msg = t(key)
+    const s = typeof msg === 'string' ? msg : String(msg)
+    if (params) {
+      return s.replace(/\{(\w+)\}/g, (_, k) => String(params[k] ?? `{${k}}`))
+    }
+    return s
+  }
   function message(opts: { message: string; type?: MsgType; duration?: number }) {
     ElMessage({
       message: opts.message,

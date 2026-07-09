@@ -93,6 +93,8 @@ export default {
     posts: 'Post',
     roles: 'Roles',
     menuPermission: 'Menu Permission',
+    userCreateSuccess: 'User created',
+    userUpdateSuccess: 'User updated',
   },
 
   user: {

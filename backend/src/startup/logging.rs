@@ -135,6 +135,11 @@ where
         let level = meta.level();
         let file = meta.file().unwrap_or("?");
         let line = meta.line().unwrap_or(0);
+        let loc = if meta.target().starts_with("sqlx") {
+            format!("sqlx:{}", line)
+        } else {
+            format!("{}:{}", file, line)
+        };
 
         let level_str = match *level {
             tracing::Level::ERROR if self.ansi => "\x1b[31mERROR\x1b[0m",
@@ -158,7 +163,7 @@ where
             if slot.is_none() { *slot = Some(tid); }
             if slot.as_ref() == Some(&tid) { "main".to_string() } else { format!("{:?}", tid) }
         });
-        write!(writer, " {} [{}] {}:{}: ", level_str, tid_str, file, line)?;
+        write!(writer, " {} [{}] {}: ", level_str, tid_str, loc)?;
 
         let mut field_writer = EventFieldWriter { writer: &mut writer, is_first: true };
         event.record(&mut field_writer);
@@ -183,7 +188,7 @@ pub fn init(log_dir: &Path, log_level: &str, max_size_mb: u64) {
         .with_ansi(false)
         .with_writer(appender);
 
-    let filter = format!("ox_nginx={},tower_http=info", log_level);
+    let filter = format!("ox_nginx={},tower_http=warn,sqlx=debug", log_level);
 
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::new(std::env::var("RUST_LOG").unwrap_or(filter)))

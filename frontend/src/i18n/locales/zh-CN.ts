@@ -93,6 +93,8 @@ export default {
     posts: '岗位',
     roles: '角色',
     menuPermission: '菜单权限',
+    userCreateSuccess: '创建用户成功',
+    userUpdateSuccess: '更新用户成功',
   },
 
   user: {

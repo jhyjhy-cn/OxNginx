@@ -1,4 +1,6 @@
-use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
+use log::LevelFilter;
+use sqlx::ConnectOptions;
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePool, SqlitePoolOptions};
 use std::path::Path;
 
 pub mod seed;
@@ -25,9 +27,11 @@ impl Database {
                 .unwrap_or(false);
 
         let url = format!("sqlite:{}?mode=rwc", db_path);
+        let opts = SqliteConnectOptions::from_url(&url.parse()?)?
+            .log_statements(LevelFilter::Debug);
         let pool = SqlitePoolOptions::new()
             .max_connections(1)
-            .connect(&url)
+            .connect_with(opts)
             .await?;
 
         let db = Self { pool: pool.clone() };
