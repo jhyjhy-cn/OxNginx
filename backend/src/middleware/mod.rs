@@ -1,3 +1,5 @@
+pub mod error_handler;
+
 use axum::{
     extract::Request,
     http::{header, StatusCode},

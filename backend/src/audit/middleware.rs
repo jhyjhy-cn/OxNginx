@@ -88,7 +88,14 @@ pub async fn audit_middleware(
     let ctx_data = ctx.lock().unwrap().clone();
 
     let status_code = response.status().as_u16();
-    let status_str = if (200..300).contains(&status_code) {
+
+    // 读取响应体并重建响应（需要在判断 status 之前读取）
+    let (response, resp_body_log) = collect_response_body(response).await;
+
+    // 同时检查 HTTP status 和响应体中的 code 字段
+    let is_success_http = (200..300).contains(&status_code);
+    let is_success_body = check_response_success(&resp_body_log);
+    let status_str = if is_success_http && is_success_body {
         "success"
     } else {
         "failed"
@@ -98,13 +105,10 @@ pub async fn audit_middleware(
         ctx_data
             .error
             .clone()
-            .or_else(|| Some(format!("HTTP {}", status_code)))
+            .or_else(|| Some(resp_body_log.clone().unwrap_or_else(|| format!("HTTP {}", status_code))))
     } else {
         ctx_data.error.clone()
     };
-
-    // 读取响应体并重建响应
-    let (response, resp_body_log) = collect_response_body(response).await;
 
     let mut ev = AuditEvent::now(trace_id);
     ev.username = username;
@@ -121,6 +125,17 @@ pub async fn audit_middleware(
     sender::submit(ev).await;
 
     response
+}
+
+/// 检查响应体中的 code 字段，ApiResponse::success 返回 code=0
+fn check_response_success(resp_body: &Option<String>) -> bool {
+    let Some(body) = resp_body else { return true };
+    if let Ok(json) = serde_json::from_str::<serde_json::Value>(body) {
+        if let Some(code) = json.get("code").and_then(|v| v.as_i64()) {
+            return code == 0;
+        }
+    }
+    true
 }
 
 /// 读取响应体并重建响应
