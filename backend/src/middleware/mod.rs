@@ -83,15 +83,30 @@ fn get_client_ip(request: &Request) -> Option<String> {
 }
 
 /// 管理员认证中间件
+/// ponytail: 自带 token 解析，不依赖上游 auth_middleware 注入 TokenInfo。
+/// 即使 axum layer 顺序导致上游未跑，本中间件也能独立完成认证+授权。
 pub async fn require_admin(
     state: axum::extract::State<AppState>,
     request: Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
-    let token_info = request.extensions().get::<TokenInfo>().cloned();
-    let Some(info) = token_info else { return Err(StatusCode::UNAUTHORIZED) };
-    if info.username == "admin" { return Ok(next.run(request).await); }
-    match crate::service::rbac_service::user_is_super_admin(&state.db.pool(), &info.username).await {
+    // 优先用上游注入的 TokenInfo（避免重复查库）；缺失时自己解析 Authorization
+    let username = if let Some(info) = request.extensions().get::<TokenInfo>().cloned() {
+        info.username
+    } else {
+        let token = request
+            .headers()
+            .get(header::AUTHORIZATION)
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.strip_prefix("Bearer "));
+        let Some(token) = token else { return Err(StatusCode::UNAUTHORIZED) };
+        match crate::service::token_service::verify_token(state.db.pool(), token).await {
+            Ok(Some(u)) => u,
+            _ => return Err(StatusCode::UNAUTHORIZED),
+        }
+    };
+    if username == "admin" { return Ok(next.run(request).await); }
+    match crate::service::rbac_service::user_is_super_admin(&state.db.pool(), &username).await {
         Ok(true) => Ok(next.run(request).await),
         _ => Err(StatusCode::FORBIDDEN),
     }
