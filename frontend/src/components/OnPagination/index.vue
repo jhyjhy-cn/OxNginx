@@ -5,9 +5,8 @@
       v-model:page-size="size"
       :total="total"
       :page-sizes="pageSizes"
-      layout="total, sizes, prev, pager, next"
-      size="small"
-      @current-change="$emit('change')"
+      layout="total, sizes, prev, pager, next, jumper"
+      @current-change="onCurrentChange"
       @size-change="onSizeChange"
     />
   </div>
@@ -24,14 +23,14 @@ const props = withDefaults(
     pageSizes?: number[]
   }>(),
   {
-    pageSizes: () => [10, 20, 50],
+    pageSizes: () => [10, 20, 50, 100],
   }
 )
 
 const emit = defineEmits<{
   'update:currentPage': [value: number]
   'update:pageSize': [value: number]
-  change: []
+  change: [page: number, size: number]
 }>()
 
 const page = computed({
@@ -44,9 +43,12 @@ const size = computed({
   set: (v) => emit('update:pageSize', v),
 })
 
+function onCurrentChange() {
+  emit('change', page.value, size.value)
+}
+
 function onSizeChange() {
-  page.value = 1
-  emit('change')
+  emit('change', 1, size.value)
 }
 </script>
 
