@@ -7,7 +7,17 @@ pub mod dashboard_ws;
 pub mod file_api;
 pub mod log_api;
 pub mod nginx_api;
-pub mod rbac_api;
+
+// RBAC 子模块
+pub mod sys_user_api;
+pub mod sys_role_api;
+pub mod sys_dept_api;
+pub mod sys_post_api;
+pub mod sys_menu_api;
+pub mod sys_dict_api;
+pub mod sys_i18n_api;
+pub mod rbac_api; // 仅保留共享接口
+
 pub mod reverse_proxy_api;
 pub mod settings_api;
 pub mod site_api;

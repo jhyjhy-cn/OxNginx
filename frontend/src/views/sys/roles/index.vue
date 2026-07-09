@@ -25,7 +25,7 @@
         <el-table-column prop="remark" :label="$t('rbac.colRemark')" />
         <el-table-column :label="$t('common.action')" width="200">
           <template #default="{ row }">
-            <el-button size="small" :disabled="row.code === 'super_admin'" @click="$router.push(`/settings/rbac/role/${row.id}`)">
+            <el-button size="small" :disabled="row.code === 'super_admin'" @click="openMenuPerm(row)">
               {{ $t('rbac.menuPermission') }}
             </el-button>
             <el-button size="small" type="danger" :disabled="row.code === 'super_admin'" @click="del(row)">
@@ -49,15 +49,39 @@
         <el-button type="primary" @click="submit">{{ $t('common.confirm') }}</el-button>
       </template>
     </el-dialog>
+
+    <!-- 菜单权限弹窗 -->
+    <OnDialog
+      v-model="showMenuPerm"
+      :title="`${$t('rbac.menuPermission')} - ${menuPermRole?.name || ''}`"
+      width="520px"
+      height="60vh"
+      destroy-on-close
+    >
+      <el-tree
+        ref="treeRef"
+        :data="menuTree"
+        show-checkbox
+        node-key="id"
+        :default-checked-keys="checkedMenuIds"
+        :props="{ label: (data: any) => $t(data.title), children: 'children' }"
+        style="margin-top: 4px"
+      />
+      <template #footer>
+        <el-button @click="showMenuPerm = false">{{ $t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="saving" @click="saveMenuPerm">{{ $t('common.save') }}</el-button>
+      </template>
+    </OnDialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import api from '@/api'
 import OnPagination from '@/components/OnPagination/index.vue'
+import OnDialog from '@/components/OnDialog/index.vue'
 
 const { t } = useI18n()
 const roles = ref<any[]>([])
@@ -124,6 +148,67 @@ async function del(row: any) {
       load()
     } else ElMessage.error(data.message)
   } catch {}
+}
+
+// ========== 菜单权限弹窗 ==========
+const showMenuPerm = ref(false)
+const menuPermRole = ref<any>(null)
+const menuTree = ref<any[]>([])
+const checkedMenuIds = ref<number[]>([])
+const treeRef = ref()
+const saving = ref(false)
+
+async function openMenuPerm(row: any) {
+  menuPermRole.value = row
+  showMenuPerm.value = true
+  checkedMenuIds.value = []
+  const [mr, cr] = await Promise.all([
+    api.get('/api/rbac/menus', { params: { page: 1, page_size: 999 } }),
+    api.get(`/api/rbac/roles/${row.id}/menus`),
+  ])
+  const list: any[] = mr.data?.data?.list || mr.data?.data || []
+  const map = new Map<number, any>()
+  list.forEach((m) => map.set(m.id, { ...m, children: [] as any[] }))
+  const roots: any[] = []
+  for (const m of map.values()) {
+    if (m.parent_id && map.has(m.parent_id)) map.get(m.parent_id).children.push(m)
+    else roots.push(m)
+  }
+  menuTree.value = roots
+  checkedMenuIds.value = (cr.data?.data || []) as number[]
+  // 树节点已存在后,让 el-tree 拿到 default-checked-keys
+  await nextTick()
+  if (treeRef.value && checkedMenuIds.value.length) {
+    treeRef.value.setCheckedKeys(checkedMenuIds.value)
+  }
+}
+
+async function saveMenuPerm() {
+  if (!menuPermRole.value) return
+  if (!treeRef.value) {
+    ElMessage.error('tree not ready')
+    return
+  }
+  saving.value = true
+  try {
+    const checked = treeRef.value.getCheckedKeys() as number[]
+    const half = treeRef.value.getHalfCheckedKeys() as number[]
+    const ids = [...checked, ...half]
+    console.log('[saveMenuPerm] role=', menuPermRole.value.id, 'ids=', ids)
+    const { data } = await api.put(`/api/rbac/roles/${menuPermRole.value.id}/menus`, {
+      menu_ids: ids,
+    })
+    console.log('[saveMenuPerm] resp=', data)
+    if (data.code === 0) {
+      ElMessage.success('ok')
+      showMenuPerm.value = false
+    } else ElMessage.error(data.message)
+  } catch (e: any) {
+    console.error('[saveMenuPerm] error=', e)
+    ElMessage.error(e?.message || 'save failed')
+  } finally {
+    saving.value = false
+  }
 }
 </script>
 

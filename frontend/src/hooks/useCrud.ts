@@ -1,4 +1,5 @@
 import { ref, reactive } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessageBox } from 'element-plus'
 import { useMessage } from './useMessage'
 
@@ -29,6 +30,7 @@ export function useCrud<T = any>(options: CrudOptions<T>) {
   const { getListApi, createApi, updateApi, deleteApi, isPage = true, pageSize = 20, searchForm: initSearchForm = {} } = options
 
   const { success, error } = useMessage()
+  const { t } = useI18n()
 
   // 状态
   const loading = ref(false)
@@ -114,7 +116,7 @@ export function useCrud<T = any>(options: CrudOptions<T>) {
       return false
     }
     try {
-      await ElMessageBox.confirm(message, 'common.tip', { type: 'warning' })
+      await ElMessageBox.confirm(t(message), t('common.tip'), { type: 'warning' })
       await deleteApi(id)
       success('common.deleteSuccess')
       load()

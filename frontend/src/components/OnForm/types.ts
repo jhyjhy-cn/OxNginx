@@ -45,6 +45,7 @@ export interface FormField {
 
   // 组件特定
   options?: ItemOption[]; // select/radio/checkbox 用
+  multiple?: boolean; // select 多选
   showPassword?: boolean;
   rows?: number;
   min?: number;

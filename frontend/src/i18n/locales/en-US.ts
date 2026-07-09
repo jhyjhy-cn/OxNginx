@@ -24,6 +24,7 @@ export default {
     failed: 'Failed',
     tip: 'Tip',
     confirmDelete: 'Are you sure to delete?',
+    confirmResetPwd: 'Reset password to 123456?',
     none: 'None',
     version: 'Version',
     operationFailed: 'Operation failed',
@@ -31,6 +32,9 @@ export default {
     download: 'Download',
     close: 'Close',
     input: 'Please enter',
+    all: 'All',
+    remark: 'Remark',
+    columnConfig: 'Column Config',
   },
 
   menu: {
@@ -84,6 +88,22 @@ export default {
     typeM: 'Directory',
     typeC: 'Menu',
     typeF: 'Button',
+    department: 'Department',
+    post: 'Post',
+    posts: 'Post',
+    roles: 'Roles',
+    menuPermission: 'Menu Permission',
+  },
+
+  user: {
+    id: 'ID',
+    nickname: 'Nickname',
+    phone: 'Phone',
+    email: 'Email',
+    gender: 'Gender',
+    male: 'Male',
+    female: 'Female',
+    secret: 'Secret',
   },
 
   layout: {

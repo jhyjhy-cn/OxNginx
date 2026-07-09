@@ -24,16 +24,37 @@
           :disabled="props.disabled || props.readonly"
           :placeholder="computedPlaceholder"
           :clearable="props.clearable"
+          :multiple="props.multiple"
         >
           <template v-if="props.options && hasOptionsSlot">
-            <component
-              :is="'el-option'"
-              v-for="opt in props.options"
-              :key="opt.value"
-              :label="t(opt.label)"
-              :value="opt.value"
-              :disabled="opt.disabled"
-            />
+            <template v-if="props.type === 'select'">
+              <component
+                :is="'el-option'"
+                v-for="opt in props.options"
+                :key="opt.value"
+                :label="isI18nKey(opt.label) ? t(opt.label) : opt.label"
+                :value="opt.value"
+                :disabled="opt.disabled"
+              />
+            </template>
+            <template v-else-if="props.type === 'radio'">
+              <component
+                :is="'el-radio'"
+                v-for="opt in props.options"
+                :key="opt.value"
+                :value="opt.value"
+                :disabled="opt.disabled"
+              >{{ isI18nKey(opt.label) ? t(opt.label) : opt.label }}</component>
+            </template>
+            <template v-else-if="props.type === 'checkbox'">
+              <component
+                :is="'el-checkbox'"
+                v-for="opt in props.options"
+                :key="opt.value"
+                :label="opt.value"
+                :disabled="opt.disabled"
+              >{{ isI18nKey(opt.label) ? t(opt.label) : opt.label }}</component>
+            </template>
           </template>
         </component>
       </slot>
@@ -65,6 +86,7 @@ const props = withDefaults(
     clearable?: boolean;
     options?: FormField["options"];
     showPassword?: boolean;
+    multiple?: boolean;
     rows?: number;
     min?: number;
     max?: number;
@@ -104,6 +126,11 @@ const currentComponent = computed(
   () => componentMap[props.type || "input"] || "el-input"
 );
 
+// 判断是否为 i18n key（包含 . 的为 key）
+function isI18nKey(val?: string): boolean {
+  return !!val && val.includes('.');
+}
+
 // 组件属性
 const componentProps = computed(() => {
   const p: Record<string, any> = {};
@@ -125,6 +152,8 @@ const componentProps = computed(() => {
       break;
     case "switch":
       p.placeholder = undefined;
+      p["active-value"] = 1;
+      p["inactive-value"] = 0;
       break;
     case "date":
       p.type = "date";

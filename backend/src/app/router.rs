@@ -113,33 +113,39 @@ pub fn build(state: AppState) -> Router {
         // RBAC me（任意登录用户可用）
         .route("/api/rbac/me", get(api::rbac_api::me))
         .route("/api/rbac/i18n/messages", get(api::rbac_api::get_i18n_messages))
-        .route("/api/rbac/i18n", get(api::rbac_api::list_i18n))  // 读，全局可用
+        .route("/api/rbac/i18n", get(api::sys_i18n_api::list_i18n))  // 读，全局可用
         .layer(from_fn_with_state(state.clone(), audit::middleware::audit_middleware)) // 先添加 = 后执行
         .layer(from_fn_with_state(state.clone(), middleware::auth_middleware));         // 后添加 = 先执行 = 注入 TokenInfo
 
     let admin_routes = Router::new()
-        .route("/api/rbac/users", get(api::rbac_api::list_users).post(api::rbac_api::create_user))
-        .route("/api/rbac/users/{id}", put(api::rbac_api::update_user).delete(api::rbac_api::delete_user))
-        .route("/api/rbac/users/{id}/reset-password", post(api::rbac_api::reset_password))
-        .route("/api/rbac/roles", get(api::rbac_api::list_roles).post(api::rbac_api::create_role))
-        .route("/api/rbac/roles/{id}", put(api::rbac_api::update_role).delete(api::rbac_api::delete_role))
-        .route("/api/rbac/roles/{id}/menus", put(api::rbac_api::set_role_menus))
-        .route("/api/rbac/depts", get(api::rbac_api::list_depts).post(api::rbac_api::create_dept))
-        .route("/api/rbac/depts/{id}", put(api::rbac_api::update_dept).delete(api::rbac_api::delete_dept))
-        .route("/api/rbac/posts", get(api::rbac_api::list_posts).post(api::rbac_api::create_post))
-        .route("/api/rbac/posts/{id}", put(api::rbac_api::update_post).delete(api::rbac_api::delete_post))
-        .route("/api/rbac/menus", get(api::rbac_api::list_menus).post(api::rbac_api::create_menu))
-        .route("/api/rbac/menus/batch-delete", post(api::rbac_api::batch_delete_menus))
-        .route("/api/rbac/menus/{id}", put(api::rbac_api::update_menu).delete(api::rbac_api::delete_menu))
+        // 用户
+        .route("/api/rbac/users", get(api::sys_user_api::list_users).post(api::sys_user_api::create_user))
+        .route("/api/rbac/users/{id}", get(api::sys_user_api::get_user).put(api::sys_user_api::update_user).delete(api::sys_user_api::delete_user))
+        .route("/api/rbac/users/{id}/reset-password", post(api::sys_user_api::reset_password))
+        // 角色
+        .route("/api/rbac/roles", get(api::sys_role_api::list_roles).post(api::sys_role_api::create_role))
+        .route("/api/rbac/roles/{id}", put(api::sys_role_api::update_role).delete(api::sys_role_api::delete_role))
+        .route("/api/rbac/roles/{id}/menus", get(api::sys_role_api::get_role_menus).put(api::sys_role_api::set_role_menus))
+        // 部门
+        .route("/api/rbac/depts", get(api::sys_dept_api::list_depts).post(api::sys_dept_api::create_dept))
+        .route("/api/rbac/depts/tree", get(api::sys_dept_api::dept_tree))
+        .route("/api/rbac/depts/{id}", put(api::sys_dept_api::update_dept).delete(api::sys_dept_api::delete_dept))
+        // 岗位
+        .route("/api/rbac/posts", get(api::sys_post_api::list_posts).post(api::sys_post_api::create_post))
+        .route("/api/rbac/posts/{id}", put(api::sys_post_api::update_post).delete(api::sys_post_api::delete_post))
+        // 菜单
+        .route("/api/rbac/menus", get(api::sys_menu_api::list_menus).post(api::sys_menu_api::create_menu))
+        .route("/api/rbac/menus/batch-delete", post(api::sys_menu_api::batch_delete_menus))
+        .route("/api/rbac/menus/{id}", put(api::sys_menu_api::update_menu).delete(api::sys_menu_api::delete_menu))
         // 国际化
-        .route("/api/rbac/i18n/locales", get(api::rbac_api::list_i18n_locales))
-        .route("/api/rbac/i18n", post(api::rbac_api::upsert_i18n))  // 写，仅管理员
-        .route("/api/rbac/i18n/{id}", delete(api::rbac_api::delete_i18n))
+        .route("/api/rbac/i18n/locales", get(api::sys_i18n_api::list_i18n_locales))
+        .route("/api/rbac/i18n", post(api::sys_i18n_api::upsert_i18n))  // 写，仅管理员
+        .route("/api/rbac/i18n/{id}", delete(api::sys_i18n_api::delete_i18n))
         // 字典
-        .route("/api/rbac/dicts", get(api::rbac_api::list_dicts).post(api::rbac_api::create_dict))
-        .route("/api/rbac/dicts/{id}", get(api::rbac_api::get_dict).put(api::rbac_api::update_dict).delete(api::rbac_api::delete_dict))
-        .route("/api/rbac/dicts/{dict_id}/items", post(api::rbac_api::create_dict_item))
-        .route("/api/rbac/dict-items/{id}", put(api::rbac_api::update_dict_item).delete(api::rbac_api::delete_dict_item))
+        .route("/api/rbac/dicts", get(api::sys_dict_api::list_dicts).post(api::sys_dict_api::create_dict))
+        .route("/api/rbac/dicts/{id}", get(api::sys_dict_api::get_dict).put(api::sys_dict_api::update_dict).delete(api::sys_dict_api::delete_dict))
+        .route("/api/rbac/dicts/{dict_id}/items", post(api::sys_dict_api::create_dict_item))
+        .route("/api/rbac/dict-items/{id}", put(api::sys_dict_api::update_dict_item).delete(api::sys_dict_api::delete_dict_item))
         .layer(from_fn_with_state(state.clone(), audit::middleware::audit_middleware)) // 先添加 = 第3执行
         .layer(from_fn_with_state(state.clone(), middleware::auth_middleware))          // 第2添加 = 第2执行
         .layer(from_fn_with_state(state.clone(), middleware::require_admin));                       // 最后添加 = 第1执行

@@ -306,6 +306,19 @@ pub struct PageQuery {
     pub keyword: Option<String>,
 }
 
+/// 用户列表查询参数
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UserQuery {
+    pub page: Option<i64>,
+    pub page_size: Option<i64>,
+    pub keyword: Option<String>,
+    pub dept_id: Option<i64>,
+    pub phone: Option<String>,
+    pub status: Option<String>,
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+}
+
 /// 分页响应
 #[derive(Debug, Serialize)]
 pub struct PagedResult<T: Serialize> {
@@ -320,6 +333,11 @@ pub struct PagedResult<T: Serialize> {
 pub struct UpsertUserRequest {
     pub username: String,
     pub password: Option<String>,
+    pub nickname: Option<String>,
+    pub phone: Option<String>,
+    pub email: Option<String>,
+    pub gender: Option<String>,
+    pub remark: Option<String>,
     pub dept_id: Option<i64>,
     pub post_id: Option<i64>,
     pub role_ids: Option<Vec<i64>>,

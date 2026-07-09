@@ -24,7 +24,7 @@
     <!-- 自定义标题栏 -->
     <template #header>
       <div class="on-dialog__header" :style="headerStyle" @mousedown="onDragStart" @dblclick="toggleMaximize">
-        <span class="on-dialog__title">{{ title }}</span>
+        <span class="on-dialog__title">{{ props.title ? t(props.title) : '' }}</span>
         <div class="on-dialog__actions">
           <button v-if="maximizable" class="on-dialog__btn" :title="maximized ? '还原' : '最大化'" @click.stop="toggleMaximize">
             <el-icon :size="14">
@@ -53,8 +53,10 @@
 import { ref, watch, nextTick, computed } from 'vue'
 import { FullScreen, CopyDocument, Close } from '@element-plus/icons-vue'
 import { useSettingsStore } from '@/stores/settings'
+import { useI18n } from 'vue-i18n'
 
 const settingsStore = useSettingsStore()
+const { t } = useI18n()
 
 /** 根据主题色生成标题栏渐变样式 */
 const headerStyle = computed(() => {

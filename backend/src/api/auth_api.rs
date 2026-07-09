@@ -258,15 +258,41 @@ pub async fn setup(
         Err(e) => return Json(json!(ApiResponse::<()>::error(format!("密码哈希失败: {}", e)))),
     };
 
-    let result = sqlx::query("INSERT INTO sys_users (username, password) VALUES (?, ?)")
-        .bind(&req.username)
-        .bind(&hashed_password)
-        .execute(state.db.pool())
-        .await;
+    // 创建用户（完整信息）
+    let result = sqlx::query(
+        r#"INSERT INTO sys_users (username, password, nickname, phone, email, gender, dept_id, post_id, disabled)
+           VALUES (?, ?, '超级管理员', '13800000000', '13800000000@qq.com', 'male', 1, 1, 0)"#,
+    )
+    .bind(&req.username)
+    .bind(&hashed_password)
+    .execute(state.db.pool())
+    .await;
 
     match result {
         Ok(_) => {
+            // 运行种子数据
             let _ = crate::database::seed::run(state.db.pool()).await;
+            // 绑定到超级管理员角色
+            let user_id: Option<i64> = sqlx::query_scalar("SELECT id FROM sys_users WHERE username=?")
+                .bind(&req.username)
+                .fetch_optional(state.db.pool())
+                .await
+                .ok()
+                .flatten();
+            if let Some(uid) = user_id {
+                let role_id: Option<i64> = sqlx::query_scalar("SELECT id FROM sys_roles WHERE code='super_admin'")
+                    .fetch_optional(state.db.pool())
+                    .await
+                    .ok()
+                    .flatten();
+                if let Some(rid) = role_id {
+                    let _ = sqlx::query("INSERT INTO sys_user_roles (user_id, role_id) VALUES (?, ?)")
+                        .bind(uid)
+                        .bind(rid)
+                        .execute(state.db.pool())
+                        .await;
+                }
+            }
             Json(json!(ApiResponse::success("管理员账户创建成功")))
         }
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("创建用户失败: {}", e)))),

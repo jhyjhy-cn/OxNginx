@@ -210,7 +210,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     ),
 ];
 
-/// 启动种子：菜单 + super_admin 角色 + admin 绑定
+/// 启动种子：菜单 + super_admin 角色 + 默认部门/岗位
 pub async fn seed_menus(pool: &SqlitePool) -> Result<()> {
     dedup_menus(pool).await?;
     let seeded: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sys_menus WHERE parent_id IS NULL")
@@ -221,7 +221,8 @@ pub async fn seed_menus(pool: &SqlitePool) -> Result<()> {
     }
     let super_id = ensure_super_admin_role(pool).await?;
     bind_super_to_all_menus(pool, super_id).await?;
-    bind_admin_user_to_super(pool).await?;
+    seed_default_dept(pool).await?;
+    seed_default_post(pool).await?;
     Ok(())
 }
 
@@ -330,28 +331,38 @@ async fn bind_super_to_all_menus(pool: &SqlitePool, role_id: i64) -> Result<()> 
     Ok(())
 }
 
-async fn bind_admin_user_to_super(pool: &SqlitePool) -> Result<()> {
-    let admin_id: Option<i64> =
-        sqlx::query_scalar("SELECT id FROM sys_users WHERE username = 'admin'")
-            .fetch_optional(pool)
-            .await?;
-
-    let Some(admin_id) = admin_id else {
-        return Ok(());
-    };
-    let role_id: Option<i64> =
-        sqlx::query_scalar("SELECT id FROM sys_roles WHERE code = 'super_admin'")
-            .fetch_optional(pool)
-            .await?;
-
-    let Some(role_id) = role_id else {
-        return Ok(());
-    };
-
-    sqlx::query("INSERT OR IGNORE INTO sys_user_roles (user_id, role_id) VALUES (?, ?)")
-        .bind(admin_id)
-        .bind(role_id)
-        .execute(pool)
+/// 创建默认部门（id=1）
+async fn seed_default_dept(pool: &SqlitePool) -> Result<()> {
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sys_depts WHERE id=1")
+        .fetch_one(pool)
         .await?;
+    if count == 0 {
+        sqlx::query("INSERT INTO sys_depts (id, name, sort) VALUES (1, '默认部门', 0)")
+            .execute(pool)
+            .await?;
+    } else {
+        // 更新名称
+        let _ = sqlx::query("UPDATE sys_depts SET name='默认部门' WHERE id=1")
+            .execute(pool)
+            .await;
+    }
+    Ok(())
+}
+
+/// 创建默认岗位（id=1）
+async fn seed_default_post(pool: &SqlitePool) -> Result<()> {
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sys_posts WHERE id=1")
+        .fetch_one(pool)
+        .await?;
+    if count == 0 {
+        sqlx::query("INSERT INTO sys_posts (id, code, name, sort) VALUES (1, 'default', '默认岗位', 0)")
+            .execute(pool)
+            .await?;
+    } else {
+        // 更新名称
+        let _ = sqlx::query("UPDATE sys_posts SET name='默认岗位' WHERE id=1")
+            .execute(pool)
+            .await;
+    }
     Ok(())
 }

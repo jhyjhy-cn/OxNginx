@@ -15,6 +15,7 @@
         :clearable="field.clearable"
         :options="field.options"
         :show-password="field.showPassword"
+        :multiple="field.multiple"
         :rows="field.rows"
         :min="field.min"
         :max="field.max"

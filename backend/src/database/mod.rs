@@ -19,7 +19,10 @@ impl Database {
             std::fs::create_dir_all(parent)?;
         }
 
-        let db_exists = Path::new(db_path).exists() && std::fs::metadata(db_path).map(|m| m.len() > 0).unwrap_or(false);
+        let db_exists = Path::new(db_path).exists()
+            && std::fs::metadata(db_path)
+                .map(|m| m.len() > 0)
+                .unwrap_or(false);
 
         let url = format!("sqlite:{}?mode=rwc", db_path);
         let pool = SqlitePoolOptions::new()
@@ -72,310 +75,263 @@ impl Database {
         sqlx::query(
             r#"
             CREATE TABLE IF NOT EXISTS sys_users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT NOT NULL UNIQUE,
-                password TEXT NOT NULL,
-                dept_id INTEGER,
-                post_id INTEGER,
-                disabled INTEGER NOT NULL DEFAULT 0,
-                status TEXT NOT NULL DEFAULT 'enabled',
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 用户ID
+                username TEXT NOT NULL UNIQUE,          -- 用户名
+                password TEXT NOT NULL,                 -- 密码（Argon2）
+                nickname TEXT,                          -- 用户昵称
+                phone TEXT,                             -- 手机号
+                email TEXT,                             -- 邮箱
+                gender TEXT,                            -- 性别：male/female/secret
+                remark TEXT,                            -- 备注
+                dept_id INTEGER,                        -- 部门ID
+                post_id INTEGER,                        -- 岗位ID
+                disabled INTEGER NOT NULL DEFAULT 0,    -- 是否禁用
+                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 更新时间
             );
 
             CREATE TABLE IF NOT EXISTS sys_sites (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                server_name TEXT NOT NULL,
-                listen TEXT NOT NULL DEFAULT '80',
-                ssl INTEGER NOT NULL DEFAULT 0,
-                certificate_path TEXT,
-                key_path TEXT,
-                proxy_pass TEXT,
-                root_path TEXT,
-                config TEXT,
-                remark TEXT,
-                expire_time DATETIME,
-                rewrite_rules TEXT,
-                redirect_rules TEXT,
-                hotlink_config TEXT,
-                log_access_path TEXT,
-                log_error_path TEXT,
-                status TEXT NOT NULL DEFAULT 'enabled',
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                id INTEGER PRIMARY KEY AUTOINCREMENT,      -- 网站ID
+                name TEXT NOT NULL,                       -- 网站名称
+                server_name TEXT NOT NULL,                -- 域名
+                listen TEXT NOT NULL DEFAULT '80',        -- 监听端口
+                ssl INTEGER NOT NULL DEFAULT 0,           -- 是否启用SSL
+                certificate_path TEXT,                    -- 证书路径
+                key_path TEXT,                           -- 私钥路径
+                proxy_pass TEXT,                          -- 反向代理地址
+                root_path TEXT,                           -- 网站根目录
+                config TEXT,                             -- Nginx配置
+                remark TEXT,                             -- 备注
+                expire_time DATETIME,                    -- 过期时间
+                rewrite_rules TEXT,                      -- URL重写规则
+                redirect_rules TEXT,                     -- 重定向规则
+                hotlink_config TEXT,                     -- 防盗链配置
+                log_access_path TEXT,                    -- 访问日志路径
+                log_error_path TEXT,                     -- 错误日志路径
+                status TEXT NOT NULL DEFAULT 'enabled',  -- 状态
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 更新时间
             );
 
             CREATE TABLE IF NOT EXISTS sys_certificates (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                domain TEXT NOT NULL UNIQUE,
-                issuer TEXT,
-                expire_time DATETIME,
-                cert_path TEXT,
-                key_path TEXT,
-                auto_renew INTEGER NOT NULL DEFAULT 1,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                id INTEGER PRIMARY KEY AUTOINCREMENT,   -- 证书ID
+                domain TEXT NOT NULL UNIQUE,           -- 域名
+                issuer TEXT,                           -- 颁发者
+                expire_time DATETIME,                  -- 过期时间
+                cert_path TEXT,                        -- 证书文件路径
+                key_path TEXT,                         -- 私钥文件路径
+                auto_renew INTEGER NOT NULL DEFAULT 1, -- 自动续期
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 创建时间
             );
 
             CREATE TABLE IF NOT EXISTS sys_backups (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                site_id INTEGER,
-                version INTEGER NOT NULL DEFAULT 1,
-                config TEXT NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,   -- 备份ID
+                site_id INTEGER,                       -- 网站ID
+                version INTEGER NOT NULL DEFAULT 1,    -- 版本号
+                config TEXT NOT NULL,                  -- 配置内容
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
                 FOREIGN KEY (site_id) REFERENCES sys_sites(id)
             );
 
             CREATE TABLE IF NOT EXISTS sys_upstreams (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL UNIQUE,
-                method TEXT NOT NULL DEFAULT 'round_robin',
-                keepalive INTEGER DEFAULT 32,
-                status TEXT NOT NULL DEFAULT 'enabled',
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 负载均衡ID
+                name TEXT NOT NULL UNIQUE,             -- 名称
+                method TEXT NOT NULL DEFAULT 'round_robin', -- 负载均衡算法
+                keepalive INTEGER DEFAULT 32,         -- 保持连接数
+                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 更新时间
             );
 
             CREATE TABLE IF NOT EXISTS sys_upstream_servers (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                upstream_id INTEGER NOT NULL,
-                address TEXT NOT NULL,
-                weight INTEGER DEFAULT 1,
-                max_fails INTEGER DEFAULT 3,
-                fail_timeout TEXT DEFAULT '30s',
-                backup INTEGER DEFAULT 0,
-                status TEXT NOT NULL DEFAULT 'enabled',
+                id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 服务器ID
+                upstream_id INTEGER NOT NULL,           -- 负载均衡ID
+                address TEXT NOT NULL,                 -- 服务器地址
+                weight INTEGER DEFAULT 1,               -- 权重
+                max_fails INTEGER DEFAULT 3,            -- 最大失败次数
+                fail_timeout TEXT DEFAULT '30s',        -- 失败超时
+                backup INTEGER DEFAULT 0,               -- 备用服务器
+                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
                 FOREIGN KEY (upstream_id) REFERENCES sys_upstreams(id) ON DELETE CASCADE
             );
 
             CREATE TABLE IF NOT EXISTS sys_access_rules (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                site_id INTEGER,
-                rule_type TEXT NOT NULL,
-                value TEXT NOT NULL,
-                description TEXT,
-                status TEXT NOT NULL DEFAULT 'enabled',
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 规则ID
+                site_id INTEGER,                       -- 网站ID
+                rule_type TEXT NOT NULL,               -- 规则类型
+                value TEXT NOT NULL,                   -- 规则值
+                description TEXT,                     -- 描述
+                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
                 FOREIGN KEY (site_id) REFERENCES sys_sites(id) ON DELETE CASCADE
             );
 
             CREATE TABLE IF NOT EXISTS sys_templates (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL UNIQUE,
-                description TEXT,
-                config TEXT NOT NULL,
-                variables TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 模板ID
+                name TEXT NOT NULL UNIQUE,             -- 模板名称
+                description TEXT,                     -- 描述
+                config TEXT NOT NULL,                  -- 配置内容
+                variables TEXT,                        -- 变量
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 更新时间
             );
 
             CREATE TABLE IF NOT EXISTS sys_file_notes (
-                path TEXT PRIMARY KEY,
-                note TEXT NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                path TEXT PRIMARY KEY,                 -- 文件路径
+                note TEXT NOT NULL,                    -- 备注内容
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 创建时间
             );
 
             CREATE TABLE IF NOT EXISTS sys_reverse_proxies (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                site_id INTEGER NOT NULL,
-                name TEXT NOT NULL,
-                proxy_dir TEXT NOT NULL DEFAULT '/',
-                target_url TEXT NOT NULL,
-                cache INTEGER NOT NULL DEFAULT 0,
-                status TEXT NOT NULL DEFAULT 'enabled',
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 反向代理ID
+                site_id INTEGER NOT NULL,              -- 网站ID
+                name TEXT NOT NULL,                    -- 名称
+                proxy_dir TEXT NOT NULL DEFAULT '/',   -- 代理路径
+                target_url TEXT NOT NULL,              -- 目标URL
+                cache INTEGER NOT NULL DEFAULT 0,      -- 是否启用缓存
+                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 更新时间
                 FOREIGN KEY (site_id) REFERENCES sys_sites(id) ON DELETE CASCADE
             );
 
             -- ===== RBAC =====
             CREATE TABLE IF NOT EXISTS sys_roles (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                code TEXT NOT NULL UNIQUE,
-                name TEXT NOT NULL,
-                remark TEXT,
-                status TEXT NOT NULL DEFAULT 'enabled',
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 角色ID
+                code TEXT NOT NULL UNIQUE,             -- 角色代码
+                name TEXT NOT NULL,                    -- 角色名称
+                remark TEXT,                           -- 备注
+                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 更新时间
             );
 
             CREATE TABLE IF NOT EXISTS sys_depts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                parent_id INTEGER,
-                name TEXT NOT NULL,
-                sort INTEGER NOT NULL DEFAULT 0,
-                status TEXT NOT NULL DEFAULT 'enabled',
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 部门ID
+                parent_id INTEGER,                     -- 父部门ID
+                name TEXT NOT NULL,                    -- 部门名称
+                sort INTEGER NOT NULL DEFAULT 0,       -- 排序
+                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 更新时间
             );
 
             CREATE TABLE IF NOT EXISTS sys_posts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                code TEXT NOT NULL UNIQUE,
-                name TEXT NOT NULL,
-                sort INTEGER NOT NULL DEFAULT 0,
-                status TEXT NOT NULL DEFAULT 'enabled',
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 岗位ID
+                code TEXT NOT NULL UNIQUE,             -- 岗位代码
+                name TEXT NOT NULL,                    -- 岗位名称
+                sort INTEGER NOT NULL DEFAULT 0,       -- 排序
+                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 更新时间
             );
 
             CREATE TABLE IF NOT EXISTS sys_menus (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                parent_id INTEGER,
-                name TEXT NOT NULL,
-                title TEXT NOT NULL,
-                icon TEXT,
-                path TEXT,
-                component TEXT,
-                type TEXT NOT NULL,
-                permission TEXT,
-                sort INTEGER NOT NULL DEFAULT 0,
-                status TEXT NOT NULL DEFAULT 'enabled',
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 菜单ID
+                parent_id INTEGER,                     -- 父菜单ID
+                name TEXT NOT NULL,                    -- 菜单名称
+                title TEXT NOT NULL,                   -- 菜单标题
+                icon TEXT,                             -- 图标
+                path TEXT,                             -- 路由路径
+                component TEXT,                        -- 组件路径
+                type TEXT NOT NULL,                   -- 菜单类型
+                permission TEXT,                      -- 权限标识
+                sort INTEGER NOT NULL DEFAULT 0,      -- 排序
+                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 更新时间
             );
 
             CREATE TABLE IF NOT EXISTS sys_user_roles (
-                user_id INTEGER NOT NULL,
-                role_id INTEGER NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                user_id INTEGER NOT NULL,              -- 用户ID
+                role_id INTEGER NOT NULL,              -- 角色ID
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
                 PRIMARY KEY (user_id, role_id)
             );
 
             CREATE TABLE IF NOT EXISTS sys_role_menus (
-                role_id INTEGER NOT NULL,
-                menu_id INTEGER NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                role_id INTEGER NOT NULL,              -- 角色ID
+                menu_id INTEGER NOT NULL,               -- 菜单ID
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
                 PRIMARY KEY (role_id, menu_id)
             );
 
             CREATE TABLE IF NOT EXISTS sys_i18n (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                locale TEXT NOT NULL,
-                key TEXT NOT NULL,
-                value TEXT NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 国际化ID
+                locale TEXT NOT NULL,                  -- 语言
+                key TEXT NOT NULL,                     -- 键
+                value TEXT NOT NULL,                   -- 值
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 更新时间
                 UNIQUE(locale, key)
             );
 
             CREATE TABLE IF NOT EXISTS sys_dict (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                code TEXT NOT NULL UNIQUE,
-                description TEXT,
-                status TEXT NOT NULL DEFAULT 'enabled',
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 字典ID
+                name TEXT NOT NULL,                     -- 字典名称
+                code TEXT NOT NULL UNIQUE,              -- 字典代码
+                description TEXT,                        -- 描述
+                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 更新时间
             );
 
             CREATE TABLE IF NOT EXISTS sys_dict_item (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                dict_id INTEGER NOT NULL,
-                label TEXT NOT NULL,
-                value TEXT NOT NULL,
-                sort INTEGER NOT NULL DEFAULT 0,
-                status TEXT NOT NULL DEFAULT 'enabled',
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 字典项ID
+                dict_id INTEGER NOT NULL,              -- 字典ID
+                label TEXT NOT NULL,                   -- 标签
+                value TEXT NOT NULL,                   -- 值
+                sort INTEGER NOT NULL DEFAULT 0,       -- 排序
+                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 更新时间
                 FOREIGN KEY (dict_id) REFERENCES sys_dict(id) ON DELETE CASCADE
             );
 
             CREATE TABLE IF NOT EXISTS sys_tokens (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                token TEXT NOT NULL UNIQUE,
-                user_id INTEGER NOT NULL,
-                username TEXT NOT NULL,
-                expires_at DATETIME NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,  -- TokenID
+                token TEXT NOT NULL UNIQUE,            -- Token
+                user_id INTEGER NOT NULL,               -- 用户ID
+                username TEXT NOT NULL,                 -- 用户名
+                expires_at DATETIME NOT NULL,           -- 过期时间
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
                 FOREIGN KEY (user_id) REFERENCES sys_users(id) ON DELETE CASCADE
             );
 
             CREATE TABLE IF NOT EXISTS sys_operation_logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                trace_id TEXT,
-                username TEXT NOT NULL,
-                module TEXT,
-                action TEXT NOT NULL,
-                method TEXT,
-                uri TEXT,
-                ip TEXT,
-                status TEXT NOT NULL DEFAULT 'success',
-                cost_ms INTEGER,
-                duration_ms INTEGER,
-                request_body TEXT,
-                error_msg TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 日志ID
+                trace_id TEXT,                         -- 追踪ID
+                username TEXT NOT NULL,                 -- 用户名
+                module TEXT,                            -- 模块
+                action TEXT NOT NULL,                   -- 操作
+                method TEXT,                            -- 请求方法
+                uri TEXT,                              -- 请求路径
+                ip TEXT,                               -- IP地址
+                status TEXT NOT NULL DEFAULT 'success', -- 状态
+                cost_ms INTEGER,                       -- 耗时（毫秒）
+                duration_ms INTEGER,                   -- 持续时间
+                request_body TEXT,                      -- 请求体
+                response_body TEXT,                     -- 响应体
+                error_msg TEXT,                        -- 错误信息
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 创建时间
             );
 
             CREATE TABLE IF NOT EXISTS sys_login_logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT NOT NULL,
-                ip TEXT,
-                os TEXT,
-                browser TEXT,
-                user_agent TEXT,
-                type TEXT NOT NULL DEFAULT 'login',
-                status TEXT NOT NULL DEFAULT 'success',
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 日志ID
+                username TEXT NOT NULL,                 -- 用户名
+                ip TEXT,                               -- IP地址
+                os TEXT,                               -- 操作系统
+                browser TEXT,                           -- 浏览器
+                user_agent TEXT,                       -- UserAgent
+                type TEXT NOT NULL DEFAULT 'login',     -- 日志类型
+                status TEXT NOT NULL DEFAULT 'success', -- 状态
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 创建时间
             );
             "#,
         )
         .execute(&self.pool)
         .await?;
-
-        // 兼容旧库：sys_sites 表加 remark 列（已存在则忽略）
-        let _ = sqlx::query("ALTER TABLE sys_sites ADD COLUMN remark TEXT")
-            .execute(&self.pool)
-            .await;
-        let _ = sqlx::query("ALTER TABLE sys_sites ADD COLUMN expire_time DATETIME")
-            .execute(&self.pool)
-            .await;
-        let _ = sqlx::query("ALTER TABLE sys_sites ADD COLUMN rewrite_rules TEXT")
-            .execute(&self.pool)
-            .await;
-        let _ = sqlx::query("ALTER TABLE sys_sites ADD COLUMN redirect_rules TEXT")
-            .execute(&self.pool)
-            .await;
-        let _ = sqlx::query("ALTER TABLE sys_sites ADD COLUMN hotlink_config TEXT")
-            .execute(&self.pool)
-            .await;
-        let _ = sqlx::query("ALTER TABLE sys_sites ADD COLUMN log_access_path TEXT")
-            .execute(&self.pool)
-            .await;
-        let _ = sqlx::query("ALTER TABLE sys_sites ADD COLUMN log_error_path TEXT")
-            .execute(&self.pool)
-            .await;
-
-        // 兼容旧库：sys_users 加 RBAC 列
-        let _ = sqlx::query("ALTER TABLE sys_users ADD COLUMN dept_id INTEGER")
-            .execute(&self.pool)
-            .await;
-        let _ = sqlx::query("ALTER TABLE sys_users ADD COLUMN post_id INTEGER")
-            .execute(&self.pool)
-            .await;
-        let _ = sqlx::query("ALTER TABLE sys_users ADD COLUMN disabled INTEGER NOT NULL DEFAULT 0")
-            .execute(&self.pool)
-            .await;
-
-        // 兼容旧库：sys_menus 加 component 列
-        let _ = sqlx::query("ALTER TABLE sys_menus ADD COLUMN component TEXT")
-            .execute(&self.pool)
-            .await;
-
-        // 兼容旧库：sys_operation_logs 加新列
-        let _ = sqlx::query("ALTER TABLE sys_operation_logs ADD COLUMN trace_id TEXT")
-            .execute(&self.pool)
-            .await;
-        let _ = sqlx::query("ALTER TABLE sys_operation_logs ADD COLUMN module TEXT")
-            .execute(&self.pool)
-            .await;
-        let _ = sqlx::query("ALTER TABLE sys_operation_logs ADD COLUMN duration_ms INTEGER")
-            .execute(&self.pool)
-            .await;
-        let _ = sqlx::query("ALTER TABLE sys_operation_logs ADD COLUMN response_body TEXT")
-            .execute(&self.pool)
-            .await;
 
         Ok(())
     }

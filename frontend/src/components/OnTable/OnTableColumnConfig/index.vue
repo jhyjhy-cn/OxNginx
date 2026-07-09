@@ -4,7 +4,7 @@
       <el-table-column type="index" width="40" label="序号" />
       <el-table-column prop="label" label="列名">
         <template #default="{ row }">
-          {{ t(row.label || row.prop || '') }}
+          {{ row.label ? t(row.label) : row.prop || '' }}
         </template>
       </el-table-column>
       <el-table-column prop="visible" label="显示" width="80">

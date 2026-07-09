@@ -24,6 +24,7 @@ export default {
     failed: '操作失败',
     tip: '提示',
     confirmDelete: '确定要删除吗？',
+    confirmResetPwd: '确定要重置密码为 123456 吗？',
     none: '无',
     version: '版本',
     operationFailed: '操作失败',
@@ -31,6 +32,9 @@ export default {
     download: '下载',
     close: '关闭',
     input: '请输入',
+    all: '全部',
+    remark: '备注',
+    columnConfig: '列配置',
   },
 
   menu: {
@@ -84,6 +88,22 @@ export default {
     typeM: '目录',
     typeC: '菜单',
     typeF: '按钮',
+    department: '部门',
+    post: '岗位',
+    posts: '岗位',
+    roles: '角色',
+    menuPermission: '菜单权限',
+  },
+
+  user: {
+    id: '编号',
+    nickname: '昵称',
+    phone: '手机号',
+    email: '邮箱',
+    gender: '性别',
+    male: '男',
+    female: '女',
+    secret: '保密',
   },
 
   layout: {
