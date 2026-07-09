@@ -15,9 +15,10 @@ pub struct OperationLog {
     pub uri: Option<String>,
     pub ip: Option<String>,
     pub status: String,
-    pub cost_ms: Option<i64>, // 旧列保留，兼容旧数据
+    pub cost_ms: Option<i64>,
     pub duration_ms: Option<i64>,
     pub request_body: Option<String>,
+    pub response_body: Option<String>,
     pub error_msg: Option<String>,
     pub created_at: Option<chrono::NaiveDateTime>,
 }
@@ -46,11 +47,11 @@ pub async fn log_operations_batch_multirow(
     }
     let n = events.len();
     let placeholders = (0..n)
-        .map(|_| "(?,?,?,?,?,?,?,?,?,?,?,?)")
+        .map(|_| "(?,?,?,?,?,?,?,?,?,?,?,?,?)")
         .collect::<Vec<_>>()
         .join(",");
     let sql = format!(
-        "INSERT INTO sys_operation_logs (trace_id, username, module, action, method, uri, ip, status, duration_ms, request_body, error_msg, created_at) VALUES {}",
+        "INSERT INTO sys_operation_logs (trace_id, username, module, action, method, uri, ip, status, duration_ms, request_body, response_body, error_msg, created_at) VALUES {}",
         placeholders
     );
     let mut q = sqlx::query(&sql);
@@ -66,6 +67,7 @@ pub async fn log_operations_batch_multirow(
             .bind(&ev.status)
             .bind(ev.duration_ms)
             .bind(ev.request_body.as_deref())
+            .bind(ev.response_body.as_deref())
             .bind(ev.error_msg.as_deref())
             .bind(ev.created_at);
     }
@@ -76,7 +78,7 @@ pub async fn log_operations_batch_multirow(
 /// 单条插入（batch 失败时的降级路径）。
 pub async fn log_operation_single(pool: &SqlitePool, ev: &AuditEvent) -> Result<()> {
     sqlx::query(
-        "INSERT INTO sys_operation_logs (trace_id, username, module, action, method, uri, ip, status, duration_ms, request_body, error_msg, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+        "INSERT INTO sys_operation_logs (trace_id, username, module, action, method, uri, ip, status, duration_ms, request_body, response_body, error_msg, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"
     )
     .bind(&ev.trace_id)
     .bind(&ev.username)
@@ -88,6 +90,7 @@ pub async fn log_operation_single(pool: &SqlitePool, ev: &AuditEvent) -> Result<
     .bind(&ev.status)
     .bind(ev.duration_ms)
     .bind(ev.request_body.as_deref())
+    .bind(ev.response_body.as_deref())
     .bind(ev.error_msg.as_deref())
     .bind(ev.created_at)
     .execute(pool)

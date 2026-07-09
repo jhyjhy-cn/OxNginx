@@ -113,8 +113,9 @@ pub fn build(state: AppState) -> Router {
         // RBAC me（任意登录用户可用）
         .route("/api/rbac/me", get(api::rbac_api::me))
         .route("/api/rbac/i18n/messages", get(api::rbac_api::get_i18n_messages))
-        .layer(from_fn_with_state(state.clone(), middleware::auth_middleware))         // 外层先跑（注入 TokenInfo）
-        .layer(from_fn_with_state(state.clone(), audit::middleware::audit_middleware));// 内层（读 TokenInfo）
+        .route("/api/rbac/i18n", get(api::rbac_api::list_i18n))  // 读，全局可用
+        .layer(from_fn_with_state(state.clone(), audit::middleware::audit_middleware)) // 内层（后执行，读取 auth 注入的数据）
+        .layer(from_fn_with_state(state.clone(), middleware::auth_middleware));         // 外层（先执行，注入 TokenInfo）
 
     let admin_routes = Router::new()
         .route("/api/rbac/users", get(api::rbac_api::list_users).post(api::rbac_api::create_user))
@@ -132,16 +133,16 @@ pub fn build(state: AppState) -> Router {
         .route("/api/rbac/menus/:id", put(api::rbac_api::update_menu).delete(api::rbac_api::delete_menu))
         // 国际化
         .route("/api/rbac/i18n/locales", get(api::rbac_api::list_i18n_locales))
-        .route("/api/rbac/i18n", get(api::rbac_api::list_i18n).post(api::rbac_api::upsert_i18n))
+        .route("/api/rbac/i18n", post(api::rbac_api::upsert_i18n))  // 写，仅管理员
         .route("/api/rbac/i18n/:id", delete(api::rbac_api::delete_i18n))
         // 字典
         .route("/api/rbac/dicts", get(api::rbac_api::list_dicts).post(api::rbac_api::create_dict))
         .route("/api/rbac/dicts/:id", get(api::rbac_api::get_dict).put(api::rbac_api::update_dict).delete(api::rbac_api::delete_dict))
         .route("/api/rbac/dicts/:dict_id/items", post(api::rbac_api::create_dict_item))
         .route("/api/rbac/dict-items/:id", put(api::rbac_api::update_dict_item).delete(api::rbac_api::delete_dict_item))
-        .layer(from_fn_with_state(state.clone(), middleware::require_admin))            // 最外
-        .layer(from_fn_with_state(state.clone(), middleware::auth_middleware))         // auth
-        .layer(from_fn_with_state(state.clone(), audit::middleware::audit_middleware));// audit 内层
+        .layer(from_fn_with_state(state.clone(), audit::middleware::audit_middleware)) // 最内层（最后执行）
+        .layer(from_fn_with_state(state.clone(), middleware::auth_middleware))          // 中间层
+        .layer(from_fn_with_state(state.clone(), middleware::require_admin));          // 最外层（最先执行）
 
     // 静态文件服务（前端 SPA）
     // 使用 exe 所在目录下的 static 目录
@@ -158,7 +159,6 @@ pub fn build(state: AppState) -> Router {
     public_routes
         .merge(protected_routes)
         .merge(admin_routes)
-        .layer(from_fn_with_state(state.clone(), audit::middleware::audit_middleware))  // 顶层 audit（兜底 public_routes）
         .layer(axum::middleware::from_fn(middleware::logging_middleware))              // 全局耗时
         .layer(CorsLayer::permissive())
         .fallback_service(static_service)

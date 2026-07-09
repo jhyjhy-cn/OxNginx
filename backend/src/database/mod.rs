@@ -373,6 +373,9 @@ impl Database {
         let _ = sqlx::query("ALTER TABLE sys_operation_logs ADD COLUMN duration_ms INTEGER")
             .execute(&self.pool)
             .await;
+        let _ = sqlx::query("ALTER TABLE sys_operation_logs ADD COLUMN response_body TEXT")
+            .execute(&self.pool)
+            .await;
 
         Ok(())
     }

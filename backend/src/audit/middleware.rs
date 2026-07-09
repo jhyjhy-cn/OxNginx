@@ -13,13 +13,13 @@ use crate::app::state::AppState;
 use crate::audit::context::{AuditContext, SharedAuditContext};
 use crate::audit::event::AuditEvent;
 use crate::audit::sender;
+use crate::middleware::ClientIp;
 use crate::middleware::TokenInfo;
 
 /// 操作日志中间件。
 /// - 只记录 POST/PUT/DELETE
 /// - 白名单内的 URI（list/search/...）放行
 /// - multipart / octet-stream / >8MB body 跳过采集
-/// - 不读 response body（review #9：审计只关心 status / duration）
 pub async fn audit_middleware(
     State(_state): State<AppState>,
     mut request: Request,
@@ -41,40 +41,55 @@ pub async fn audit_middleware(
     let ctx: SharedAuditContext = std::sync::Arc::new(std::sync::Mutex::new(AuditContext::default()));
     request.extensions_mut().insert(ctx.clone());
 
-    // 读 body（按跳过策略）后用 from_parts 重建
-    let (parts, body) = request.into_parts();
-    let skip_req = should_skip_body(&parts.headers);
+    // 从 auth_middleware 注入的 ClientIp 获取
+    let ip_from_auth = request
+        .extensions()
+        .get::<ClientIp>()
+        .map(|c| c.0.clone())
+        .unwrap_or_else(|| {
+            tracing::warn!("[AUDIT] ClientIp NOT found");
+            None
+        });
+
+    // 读取 body 并重建请求
+    let skip_req = should_skip_body(request.headers());
     let (request, req_body_log) = if skip_req {
-        (Request::from_parts(parts, body), None)
+        (request, None)
     } else {
+        let (parts, body) = request.into_parts();
         match body::to_bytes(body, 2 * 1024 * 1024).await {
             Ok(bytes) => {
                 let log_str = truncate_str(&bytes);
                 (Request::from_parts(parts, Body::from(bytes)), log_str)
             }
             Err(_) => {
-                // 兜底：to_bytes 失败时给空 body，handler 解析会失败但不影响日志其他字段
                 (Request::from_parts(parts, Body::empty()), None)
             }
         }
     };
 
+    // 执行后续中间件和 handler
+    // 注意：auth middleware 在外层，会在 next.run() 之前执行并注入 TokenInfo
+    // 但 TokenInfo 不会自动传递到 request，所以我们需要通过 Clone 特性传递
+    // 实际上，由于 auth 在外层，next.run() 执行完后 auth 已经完成
+    // 但 request 被消费了，TokenInfo 需要从其他地方获取
+
+    // 简化方案：在 next.run() 之前把 TokenInfo 克隆出来
+    let username = request
+        .extensions()
+        .get::<TokenInfo>()
+        .map(|t| {
+            tracing::debug!("[AUDIT] TokenInfo found: username={}", t.username);
+            t.username.clone()
+        })
+        .unwrap_or_else(|| {
+            tracing::warn!("[AUDIT] TokenInfo NOT found in request");
+            "unknown".into()
+        });
+
     let start = Instant::now();
     let response = next.run(request).await;
     let duration_ms = start.elapsed().as_millis() as i64;
-
-    // ponytail: 必须在 next.run() 返回后读 username / ip —— 此时 auth 中间件已把 TokenInfo 塞进 extensions
-    let username = response
-        .extensions()
-        .get::<TokenInfo>()
-        .map(|t| t.username.clone())
-        .unwrap_or_else(|| "unknown".into());
-    let ip_from_header = response
-        .headers()
-        .get("x-forwarded-for")
-        .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.split(',').next())
-        .map(|s| s.trim().to_string());
 
     let ctx_data = ctx.lock().unwrap().clone();
 
@@ -100,7 +115,7 @@ pub async fn audit_middleware(
     ev.action = ctx_data.action.unwrap_or_default();
     ev.method = method.to_string();
     ev.uri = uri_s;
-    ev.ip = ip_from_header;
+    ev.ip = ip_from_auth;
     ev.status = status_str.into();
     ev.duration_ms = duration_ms;
     ev.request_body = req_body_log;

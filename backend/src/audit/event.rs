@@ -12,6 +12,7 @@ pub struct AuditEvent {
     pub status: String,
     pub duration_ms: i64,
     pub request_body: Option<String>,
+    pub response_body: Option<String>,
     pub error_msg: Option<String>,
     pub created_at: NaiveDateTime,
 }
@@ -29,6 +30,7 @@ impl AuditEvent {
             status: "success".into(),
             duration_ms: 0,
             request_body: None,
+            response_body: None,
             error_msg: None,
             created_at: Utc::now().naive_utc(),
         }
