@@ -89,6 +89,8 @@ jwt_expires_hours = 24
 | `/api/log/access` | GET | Access日志 |
 | `/api/log/error` | GET | Error日志 |
 
+sqlite MCP安装 命令: uv tool install D:\jhy\Work\jhyjhy.cn\MCP\sqlite-mcp
+
 ## 许可证
 
 MIT License
