@@ -33,21 +33,15 @@ impl SizeBasedAppenderInner {
 }
 
 /// 按文件大小自动轮转（线程安全）
-///
-/// - 主文件：`panel.log`
-/// - 轮转后：`panel-20260703_154623.log`
 struct SizeBasedAppender {
     inner: Mutex<SizeBasedAppenderInner>,
-    /// 当前日志文件已写入字节数（实时更新，每次 write 都累加）
     written: Arc<Mutex<u64>>,
 }
 
 impl SizeBasedAppender {
     fn new(dir: PathBuf, base_name: &str, max_mb: u64) -> Self {
         let current_path = dir.join(base_name);
-        let current_bytes = std::fs::metadata(&current_path)
-            .map(|m| m.len()).unwrap_or(0);
-
+        let current_bytes = std::fs::metadata(&current_path).map(|m| m.len()).unwrap_or(0);
         SizeBasedAppender {
             inner: Mutex::new(SizeBasedAppenderInner {
                 dir,
@@ -59,7 +53,6 @@ impl SizeBasedAppender {
     }
 }
 
-/// 追加写入器，每次 write 实时更新已用字节数
 struct CountingFile {
     inner: std::fs::File,
     written: Arc<Mutex<u64>>,
@@ -68,58 +61,38 @@ struct CountingFile {
 impl std::io::Write for CountingFile {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         let n = self.inner.write(buf)?;
-        if let Ok(mut w) = self.written.lock() {
-            *w += n as u64;
-        }
+        if let Ok(mut w) = self.written.lock() { *w += n as u64; }
         Ok(n)
     }
-    fn flush(&mut self) -> std::io::Result<()> {
-        self.inner.flush()
-    }
+    fn flush(&mut self) -> std::io::Result<()> { self.inner.flush() }
 }
 
 impl Drop for CountingFile {
-    fn drop(&mut self) {
-        let _ = self.inner.flush();
-    }
+    fn drop(&mut self) { let _ = self.inner.flush(); }
 }
 
 impl<'a> tracing_subscriber::fmt::MakeWriter<'a> for SizeBasedAppender {
     type Writer = CountingFile;
-
     fn make_writer(&'a self) -> Self::Writer {
         let mut inner = self.inner.lock().unwrap_or_else(|e| e.into_inner());
-
-        // 超过大小限制 → 轮转
         if *self.written.lock().unwrap_or_else(|e| e.into_inner()) >= inner.max_bytes {
-            if let Err(e) = inner.rotate() {
-                eprintln!("日志轮转失败: {}", e);
-            }
-            // 重置计数
+            if let Err(e) = inner.rotate() { eprintln!("日志轮转失败: {}", e); }
             *self.written.lock().unwrap_or_else(|e| e.into_inner()) = 0;
         }
-
-        let file = std::fs::OpenOptions::new()
-            .create(true).append(true)
+        let file = std::fs::OpenOptions::new().create(true).append(true)
             .open(inner.current_path())
-            .unwrap_or_else(|e| {
-                eprintln!("无法打开日志文件: {}", e);
-                std::fs::File::create("NUL").unwrap()
-            });
-
+            .unwrap_or_else(|e| { eprintln!("无法打开日志文件: {}", e); std::fs::File::create("NUL").unwrap() });
         CountingFile { inner: file, written: Arc::clone(&self.written) }
     }
 }
 
-// ========== 自定义日志格式：时间 级别 文件:行号 消息 ==========
+// ========== 自定义日志格式 ==========
 
 struct LocalTimer;
 
 impl tracing_subscriber::fmt::time::FormatTime for LocalTimer {
     fn format_time(&self, w: &mut tracing_subscriber::fmt::format::Writer<'_>) -> std::fmt::Result {
-        let now = chrono::Local::now();
-        let formatted = format!("{}", now.format("%Y-%m-%d %H:%M:%S%.3f%:z"));
-        write!(w, "{}", formatted)
+        write!(w, "{}", chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f%:z"))
     }
 }
 
@@ -138,6 +111,9 @@ impl tracing::field::Visit for EventFieldWriter<'_, '_> {
         }
     }
 }
+
+// 线程局部：第一个出现的线程 ID 标记为 "main"
+thread_local!(static MAIN_TID: std::cell::RefCell<Option<std::thread::ThreadId>> = const { std::cell::RefCell::new(None) });
 
 struct FullFormat {
     timer: LocalTimer,
@@ -175,7 +151,14 @@ where
 
         use tracing_subscriber::fmt::time::FormatTime;
         self.timer.format_time(&mut writer)?;
-        write!(writer, " {} {}:{}: ", level_str, file, line)?;
+
+        let tid = std::thread::current().id();
+        let tid_str = MAIN_TID.with(|slot| {
+            let mut slot = slot.borrow_mut();
+            if slot.is_none() { *slot = Some(tid); }
+            if slot.as_ref() == Some(&tid) { "main".to_string() } else { format!("{:?}", tid) }
+        });
+        write!(writer, " {} [{}] {}:{}: ", level_str, tid_str, file, line)?;
 
         let mut field_writer = EventFieldWriter { writer: &mut writer, is_first: true };
         event.record(&mut field_writer);
@@ -185,7 +168,6 @@ where
 
 // ========== 初始化 ==========
 
-/// 初始化 tracing 日志系统（控制台 + 文件双输出）
 pub fn init(log_dir: &Path, log_level: &str, max_size_mb: u64) {
     let _ = std::fs::create_dir_all(log_dir);
     cleanup_old_logs(log_dir, 30);
@@ -201,34 +183,25 @@ pub fn init(log_dir: &Path, log_level: &str, max_size_mb: u64) {
         .with_ansi(false)
         .with_writer(appender);
 
-    // 日志级别：优先环境变量 RUST_LOG，否则用配置
     let filter = format!("ox_nginx={},tower_http=info", log_level);
 
     tracing_subscriber::registry()
-        .with(tracing_subscriber::EnvFilter::new(
-            std::env::var("RUST_LOG").unwrap_or(filter),
-        ))
+        .with(tracing_subscriber::EnvFilter::new(std::env::var("RUST_LOG").unwrap_or(filter)))
         .with(stdout_layer)
         .with(file_layer)
         .init();
 }
 
-/// 清理超过保留天数的旧轮转日志（panel-YYYYMMDD_*.log）
 fn cleanup_old_logs(log_dir: &Path, retention_days: i64) {
     let cutoff = chrono::Local::now() - chrono::Duration::days(retention_days);
     let cutoff_str = cutoff.format("%Y%m%d").to_string();
-
-    let entries = match std::fs::read_dir(log_dir) {
-        Ok(e) => e, Err(_) => return,
-    };
+    let entries = match std::fs::read_dir(log_dir) { Ok(e) => e, Err(_) => return };
     for entry in entries.flatten() {
         let name = entry.file_name();
         let name_str = name.to_string_lossy();
         if let Some(rest) = name_str.strip_prefix("panel-") {
             if let Some(date_part) = rest.get(..8) {
-                if date_part < cutoff_str.as_str() {
-                    let _ = std::fs::remove_file(entry.path());
-                }
+                if date_part < cutoff_str.as_str() { let _ = std::fs::remove_file(entry.path()); }
             }
         }
     }
