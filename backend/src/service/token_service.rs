@@ -1,12 +1,12 @@
 use anyhow::Result;
 use chrono::{Duration, NaiveDateTime};
+use rand::Rng;
 use sqlx::SqlitePool;
 
 use crate::model::Token;
 
 /// 生成随机 token
 fn generate_token() -> String {
-    use rand::Rng;
     let mut rng = rand::thread_rng();
     let bytes: [u8; 32] = rng.gen();
     hex::encode(bytes)

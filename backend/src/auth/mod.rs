@@ -7,7 +7,8 @@ use rsa::{Pkcs1v15Encrypt, RsaPrivateKey, RsaPublicKey};
 
 /// 生成 2048-bit RSA 密钥对，返回 (private_key, public_key_spki_base64)
 pub fn generate_rsa_keypair() -> anyhow::Result<(RsaPrivateKey, String)> {
-    let private_key = RsaPrivateKey::new(&mut OsRng, 2048)?;
+    let mut rng = OsRng;
+    let private_key = RsaPrivateKey::new(&mut rng, 2048)?;
     let public_key = RsaPublicKey::from(&private_key);
     let spki_der = public_key.to_public_key_der()?;
     let pub_b64 = base64::engine::general_purpose::STANDARD.encode(spki_der.as_bytes());
@@ -23,7 +24,8 @@ pub fn rsa_decrypt(private_key: &RsaPrivateKey, ciphertext_b64: &str) -> anyhow:
 
 /// 密码哈希
 pub fn hash_password(password: &str) -> anyhow::Result<String> {
-    let salt = SaltString::generate(&mut OsRng);
+    let mut rng = OsRng;
+    let salt = SaltString::generate(&mut rng);
     let argon2 = Argon2::default();
     let hash = argon2
         .hash_password(password.as_bytes(), &salt)

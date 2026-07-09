@@ -34,7 +34,7 @@ pub async fn get_system_info(state: &AppState) -> anyhow::Result<SystemInfo> {
     let mut sys = state.sys.lock().unwrap();
     sys.refresh_cpu_all();
     sys.refresh_memory();
-    sys.refresh_processes(sysinfo::ProcessesToUpdate::All);
+    sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
     let app_memory = sys
         .process(state.pid)
         .map(|p| p.memory() / 1024 / 1024)

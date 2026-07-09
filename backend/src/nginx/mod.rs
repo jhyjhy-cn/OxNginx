@@ -932,6 +932,7 @@ pub async fn install_nginx(install_dir: &str) -> anyhow::Result<NginxInstallResu
 
 /// Nginx 安装结果
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct NginxInstallResult {
     pub bin: String,
     pub config: String,

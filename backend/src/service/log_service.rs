@@ -98,27 +98,6 @@ pub async fn log_operation_single(pool: &SqlitePool, ev: &AuditEvent) -> Result<
     Ok(())
 }
 
-pub async fn log_operation(
-    pool: &SqlitePool,
-    username: &str,
-    action: &str,
-    method: Option<&str>,
-    uri: Option<&str>,
-    ip: Option<&str>,
-    status: &str,
-    cost_ms: Option<i64>,
-    request_body: Option<&str>,
-    response_body: Option<&str>,
-    error_msg: Option<&str>,
-) -> Result<()> {
-    sqlx::query(
-        "INSERT INTO sys_operation_logs (username, action, method, uri, ip, status, cost_ms, request_body, response_body, error_msg) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-    )
-    .bind(username).bind(action).bind(method).bind(uri).bind(ip).bind(status).bind(cost_ms).bind(request_body).bind(response_body).bind(error_msg)
-    .execute(pool).await?;
-    Ok(())
-}
-
 pub struct OperationLogQuery {
     pub trace_id: Option<String>,
     pub module: Option<String>,
