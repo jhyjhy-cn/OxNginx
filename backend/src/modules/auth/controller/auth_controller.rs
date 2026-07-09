@@ -13,6 +13,16 @@ pub async fn get_public_key(State(state): State<AppState>) -> Json<serde_json::V
 }
 
 /// 用户登录
+#[utoipa::path(
+    post,
+    path = "/api/login",
+    tag = "auth",
+    request_body = LoginRequest,
+    responses(
+        (status = 200, description = "登录成功", body = LoginResponse),
+        (status = 401, description = "用户名或密码错误"),
+    )
+)]
 pub async fn login(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,

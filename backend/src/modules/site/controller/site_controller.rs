@@ -10,6 +10,7 @@ use serde_json::json;
 use ox_nginx_macros::audit_log;
 
 use crate::modules::common::dto::{ApiResponse, CreateSiteRequest, DeleteSiteRequest, UpdateSiteRequest};
+use crate::modules::site::entity::site::Site;
 use crate::modules::site::service::site_service;
 use crate::AppState;
 
@@ -20,6 +21,16 @@ pub struct BatchRequest {
 }
 
 /// 获取站点列表
+#[utoipa::path(
+    get,
+    path = "/api/sites",
+    tag = "site",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "站点列表", body = Vec<Site>),
+        (status = 401, description = "未授权"),
+    )
+)]
 pub async fn list_sites(
     State(state): State<AppState>,
 ) -> Json<serde_json::Value> {

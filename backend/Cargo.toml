@@ -58,6 +58,11 @@ log = "0.4"
 anyhow = "1"
 thiserror = "2"
 
+# OpenAPI / Swagger
+utoipa = { version = "5", features = ["axum_extras", "chrono"] }
+utoipa-axum = "0.2"
+utoipa-swagger-ui = { version = "9", features = ["axum"] }
+
 # UUID
 uuid = { version = "1", features = ["v4"] }
 

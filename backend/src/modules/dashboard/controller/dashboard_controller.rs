@@ -3,11 +3,21 @@ use serde_json::json;
 use tracing::error;
 // use tracing::{debug, error, info};
 
-use crate::modules::common::dto::ApiResponse;
+use crate::modules::common::dto::{ApiResponse, DashboardData};
 use crate::modules::dashboard::service::dashboard_service;
 use crate::AppState;
 
 /// 获取Dashboard数据
+#[utoipa::path(
+    get,
+    path = "/api/dashboard",
+    tag = "dashboard",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "Dashboard 数据", body = DashboardData),
+        (status = 401, description = "未授权"),
+    )
+)]
 pub async fn get_dashboard(
     State(state): State<AppState>,
 ) -> Json<serde_json::Value> {

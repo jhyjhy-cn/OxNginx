@@ -5,14 +5,24 @@ use axum::{
 };
 use tower_http::cors::CorsLayer;
 use tower_http::services::{ServeDir, ServeFile};
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 use crate::modules;
 use crate::modules::common::audit;
 use crate::modules::common::middleware;
+use super::openapi::ApiDoc;
 use super::state::AppState;
 
 /// 构建应用路由
 pub fn build(state: AppState) -> Router {
+    // OpenAPI 文档（从 utoipa::path 注解收集，#[openapi(paths(...))] 已显式声明）
+    let api_doc = ApiDoc::openapi();
+
+    // Swagger UI + OpenAPI JSON（挂载到 /swagger-ui 和 /api-docs/openapi.json）
+    let swagger = SwaggerUi::new("/swagger-ui")
+        .url("/api-docs/openapi.json", api_doc);
+
     // 公开路由（无需认证）
     let public_routes = Router::new()
         .route("/api/login", post(modules::auth::controller::auth_controller::login))
@@ -165,6 +175,7 @@ pub fn build(state: AppState) -> Router {
     public_routes
         .merge(protected_routes)
         .merge(admin_routes)
+        .merge(Router::from(swagger))
         .layer(axum::middleware::from_fn(middleware::logging_middleware))              // 全局耗时
         .layer(CorsLayer::permissive())
         .fallback_service(static_service)
