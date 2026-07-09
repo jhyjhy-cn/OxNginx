@@ -92,7 +92,7 @@ const {
 
 // 搜索表单
 const searchFields: FormField[] = [
-  { prop: "keyword", label: "login.username", type: "input", span: 8 },
+  { prop: "username", label: "login.username", type: "input", span: 8 },
   {
     prop: "disabled",
     label: "common.status",

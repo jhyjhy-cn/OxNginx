@@ -30,6 +30,7 @@ export default {
     warning: '警告',
     download: '下载',
     close: '关闭',
+    input: '请输入',
   },
 
   menu: {

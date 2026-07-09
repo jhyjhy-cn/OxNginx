@@ -29,6 +29,8 @@ export default {
     operationFailed: 'Operation failed',
     warning: 'Warning',
     download: 'Download',
+    close: 'Close',
+    input: 'Please enter',
   },
 
   menu: {

@@ -22,7 +22,7 @@
           v-model="modelValue"
           v-bind="componentProps"
           :disabled="props.disabled || props.readonly"
-          :placeholder="t(placeholder || '')"
+          :placeholder="computedPlaceholder"
           :clearable="props.clearable"
         >
           <template v-if="props.options && hasOptionsSlot">
@@ -217,6 +217,13 @@ const modelValue = computed({
 // 是否需要 options slot
 const hasOptionsSlot = computed(() => {
   return ["select", "radio", "checkbox"].includes(props.type || "");
+});
+
+// 占位符：优先用传入值，其次 "请输入" + label
+const computedPlaceholder = computed(() => {
+  if (props.placeholder) return t(props.placeholder);
+  if (props.label) return t("common.input") + t(props.label);
+  return "";
 });
 </script>
 
