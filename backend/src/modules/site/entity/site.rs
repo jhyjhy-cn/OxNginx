@@ -1,9 +1,8 @@
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 
 /// 站点实体
-#[derive(Debug, Serialize, Deserialize, ToSchema, sqlx::FromRow)]
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Site {
     pub id: i64,
     pub name: String,

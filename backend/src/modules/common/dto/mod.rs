@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 
 pub mod file_dto;
 
@@ -30,7 +29,7 @@ where
 }
 
 /// 统一API响应
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
 pub struct ApiResponse<T: Serialize> {
     pub code: i32,
     pub message: String,
@@ -56,14 +55,14 @@ impl<T: Serialize> ApiResponse<T> {
 }
 
 /// 登录请求
-#[derive(Debug, Deserialize, Serialize, ToSchema)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct LoginRequest {
     pub username: String,
     pub encrypted_password: String,
 }
 
 /// 登录响应（只返回 token + username）
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
 pub struct LoginResponse {
     pub token: String,
     pub username: String,
@@ -156,7 +155,7 @@ pub struct UpdateSiteRequest {
 }
 
 /// Dashboard数据
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
 pub struct DashboardData {
     pub nginx_version: String,
     pub worker_count: u32,

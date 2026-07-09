@@ -63,15 +63,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2a4385e2e34eb35d6b3efe798b9eb88096925d87726c0798709bf56d9ed84af3"
 
 [[package]]
-name = "arbitrary"
-version = "1.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3d036a3c4ab069c7b410a2ce876bd74808d2d0888a82667669f8e783a898bf1"
-dependencies = [
- "derive_arbitrary",
-]
-
-[[package]]
 name = "argon2"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -465,17 +456,6 @@ name = "deranged"
 version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7cd812cc2bc1d69d4764bd80df88b4317eaef9e773c75226407d9bc0876b211c"
-
-[[package]]
-name = "derive_arbitrary"
-version = "1.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e567bd82dcff979e4b03460c307b3cdc9e96fde3d73bed1496d2bc75d9dd62a"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.118",
-]
 
 [[package]]
 name = "digest"
@@ -1082,8 +1062,6 @@ checksum = "d466e9454f08e4a911e14806c24e16fba1b4c121d1ea474396f396069cf949d9"
 dependencies = [
  "equivalent",
  "hashbrown 0.17.1",
- "serde",
- "serde_core",
 ]
 
 [[package]]
@@ -1478,13 +1456,10 @@ dependencies = [
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
- "utoipa",
- "utoipa-axum",
- "utoipa-swagger-ui",
  "uuid",
  "uzers",
  "winapi",
- "zip 8.6.0",
+ "zip",
 ]
 
 [[package]]
@@ -1759,18 +1734,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "regex"
-version = "1.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a0e75113e14dc5acb068cd0786884f214f1312650a3d36d269f5c4f3cdee8a2"
-dependencies = [
- "aho-corasick",
- "memchr",
- "regex-automata",
- "regex-syntax",
-]
-
-[[package]]
 name = "regex-automata"
 version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1819,41 +1782,6 @@ dependencies = [
  "spki",
  "subtle",
  "zeroize",
-]
-
-[[package]]
-name = "rust-embed"
-version = "8.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9e7760e252aaba7b09f4be00e36476cf585bdb68a53552ac954cdf504ab4bc9"
-dependencies = [
- "rust-embed-impl",
- "rust-embed-utils",
- "walkdir",
-]
-
-[[package]]
-name = "rust-embed-impl"
-version = "8.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3bcfc4d6f53af43755f7a723e4b6b8794fcce052a178dd8c6c1dadc5f5343097"
-dependencies = [
- "mime_guess",
- "proc-macro2",
- "quote",
- "rust-embed-utils",
- "syn 2.0.118",
- "walkdir",
-]
-
-[[package]]
-name = "rust-embed-utils"
-version = "8.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42ffa149f6aa81b58a5b3011d01a857c4ed12c7a732d2c51947a4c7c692185f0"
-dependencies = [
- "sha2 0.11.0",
- "walkdir",
 ]
 
 [[package]]
@@ -1910,15 +1838,6 @@ name = "ryu"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
-
-[[package]]
-name = "same-file"
-version = "1.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
-dependencies = [
- "winapi-util",
-]
 
 [[package]]
 name = "scopeguard"
@@ -2906,7 +2825,6 @@ dependencies = [
  "form_urlencoded",
  "idna",
  "percent-encoding",
- "serde",
 ]
 
 [[package]]
@@ -2920,61 +2838,6 @@ name = "utf8_iter"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be"
-
-[[package]]
-name = "utoipa"
-version = "5.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8bde15df68e80b16c7d16b9616e80770ad158988daa56a27dccd1e55558b0160"
-dependencies = [
- "indexmap",
- "serde",
- "serde_json",
- "utoipa-gen",
-]
-
-[[package]]
-name = "utoipa-axum"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c25bae5bccc842449ec0c5ddc5cbb6a3a1eaeac4503895dc105a1138f8234a0"
-dependencies = [
- "axum",
- "paste",
- "tower-layer",
- "tower-service",
- "utoipa",
-]
-
-[[package]]
-name = "utoipa-gen"
-version = "5.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ba0b99ee52df3028635d93840c797102da61f8a7bb3cf751032455895b52ef8"
-dependencies = [
- "proc-macro2",
- "quote",
- "regex",
- "syn 2.0.118",
-]
-
-[[package]]
-name = "utoipa-swagger-ui"
-version = "9.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d047458f1b5b65237c2f6dc6db136945667f40a7668627b3490b9513a3d43a55"
-dependencies = [
- "axum",
- "base64 0.22.1",
- "mime_guess",
- "regex",
- "rust-embed",
- "serde",
- "serde_json",
- "url",
- "utoipa",
- "zip 3.0.0",
-]
 
 [[package]]
 name = "uuid"
@@ -3014,16 +2877,6 @@ name = "version_check"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
-
-[[package]]
-name = "walkdir"
-version = "2.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29790946404f91d9c5d06f9874efddea1dc06c5efe94541a7d6863108e3a5e4b"
-dependencies = [
- "same-file",
- "winapi-util",
-]
 
 [[package]]
 name = "wasi"
@@ -3122,15 +2975,6 @@ name = "winapi-i686-pc-windows-gnu"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6"
-
-[[package]]
-name = "winapi-util"
-version = "0.1.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
-dependencies = [
- "windows-sys 0.61.2",
-]
 
 [[package]]
 name = "winapi-x86_64-pc-windows-gnu"
@@ -3534,20 +3378,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.118",
-]
-
-[[package]]
-name = "zip"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12598812502ed0105f607f941c386f43d441e00148fce9dec3ca5ffb0bde9308"
-dependencies = [
- "arbitrary",
- "crc32fast",
- "flate2",
- "indexmap",
- "memchr",
- "zopfli",
 ]
 
 [[package]]
