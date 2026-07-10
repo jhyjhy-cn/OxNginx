@@ -24,6 +24,8 @@ pnpm install           # 安装依赖（项目使用 pnpm，非 npm）
 pnpm run dev           # 开发服务器
 pnpm run build         # 生产构建（vue-tsc 类型检查 + vite build）
 pnpm run preview       # 预览构建结果
+pnpm run lint          # 代码检查
+pnpm run lint:fix      # 自动修复
 ```
 
 ### 打包部署
@@ -36,18 +38,28 @@ pnpm run preview       # 预览构建结果
 ## 技术栈
 
 - **后端**: Rust + Axum + Tokio + SQLite + sqlx
-- **前端**: Vue3 + TypeScript + Vite + Pinia + Element Plus + Monaco Editor
+- **前端**: Vue3 + TypeScript + Vite + Pinia + Element Plus + Tailwind CSS + Monaco Editor + xterm
 - **认证**: JWT + Argon2id
 
 ## 架构设计
 
-### 后端 Clean Architecture
+### 后端 Clean Architecture（SpringBoot 风格 modules）
 ```
-API Layer (api/)      → 接收请求，返回统一 JSON { code, message, data }
-       ↓
-Service Layer (service/)  → 业务逻辑
-       ↓
-Repository/Database    → 数据持久化
+modules/
+├── auth/          # 认证（controller / service / dao / entity）
+├── backup/        # 备份管理
+├── common/        # 公共模块（config, database, auth, audit）
+├── dashboard/     # Dashboard 数据
+├── file/          # 文件管理
+├── log/           # 日志查看
+├── nginx/         # Nginx 操作（test, reload）
+├── settings/      # 系统设置
+├── site/          # 站点管理
+├── sys/           # 系统信息
+└── system/        # 系统配置
+
+app/               # 应用层（router.rs / state.rs）
+startup/           # 启动初始化（setup, logging）
 ```
 
 ### 核心原则
@@ -63,9 +75,19 @@ Repository/Database    → 数据持久化
 - **首次启动自引导**: `startup/setup.rs` 检测 bundled nginx.zip，自动生成 config.toml（含随机 JWT secret）、解压 nginx、注册 Windows NSSM 服务
 - **运行时配置路径**: `CONFIG_PATH` 环境变量，回退到 `{exe_dir}/configs/config.toml`
 
+### 启动流程
+1. 首次运行检测 & 自引导（setup）
+2. 加载/生成 config.toml
+3. 初始化日志（tracing + 文件轮转）
+4. 初始化数据库
+5. 生成 RSA 密钥对（JWT 签名）
+6. 启动操作日志异步 worker（channel 批量写库）
+7. 启动 WebSocket 推送任务（Dashboard 实时数据）
+8. 构建路由并监听端口
+
 ### API 处理器模式
 ```rust
-// api/xxx_api.rs — 接收 AppState + Json 请求体，调用 service，返回统一 JSON
+// modules/xxx/controller/xxx_api.rs — 接收 AppState + Json 请求体，调用 service，返回统一 JSON
 pub async fn handler(State(state): State<AppState>, Json(req): Json<SomeRequest>) -> Json<Value> {
     match xxx_service::do_something(&state, req).await {
         Ok(data) => Json(json!(ApiResponse::success(data))),
@@ -74,32 +96,21 @@ pub async fn handler(State(state): State<AppState>, Json(req): Json<SomeRequest>
 }
 ```
 
-### 目录结构
+### 前端目录结构
 ```
-backend/src/
-├── api/           # API 处理器 (auth_api, site_api, nginx_api, log_api, backup_api)
-├── service/       # 业务逻辑 (site_service, cert_service, backup_service, dashboard_service)
-├── middleware/     # 认证中间件
-├── nginx/         # Nginx 操作 (test, reload)
-├── ssl/           # ACME/SSL 操作
-├── backup/        # 备份管理
-├── config/        # TOML 配置加载
-├── database/      # SQLite + sqlx
-├── dto/          # 请求/响应数据结构
-├── model/         # 数据库模型
-├── auth/          # JWT + Argon2id
-└── main.rs        # 路由组装
-
 frontend/src/
-├── views/         # 页面组件 (Dashboard, Sites, SSL, Logs, Settings 等)
-├── stores/        # Pinia 状态管理 (auth/settings/files/tabs，后三者用 persistedstate)
-├── router/        # Vue Router (history 模式，路由守卫检查 isAuthenticated)
-├── api/           # 单文件 Axios 封装 (api/index.ts)，请求拦截加 Bearer，401 自动登出
-├── config/menu.ts # 菜单定义：flatMenuItems + groupedMenuItems，标签用 i18n key
+├── views/         # 页面组件 (Dashboard, Sites, SSL, Logs, Settings, Terminal, Files 等)
+├── stores/        # Pinia 状态管理
+├── router/        # Vue Router
+├── api/           # Axios 封装，请求拦截加 Bearer，401 自动登出
+├── components/    # 通用组件
+├── composables/   # 组合式函数
+├── hooks/         # 自定义 hooks
+├── config/menu.ts # 菜单定义
 └── i18n/          # 国际化 (zh-CN, en-US)
 ```
 
-### API 路由
+## API 路由
 - 公开: `POST /api/login`, `POST /api/setup`
 - 认证: `/api/dashboard`, `/api/sites`, `/api/certificates`, `/api/nginx/*`, `/api/log/*`, `/api/backups/*`
 
