@@ -14,6 +14,7 @@ pub struct AuditEvent {
     pub request_body: Option<String>,
     pub response_body: Option<String>,
     pub error_msg: Option<String>,
+    #[serde(serialize_with = "crate::modules::common::util::datetime::naive_datetime::serialize")]
     pub created_at: NaiveDateTime,
 }
 

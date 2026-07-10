@@ -122,6 +122,7 @@ pub struct UserListItem {
     pub post_id: Option<i64>,
     pub post_name: Option<String>,
     pub disabled: i32,
+    #[serde(with = "crate::modules::common::util::datetime::option_naive_datetime")]
     pub created_at: Option<chrono::NaiveDateTime>,
 }
 

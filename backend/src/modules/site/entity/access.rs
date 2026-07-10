@@ -1,6 +1,8 @@
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
+use crate::modules::common::util::datetime::option_naive_datetime;
+
 /// 访问控制规则实体
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct AccessRule {
@@ -10,5 +12,6 @@ pub struct AccessRule {
     pub value: String,
     pub description: Option<String>,
     pub status: String,
+    #[serde(with = "option_naive_datetime")]
     pub created_at: Option<NaiveDateTime>,
 }

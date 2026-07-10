@@ -230,6 +230,7 @@ const tableColumns: TableColumn[] = [
         command: "delete",
         type: "danger",
         size: "small",
+        disabled: (row: any) => row.username === "admin",
       },
     ],
   },

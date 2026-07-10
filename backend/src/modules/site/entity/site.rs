@@ -1,6 +1,8 @@
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
+use crate::modules::common::util::datetime::option_naive_datetime;
+
 /// 站点实体
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Site {
@@ -22,6 +24,8 @@ pub struct Site {
     pub log_access_path: Option<String>,
     pub log_error_path: Option<String>,
     pub status: String,
+    #[serde(with = "option_naive_datetime")]
     pub created_at: Option<NaiveDateTime>,
+    #[serde(with = "option_naive_datetime")]
     pub updated_at: Option<NaiveDateTime>,
 }

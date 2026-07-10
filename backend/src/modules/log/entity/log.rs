@@ -1,4 +1,7 @@
+use chrono::NaiveDateTime;
 use serde::Serialize;
+
+use crate::modules::common::util::datetime::option_naive_datetime;
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct OperationLog {
@@ -16,7 +19,8 @@ pub struct OperationLog {
     pub request_body: Option<String>,
     pub response_body: Option<String>,
     pub error_msg: Option<String>,
-    pub created_at: Option<chrono::NaiveDateTime>,
+    #[serde(with = "option_naive_datetime")]
+    pub created_at: Option<NaiveDateTime>,
 }
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
@@ -30,5 +34,6 @@ pub struct LoginLog {
     #[serde(rename = "type")]
     pub log_type: String,
     pub status: String,
-    pub created_at: Option<chrono::NaiveDateTime>,
+    #[serde(with = "option_naive_datetime")]
+    pub created_at: Option<NaiveDateTime>,
 }
