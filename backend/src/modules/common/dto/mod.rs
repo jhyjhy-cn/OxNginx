@@ -471,3 +471,36 @@ pub struct DictWithItems {
     pub items: Vec<crate::modules::sys::entity::dict::DictItem>,
 }
 
+// ============== 系统参数 ==============
+
+/// 新增/更新参数请求
+#[derive(Debug, Deserialize)]
+pub struct UpsertParamRequest {
+    pub key: String,
+    pub value: Option<String>,
+    pub name: String,
+    pub group_code: Option<String>,
+    pub remark: Option<String>,
+    pub sort: Option<i32>,
+}
+
+// ============== 系统文件 ==============
+
+/// 批量删除文件请求
+#[derive(Debug, Deserialize)]
+pub struct BatchDeleteFilesRequest {
+    pub ids: Vec<i64>,
+}
+
+/// 上传成功响应
+#[derive(Debug, Serialize)]
+pub struct UploadFileResponse {
+    pub id: i64,
+    pub name: String,
+    pub original_name: String,
+    pub path: String,
+    pub url: String,
+    pub size: i64,
+    pub mime_type: Option<String>,
+}
+

@@ -27,6 +27,8 @@ export default {
     export: 'Export',
     exportSuccess: 'Export succeeded',
     tip: 'Tip',
+    upload: 'Upload',
+    batchDelete: 'Batch Delete',
     confirmDelete: 'Are you sure to delete?',
     confirmResetPwd: 'Reset password to 123456?',
     none: 'None',

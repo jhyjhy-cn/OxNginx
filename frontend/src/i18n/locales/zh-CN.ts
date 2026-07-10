@@ -27,6 +27,8 @@ export default {
     export: '导出',
     exportSuccess: '导出成功',
     tip: '提示',
+    upload: '上传',
+    batchDelete: '批量删除',
     confirmDelete: '确定要删除吗？',
     confirmResetPwd: '确定要重置密码为 123456 吗？',
     none: '无',

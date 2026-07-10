@@ -1,7 +1,9 @@
 pub mod dept;
 pub mod dict;
+pub mod file;
 pub mod i18n;
 pub mod menu;
+pub mod param;
 pub mod post;
 pub mod role;
 pub mod user;

@@ -53,7 +53,7 @@ pub async fn auth_middleware(
             let tk = token_str.to_string();
             tokio::spawn(async move { let _ = crate::modules::auth::service::token_service::refresh_token(&pool, &tk, expires_hours).await; });
             request.extensions_mut().insert(TokenInfo { username: token.username.clone(), user_id: token.user_id });
-            tracing::debug!("[AUTH] Inserted TokenInfo: username={}, ip={:?}", token.username, client_ip);
+            // tracing::debug!("[AUTH] Inserted TokenInfo: username={}, ip={:?}", token.username, client_ip);
             Ok(next.run(request).await)
         }
         Ok(None) => Err(StatusCode::UNAUTHORIZED),

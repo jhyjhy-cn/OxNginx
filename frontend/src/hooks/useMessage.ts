@@ -42,8 +42,8 @@ export function useMessage() {
     ElMessage.info({ message: msg, duration })
   }
 
-  async function confirm(opts: { message: string; title?: string; type?: MsgType }): Promise<boolean> {
-    const msg = i18n(opts.message)
+  async function confirm(opts: { message: string; title?: string; type?: MsgType; params?: Record<string, any> }): Promise<boolean> {
+    const msg = i18n(opts.message, opts.params)
     const title = opts.title ? i18n(opts.title) : t('common.tip')
     try {
       await ElMessageBox.confirm(msg, title, { type: opts.type || 'warning' })

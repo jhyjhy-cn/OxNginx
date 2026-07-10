@@ -1,7 +1,9 @@
 pub mod dept_dao;
 pub mod dict_dao;
+pub mod file_dao;
 pub mod i18n_dao;
 pub mod menu_dao;
+pub mod param_dao;
 pub mod post_dao;
 pub mod role_dao;
 pub mod user_dao;

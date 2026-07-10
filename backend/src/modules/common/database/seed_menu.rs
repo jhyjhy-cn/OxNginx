@@ -208,6 +208,26 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
         "sys:config:view",
         "sys/i18n/index",
     ),
+    (
+        "权限管理",
+        "系统参数",
+        "sys.menu.rbacParams",
+        "Setting",
+        "/settings/rbac/params",
+        "C",
+        "sys:config:manage",
+        "sys/params/index",
+    ),
+    (
+        "权限管理",
+        "系统文件",
+        "sys.menu.rbacFiles",
+        "Folder",
+        "/settings/rbac/files",
+        "C",
+        "sys:file:manage",
+        "sys/files/index",
+    ),
 ];
 
 /// 启动种子：菜单 + super_admin 角色 + 默认部门/岗位
@@ -223,6 +243,7 @@ pub async fn seed_menus(pool: &SqlitePool) -> Result<()> {
     bind_super_to_all_menus(pool, super_id).await?;
     seed_default_dept(pool).await?;
     seed_default_post(pool).await?;
+    crate::modules::sys::service::param_service::ensure_default_params(pool).await?;
     Ok(())
 }
 

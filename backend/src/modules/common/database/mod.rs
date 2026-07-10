@@ -293,6 +293,37 @@ impl Database {
                 FOREIGN KEY (dict_id) REFERENCES sys_dict(id) ON DELETE CASCADE
             );
 
+            CREATE TABLE IF NOT EXISTS sys_params (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 参数ID
+                key TEXT NOT NULL UNIQUE,              -- 参数标识（英文唯一）
+                value TEXT,                            -- 参数值
+                name TEXT NOT NULL,                    -- 参数名（中文友好）
+                group_code TEXT NOT NULL DEFAULT 'default', -- 分组
+                remark TEXT,                           -- 备注
+                sort INTEGER NOT NULL DEFAULT 0,       -- 排序
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                created_by INTEGER,
+                updated_by INTEGER
+            );
+
+            CREATE TABLE IF NOT EXISTS sys_files (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 文件ID
+                name TEXT NOT NULL UNIQUE,              -- 服务器文件名（uuid + 后缀）
+                original_name TEXT NOT NULL,            -- 原始文件名
+                suffix TEXT NOT NULL,                   -- 后缀（小写）
+                size INTEGER NOT NULL DEFAULT 0,        -- 字节数
+                mime_type TEXT,                         -- Content-Type
+                md5 TEXT,                               -- 文件MD5
+                path TEXT NOT NULL,                     -- 相对路径（不含域名）
+                provider TEXT NOT NULL DEFAULT 'local', -- 服务商
+                dept_id INTEGER,                        -- 部门ID
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                created_by INTEGER,
+                updated_by INTEGER
+            );
+
             CREATE TABLE IF NOT EXISTS sys_tokens (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,  -- TokenID
                 token TEXT NOT NULL UNIQUE,            -- Token

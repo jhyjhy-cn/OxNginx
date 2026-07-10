@@ -73,11 +73,11 @@ pub async fn audit_middleware(
         .extensions()
         .get::<TokenInfo>()
         .map(|t| {
-            tracing::debug!("[AUDIT] TokenInfo found: username={}", t.username);
+            // tracing::debug!("[AUDIT] TokenInfo found: username={}", t.username);
             t.username.clone()
         })
         .unwrap_or_else(|| {
-            tracing::warn!("[AUDIT] TokenInfo NOT found in request");
+            // tracing::warn!("[AUDIT] TokenInfo NOT found in request");
             "unknown".into()
         });
 

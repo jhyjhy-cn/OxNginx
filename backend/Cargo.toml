@@ -25,10 +25,13 @@ strip = true
 ox-nginx-macros = { path = "macros" }
 
 # Web框架
-axum = { version = "0.8", features = ["macros", "ws"] }
+axum = { version = "0.8", features = ["macros", "ws", "multipart"] }
 tokio = { version = "1", features = ["full", "process"] }
 tower = "0.5"
 tower-http = { version = "0.7", features = ["cors", "fs"] }
+tokio-util = { version = "0.7", features = ["io"] }
+# 文件 MD5 哈希（流式）
+md5 = "0.7"
 
 # 序列化
 serde = { version = "1", features = ["derive"] }

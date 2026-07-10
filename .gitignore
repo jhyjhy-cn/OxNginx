@@ -8,6 +8,7 @@ backend/ssl/
 backend/wwwlogs/
 backend/wwwroot/
 backend/server/
+backend/files/
 backend/configs/config.toml
 backend-gui/target/
 backend-gui/gen/

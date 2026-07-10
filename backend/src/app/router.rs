@@ -1,4 +1,5 @@
 use axum::{
+    extract::DefaultBodyLimit,
     middleware::from_fn_with_state,
     routing::{delete, get, post, put},
     Router,
@@ -149,6 +150,16 @@ pub fn build(state: AppState) -> Router {
         .route("/api/rbac/dicts/{id}", get(modules::sys::controller::dict_controller::get_dict).put(modules::sys::controller::dict_controller::update_dict).delete(modules::sys::controller::dict_controller::delete_dict))
         .route("/api/rbac/dicts/{dict_id}/items", post(modules::sys::controller::dict_controller::create_dict_item))
         .route("/api/rbac/dict-items/{id}", put(modules::sys::controller::dict_controller::update_dict_item).delete(modules::sys::controller::dict_controller::delete_dict_item))
+        // 系统参数
+        .route("/api/rbac/params", get(modules::sys::controller::param_controller::page_params).post(modules::sys::controller::param_controller::create_param))
+        .route("/api/rbac/params/key/{key}", get(modules::sys::controller::param_controller::get_param_by_key))
+        .route("/api/rbac/params/{id}", get(modules::sys::controller::param_controller::get_param).put(modules::sys::controller::param_controller::update_param).delete(modules::sys::controller::param_controller::delete_param))
+        // 系统文件
+        .route("/api/rbac/files/upload", post(modules::sys::controller::file_controller::upload_file))
+        .route("/api/rbac/files/page", get(modules::sys::controller::file_controller::page_files))
+        .route("/api/rbac/files/{id}", get(modules::sys::controller::file_controller::get_file).delete(modules::sys::controller::file_controller::delete_file))
+        .route("/api/rbac/files/batch-delete", post(modules::sys::controller::file_controller::batch_delete_files))
+        .route("/api/rbac/files/{id}/download", get(modules::sys::controller::file_controller::download_file))
         .layer(from_fn_with_state(state.clone(), audit::middleware::audit_middleware)) // 先添加 = 第3执行
         .layer(from_fn_with_state(state.clone(), middleware::auth_middleware))          // 第2添加 = 第2执行
         .layer(from_fn_with_state(state.clone(), middleware::require_admin));                       // 最后添加 = 第1执行
@@ -156,16 +167,25 @@ pub fn build(state: AppState) -> Router {
     // 静态文件服务（前端 SPA）
     let run_dir = crate::modules::common::config::get_run_dir();
     let static_dir = run_dir.join("static");
-    tracing::info!("静态文件目录: {}", static_dir.display());
+    let files_dir = run_dir.join("files");
+    tracing::info!("静态文件目录: {}, 上传目录: {}", static_dir.display(), files_dir.display());
 
-    let static_service = ServeDir::new(&static_dir)
+    // /files/* 路由：指向 run_dir/files/（上传文件实际目录）
+    // nest_service 会自动剥掉 /files 前缀，ServeDir 拿到的是相对路径
+    let files_service = Router::new().nest_service("/files", ServeDir::new(&files_dir));
+
+    // SPA fallback：所有非 API、非 /files 的请求都返回 index.html
+    let spa_service = ServeDir::new(&static_dir)
         .not_found_service(ServeFile::new(static_dir.join("index.html")));
 
     public_routes
         .merge(protected_routes)
         .merge(admin_routes)
+        .merge(files_service)
+        // ponytail: 文件上传默认 body limit 是 2MB，调到 50MB；超大文件再换 streaming
+        .layer(DefaultBodyLimit::max(50 * 1024 * 1024))
         .layer(axum::middleware::from_fn(middleware::logging_middleware))              // 全局耗时
         .layer(CorsLayer::permissive())
-        .fallback_service(static_service)
+        .fallback_service(spa_service)
         .with_state(state)
 }
