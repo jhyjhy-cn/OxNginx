@@ -19,9 +19,17 @@
         @page-change="onPageChange"
         @command="handleCommand"
         @reload="load"
+        @selectionChange="(rows: any[]) => (selectedRows = rows)"
       >
         <template #toolbar-left>
           <el-button type="primary" @click="openCreate(null)">{{ $t('common.add') }}</el-button>
+          <el-button
+            type="danger"
+            :disabled="!selectedRows.length"
+            @click="batchDelete"
+          >
+            {{ $t('common.batchDelete') }} ({{ selectedRows.length }})
+          </el-button>
         </template>
         <template #status="{ row }">
           <el-tag size="small" :type="row.status === 'enabled' ? 'success' : 'info'">
@@ -63,13 +71,14 @@ import OnDialog from '@/components/OnDialog/index.vue'
 import OnTable from '@/components/OnTable/index.vue'
 import type { FormField } from '@/components/OnForm/types'
 import type { TableColumn } from '@/components/OnTable/types'
-import { listDepts, createDept, updateDept, deleteDept } from '@/api/sys/depts'
+import { listDepts, createDept, updateDept, deleteDept, batchDeleteDepts } from '@/api/sys/depts'
 import type { Dept } from '@/api/sys/depts/type'
 import { useCrud, useMessage } from '@/hooks'
 
 const { success, error, confirm } = useMessage()
 
 const showForm = ref(false)
+const selectedRows = ref<any[]>([])
 const formRef = ref<InstanceType<typeof OnForm>>()
 const form = reactive({ id: null as number | null, parent_id: null as number | null, name: '', sort: 0 })
 
@@ -114,6 +123,7 @@ const parentOptions = computed(() => {
 })
 
 const tableColumns: TableColumn[] = [
+  { type: 'selection', width: 48 },
   { prop: 'name', label: 'sys.rbac.colName', minWidth: 200 },
   { prop: 'sort', label: 'sys.rbac.colSort', width: 100 },
   { prop: 'status', label: 'common.status', width: 100, slot: 'status' },
@@ -180,6 +190,24 @@ async function del(row: Dept) {
   try {
     await deleteDept(row.id)
     success('common.success')
+    load()
+  } catch (e: any) {
+    error(e?.message || 'common.fail')
+  }
+}
+
+async function batchDelete() {
+  if (!selectedRows.value.length) return
+  const ok = await confirm({
+    message: 'sys.rbac.confirmBatchDelete',
+    params: { n: selectedRows.value.length },
+  })
+  if (!ok) return
+  try {
+    const ids = selectedRows.value.map((r) => r.id)
+    const msg = await batchDeleteDepts(ids)
+    success(typeof msg === 'string' ? msg : 'common.success')
+    selectedRows.value = []
     load()
   } catch (e: any) {
     error(e?.message || 'common.fail')

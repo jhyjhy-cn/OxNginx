@@ -27,20 +27,11 @@
         @selectionChange="(rows: any[]) => (selectedRows = rows)"
       >
         <template #toolbar-left>
-          <el-upload
-            :action="uploadUrl"
-            :headers="uploadHeaders"
-            :show-file-list="false"
-            :before-upload="beforeUpload"
-            :on-success="onUploadSuccess"
-            :on-error="onUploadError"
-            name="file"
-            accept="*/*"
-          >
-            <el-button type="primary" :loading="uploading">
+          <OnUpload ref="uploadRef" :show-file-list="false" @change="onUploaded">
+            <el-button type="primary" :loading="uploadRef?.loading">
               {{ $t("common.upload") }}
             </el-button>
-          </el-upload>
+          </OnUpload>
           <el-button
             type="danger"
             :disabled="!selectedRows.length"
@@ -76,8 +67,8 @@ import OnFormGrid from "@/components/OnForm/OnFormGrid/index.vue";
 import type { FormField } from "@/components/OnForm/types";
 import type { TableColumn } from "@/components/OnTable/types";
 import OnTable from "@/components/OnTable/index.vue";
+import OnUpload from "@/components/OnUpload/index.vue";
 import { useCrud, useMessage } from "@/hooks";
-import { useAuthStore } from "@/stores/auth";
 import {
   pageFiles,
   deleteFile,
@@ -85,15 +76,9 @@ import {
 } from "@/api/sys/files";
 
 const { success, error, confirm } = useMessage();
-const authStore = useAuthStore();
 
 const selectedRows = ref<any[]>([]);
-const uploading = ref(false);
-
-const uploadUrl = "/api/rbac/files/upload";
-const uploadHeaders = {
-  Authorization: `Bearer ${authStore.token || ""}`,
-};
+const uploadRef = ref<{ loading: boolean }>();
 
 const searchFields: FormField[] = [
   { prop: "keyword", label: "sys.files.originalName", type: "input", span: 8 },
@@ -145,24 +130,8 @@ function handleCommand(command: string | number, row: any) {
   else if (command === "delete") del(row);
 }
 
-function beforeUpload(_file: File) {
-  uploading.value = true;
-  return true;
-}
-
-function onUploadSuccess(res: any) {
-  uploading.value = false;
-  if (res?.code === 0) {
-    success("sys.files.uploadSuccess");
-    load();
-  } else {
-    error(res?.message || "sys.files.uploadFailed");
-  }
-}
-
-function onUploadError(_err: any) {
-  uploading.value = false;
-  error("sys.files.uploadFailed");
+function onUploaded() {
+  load();
 }
 
 function download(row: any) {

@@ -51,6 +51,7 @@ export interface FormField {
   min?: number;
   max?: number;
   format?: string;
+  autocomplete?: string; // off / on / new-password，input/textarea/password 有效
 
   // 高级
   visible?: boolean;

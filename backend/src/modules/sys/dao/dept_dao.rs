@@ -92,3 +92,22 @@ pub async fn delete_dept(pool: &SqlitePool, id: i64) -> sqlx::Result<u64> {
         .await?;
     Ok(r.rows_affected())
 }
+
+/// 批量删部门: 父部门有子节点时跳过(返回 skipped),仅删叶子或无子部门
+pub async fn delete_depts(pool: &SqlitePool, ids: &[i64]) -> sqlx::Result<u64> {
+    if ids.is_empty() {
+        return Ok(0);
+    }
+    // ponytail: 子节点存在性用一次 NOT IN 子查询判断
+    let placeholders = std::iter::repeat("?").take(ids.len()).collect::<Vec<_>>().join(",");
+    let sql = format!(
+        "DELETE FROM sys_depts WHERE id IN ({}) AND id NOT IN (SELECT parent_id FROM sys_depts WHERE parent_id IS NOT NULL)",
+        placeholders
+    );
+    let mut q = sqlx::query(&sql);
+    for id in ids {
+        q = q.bind(id);
+    }
+    let r = q.execute(pool).await?;
+    Ok(r.rows_affected())
+}

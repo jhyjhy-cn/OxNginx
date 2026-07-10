@@ -109,3 +109,7 @@ pub async fn update_dept(
 pub async fn delete_dept(pool: &SqlitePool, id: i64) -> Result<bool> {
     Ok(dept_dao::delete_dept(pool, id).await? > 0)
 }
+
+pub async fn delete_depts(pool: &SqlitePool, ids: &[i64]) -> Result<usize> {
+    Ok(dept_dao::delete_depts(pool, ids).await? as usize)
+}

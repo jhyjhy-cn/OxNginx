@@ -95,6 +95,7 @@ const props = withDefaults(
     visible?: boolean;
     viewFormat?: FormField["viewFormat"];
     labelWidth?: string | number;
+    autocomplete?: string;
   }>(),
   {
     type: "input",
@@ -174,6 +175,9 @@ const componentProps = computed(() => {
       p.max = props.max;
       p.precision = 0;
       break;
+  }
+  if (props.autocomplete && (props.type === "input" || props.type === "textarea" || props.type === "password")) {
+    p.autocomplete = props.autocomplete;
   }
   return p;
 });

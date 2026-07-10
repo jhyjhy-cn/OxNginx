@@ -91,6 +91,25 @@ pub async fn delete_role_protect_super_admin(pool: &SqlitePool, id: i64) -> sqlx
     Ok(r.rows_affected())
 }
 
+/// 批量删角色: 过滤掉 super_admin,返回实际删除条数
+pub async fn delete_roles_protect_super_admin(pool: &SqlitePool, ids: &[i64]) -> sqlx::Result<u64> {
+    if ids.is_empty() {
+        return Ok(0);
+    }
+    // ponytail: 单 SQL IN (...) 走 N 个占位符,避免拼接
+    let placeholders = std::iter::repeat("?").take(ids.len()).collect::<Vec<_>>().join(",");
+    let sql = format!(
+        "DELETE FROM sys_roles WHERE code != 'super_admin' AND id IN ({})",
+        placeholders
+    );
+    let mut q = sqlx::query(&sql);
+    for id in ids {
+        q = q.bind(id);
+    }
+    let r = q.execute(pool).await?;
+    Ok(r.rows_affected())
+}
+
 pub async fn replace_role_menus(
     pool: &SqlitePool,
     role_id: i64,

@@ -256,12 +256,11 @@ const searchFields: FormField[] = [
 // 表格列
 const tableColumns: TableColumn[] = [
   { type: "selection", width: 48 },
-  { prop: "id", label: "sys.user.id", width: 70 },
   { prop: "username", label: "login.username" },
   { prop: "nickname", label: "sys.user.nickname" },
   { prop: "dept_name", label: "sys.rbac.department" },
   { prop: "phone", label: "sys.user.phone" },
-  { prop: "gender", label: "sys.user.gender", width: 80, slot: "gender" },
+  { prop: "gender", label: "sys.user.gender", width: 80, sortable: true, slot: "gender" },
   { prop: "disabled", label: "common.status", width: 80, slot: "status" },
   { prop: "created_at", label: "common.createdAt", width: 170 },
   {
@@ -312,6 +311,7 @@ const formFields = computed<FormField[]>(() => {
       label: "login.username",
       type: "input",
       required: true,
+      autocomplete: "off",
     },
   ];
   if (!isEdit.value) {
@@ -321,6 +321,7 @@ const formFields = computed<FormField[]>(() => {
       type: "password",
       required: true,
       showPassword: true,
+      autocomplete: "new-password",
     });
   }
   fields.push(

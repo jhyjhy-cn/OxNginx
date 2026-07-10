@@ -14,3 +14,6 @@ export const updateDept = (id: number, payload: Partial<Dept>) =>
   putData(`/api/rbac/depts/${id}`, payload)
 
 export const deleteDept = (id: number) => deleteData(`/api/rbac/depts/${id}`)
+
+export const batchDeleteDepts = (ids: number[]) =>
+  postData(`/api/rbac/depts/batch-delete`, ids)

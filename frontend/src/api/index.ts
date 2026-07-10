@@ -30,6 +30,9 @@ api.interceptors.response.use(
     return response
   },
   (error) => {
+    // ponytail: 打 console 暴露后端实际返回(text/plain axum 错误体 / 网络错),便于排查 4xx/5xx
+    console.error('[http]', error.config?.method?.toUpperCase(), error.config?.url, '->',
+      error.response?.status, error.response?.data ?? error.message)
     if (error.response?.status === 401) {
       const authStore = useAuthStore()
       authStore.logout()

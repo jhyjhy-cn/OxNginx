@@ -327,7 +327,7 @@ pub struct UserQuery {
     pub end_date: Option<String>,
 }
 
-fn empty_str_opt<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+pub fn empty_str_opt<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -335,7 +335,7 @@ where
     Ok(opt.filter(|s| !s.is_empty()))
 }
 
-fn empty_str_opt_i64<'de, D>(deserializer: D) -> Result<Option<i64>, D::Error>
+pub fn empty_str_opt_i64<'de, D>(deserializer: D) -> Result<Option<i64>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -347,7 +347,7 @@ where
     }
 }
 
-fn empty_str_opt_i32<'de, D>(deserializer: D) -> Result<Option<i32>, D::Error>
+pub fn empty_str_opt_i32<'de, D>(deserializer: D) -> Result<Option<i32>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {

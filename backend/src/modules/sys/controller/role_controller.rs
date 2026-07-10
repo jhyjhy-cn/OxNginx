@@ -93,3 +93,15 @@ pub async fn get_role_menus(
         Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
     }
 }
+
+#[audit_log(module = "rbac", action = "批量删除角色", capture = ids)]
+pub async fn batch_delete_roles(
+    ctx: axum::extract::Extension<crate::modules::common::audit::context::SharedAuditContext>,
+    State(state): State<AppState>,
+    Json(ids): Json<Vec<i64>>,
+) -> Json<serde_json::Value> {
+    match rbac_service::delete_roles(&state.db.pool(), &ids).await {
+        Ok(n) => Json(json!(ApiResponse::success(format!("已删除 {} 条", n)))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
+    }
+}

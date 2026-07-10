@@ -66,3 +66,15 @@ pub async fn delete_dept(
         Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
     }
 }
+
+#[audit_log(module = "rbac", action = "批量删除部门", capture = ids)]
+pub async fn batch_delete_depts(
+    ctx: axum::extract::Extension<crate::modules::common::audit::context::SharedAuditContext>,
+    State(state): State<AppState>,
+    Json(ids): Json<Vec<i64>>,
+) -> Json<serde_json::Value> {
+    match rbac_service::delete_depts(&state.db.pool(), &ids).await {
+        Ok(n) => Json(json!(ApiResponse::success(format!("已删除 {} 条", n)))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
+    }
+}

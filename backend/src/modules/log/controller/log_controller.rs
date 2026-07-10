@@ -2,9 +2,19 @@ use axum::{extract::State, http::header, Json};
 use serde_json::json;
 
 use crate::modules::common::dto::{ApiResponse, LogResponse, PagedResult};
+use crate::modules::common::enums::LogStatus;
 use crate::modules::log::service::log_service::{LoginLogQuery, OperationLogQuery};
 use crate::modules::common::util::read_log_tail;
 use crate::AppState;
+
+/// ponytail: 前端发 success/failed 字符串,这里转成 LogStatus::as_i32(),空值 / 其它字符串 -> None
+fn parse_status_str(s: Option<String>) -> Option<i32> {
+    match s.as_deref().filter(|v| !v.is_empty())? {
+        "success" => Some(LogStatus::Success.as_i32()),
+        "failed" => Some(LogStatus::Failed.as_i32()),
+        _ => None,
+    }
+}
 
 /// 获取Access日志
 pub async fn access_log(State(state): State<AppState>) -> Json<serde_json::Value> {
@@ -31,7 +41,7 @@ pub struct OperationLogParams {
     pub page: Option<i64>,
     pub page_size: Option<i64>,
     pub username: Option<String>,
-    pub status: Option<i32>,
+    pub status: Option<String>,
     pub start_time: Option<String>,
     pub end_time: Option<String>,
     pub module: Option<String>,
@@ -43,7 +53,7 @@ fn build_op_query(p: &OperationLogParams) -> OperationLogQuery {
         page: p.page.unwrap_or(1).max(1),
         page_size: p.page_size.unwrap_or(20).max(1),
         username: p.username.clone().filter(|s| !s.is_empty()),
-        status: p.status.clone().filter(|&s| s != 0),
+        status: parse_status_str(p.status.clone()),
         start_time: p.start_time.clone().filter(|s| !s.is_empty()),
         end_time: p.end_time.clone().filter(|s| !s.is_empty()),
         module: p.module.clone().filter(|s| !s.is_empty()),
@@ -91,7 +101,7 @@ pub struct LoginLogParams {
     pub page_size: Option<i64>,
     pub username: Option<String>,
     pub ip: Option<String>,
-    pub status: Option<i32>,
+    pub status: Option<String>,
     pub start_time: Option<String>,
     pub end_time: Option<String>,
 }
@@ -102,7 +112,7 @@ fn build_query(params: &LoginLogParams) -> LoginLogQuery {
         page_size: params.page_size.unwrap_or(20).max(1),
         username: params.username.clone().filter(|s| !s.is_empty()),
         ip: params.ip.clone().filter(|s| !s.is_empty()),
-        status: params.status.clone().filter(|&s| s != 0),
+        status: parse_status_str(params.status.clone()),
         start_time: params.start_time.clone().filter(|s| !s.is_empty()),
         end_time: params.end_time.clone().filter(|s| !s.is_empty()),
     }

@@ -2,15 +2,21 @@ use axum::{
     extract::DefaultBodyLimit,
     middleware::from_fn_with_state,
     routing::{delete, get, post, put},
-    Router,
+    Json, Router,
 };
 use tower_http::cors::CorsLayer;
 use tower_http::services::{ServeDir, ServeFile};
 
 use crate::modules;
 use crate::modules::common::audit;
+use crate::modules::common::dto::ApiResponse;
 use crate::modules::common::middleware;
 use super::state::AppState;
+
+/// ponytail: API 路径未匹配时统一回包 ApiResponse::error 而不是 SPA 的 index.html
+async fn api_not_found() -> Json<serde_json::Value> {
+    axum::Json(serde_json::json!(ApiResponse::<()>::error("接口不存在")))
+}
 
 /// 构建应用路由
 pub fn build(state: AppState) -> Router {
@@ -129,11 +135,13 @@ pub fn build(state: AppState) -> Router {
         // 角色
         .route("/api/rbac/roles", get(modules::sys::controller::role_controller::list_roles).post(modules::sys::controller::role_controller::create_role))
         .route("/api/rbac/roles/{id}", put(modules::sys::controller::role_controller::update_role).delete(modules::sys::controller::role_controller::delete_role))
+        .route("/api/rbac/roles/batch-delete", post(modules::sys::controller::role_controller::batch_delete_roles))
         .route("/api/rbac/roles/{id}/menus", get(modules::sys::controller::role_controller::get_role_menus).put(modules::sys::controller::role_controller::set_role_menus))
         // 部门
         .route("/api/rbac/depts", get(modules::sys::controller::dept_controller::list_depts).post(modules::sys::controller::dept_controller::create_dept))
         .route("/api/rbac/depts/tree", get(modules::sys::controller::dept_controller::dept_tree))
         .route("/api/rbac/depts/{id}", put(modules::sys::controller::dept_controller::update_dept).delete(modules::sys::controller::dept_controller::delete_dept))
+        .route("/api/rbac/depts/batch-delete", post(modules::sys::controller::dept_controller::batch_delete_depts))
         // 岗位
         .route("/api/rbac/posts", get(modules::sys::controller::post_controller::list_posts).post(modules::sys::controller::post_controller::create_post))
         .route("/api/rbac/posts/{id}", put(modules::sys::controller::post_controller::update_post).delete(modules::sys::controller::post_controller::delete_post))
@@ -178,10 +186,15 @@ pub fn build(state: AppState) -> Router {
     let spa_service = ServeDir::new(&static_dir)
         .not_found_service(ServeFile::new(static_dir.join("index.html")));
 
+    // ponytail: API 404 兜底,挂在 /api/* 上,未匹配时回 ApiResponse 包而非 SPA 页面
+    let api_fallback = Router::new().fallback(api_not_found);
+    let api_with_fallback = Router::new().nest("/api", api_fallback);
+
     public_routes
         .merge(protected_routes)
         .merge(admin_routes)
         .merge(files_service)
+        .merge(api_with_fallback)
         // ponytail: 文件上传默认 body limit 是 2MB，调到 50MB；超大文件再换 streaming
         .layer(DefaultBodyLimit::max(50 * 1024 * 1024))
         .layer(axum::middleware::from_fn(middleware::logging_middleware))              // 全局耗时

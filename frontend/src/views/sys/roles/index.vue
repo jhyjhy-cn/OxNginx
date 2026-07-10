@@ -18,20 +18,28 @@
         @page-change="onPageChange"
         @command="handleCommand"
         @reload="load"
+        @selectionChange="(rows: any[]) => (selectedRows = rows)"
       >
         <template #toolbar-left>
           <el-button type="primary" @click="openCreate">{{ $t("common.add") }}</el-button>
+          <el-button
+            type="danger"
+            :disabled="!selectedRows.length"
+            @click="batchDelete"
+          >
+            {{ $t("common.batchDelete") }} ({{ selectedRows.length }})
+          </el-button>
         </template>
       </OnTable>
     </el-card>
 
-    <!-- 创建弹窗 -->
-    <OnDialog v-model="showCreate" :title="$t('sys.rbac.createRole')" width="400px">
+    <!-- 创建/编辑弹窗 -->
+    <OnDialog v-model="showForm" :title="$t(formTitle)" width="400px">
       <OnForm ref="formRef" :model="form">
         <OnFormGrid :fields="formFields" :model="form" />
       </OnForm>
       <template #footer>
-        <el-button @click="showCreate = false">{{ $t("common.cancel") }}</el-button>
+        <el-button @click="showForm = false">{{ $t("common.cancel") }}</el-button>
         <el-button type="primary" @click="submit">{{ $t("common.confirm") }}</el-button>
       </template>
     </OnDialog>
@@ -44,6 +52,13 @@
       height="60vh"
       destroy-on-close
     >
+      <div class="menu-perm-toolbar">
+        <el-button size="small" @click="treeExpandAll(true)">{{ $t('common.expandAll') }}</el-button>
+        <el-button size="small" @click="treeExpandAll(false)">{{ $t('common.collapseAll') }}</el-button>
+        <el-button size="small" @click="treeSelectAll">{{ $t('common.selectAll') }}</el-button>
+        <el-button size="small" @click="treeInvert">{{ $t('common.invert') }}</el-button>
+        <el-button size="small" @click="treeClear">{{ $t('common.clear') }}</el-button>
+      </div>
       <el-tree
         ref="treeRef"
         :data="menuTree"
@@ -62,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from "vue";
+import { ref, reactive, onMounted, nextTick, computed } from "vue";
 import OnForm from "@/components/OnForm/OnForm/index.vue";
 import OnFormGrid from "@/components/OnForm/OnFormGrid/index.vue";
 import OnDialog from "@/components/OnDialog/index.vue";
@@ -73,15 +88,17 @@ import { useCrud, useMessage } from "@/hooks";
 import {
   listRoles,
   createRole,
+  updateRole,
   deleteRole,
+  batchDeleteRoles,
   getRoleMenus,
   setRoleMenus,
 } from "@/api/sys/roles";
 import { listMenus } from "@/api/sys/menus";
 
-const { success, error, confirm } = useMessage();
-
-const showCreate = ref(false);
+const showForm = ref(false);
+const isEdit = ref(false);
+const editingId = ref<number | null>(null);
 const formRef = ref<InstanceType<typeof OnForm>>();
 const form = reactive({ code: "", name: "", remark: "" });
 
@@ -100,6 +117,9 @@ const {
   isPage: true,
   pageSize: 20,
 });
+const { success, error, confirm } = useMessage();
+
+const selectedRows = ref<any[]>([]);
 
 const searchFields: FormField[] = [
   { prop: "keyword", label: "common.search", type: "input", span: 8 },
@@ -108,25 +128,29 @@ const searchFields: FormField[] = [
 const isSuperAdmin = (row: any) => row.code === "super_admin";
 
 const tableColumns: TableColumn[] = [
-  { prop: "id", label: "sys.user.id", width: 60 },
+  { type: "selection", width: 48 },
   { prop: "code", label: "sys.rbac.colCode", width: 160 },
   { prop: "name", label: "sys.rbac.colName" },
   { prop: "remark", label: "sys.rbac.colRemark" },
   {
     label: "common.action",
-    width: 200,
+    width: 240,
     buttons: [
+      { name: "common.edit", command: "edit", size: "small" },
       { name: "sys.rbac.menuPermission", command: "menuPerm", size: "small", disabled: isSuperAdmin },
       { name: "common.delete", command: "delete", type: "danger", size: "small", disabled: isSuperAdmin },
     ],
   },
 ];
 
-const formFields: FormField[] = [
-  { prop: "code", label: "sys.rbac.colCode", type: "input", required: true },
+const formFields = computed<FormField[]>(() => [
+  { prop: "code", label: "sys.rbac.colCode", type: "input", required: true, disabled: isEdit.value },
   { prop: "name", label: "sys.rbac.colName", type: "input", required: true },
   { prop: "remark", label: "sys.rbac.colRemark", type: "input" },
-];
+]);
+
+// ponytail: template 里 $t() 取 i18n,script setup 里 useI18n().t —— 这里只返回 i18n key 让模板翻译
+const formTitle = computed(() => (isEdit.value ? "common.edit" : "sys.rbac.createRole"));
 
 function onPageChange(p: number) {
   page.value = p;
@@ -134,13 +158,23 @@ function onPageChange(p: number) {
 }
 
 function handleCommand(command: string | number, row: any) {
-  if (command === "menuPerm") openMenuPerm(row);
+  if (command === "edit") openEdit(row);
+  else if (command === "menuPerm") openMenuPerm(row);
   else if (command === "delete") del(row);
 }
 
 function openCreate() {
+  isEdit.value = false;
+  editingId.value = null;
   Object.assign(form, { code: "", name: "", remark: "" });
-  showCreate.value = true;
+  showForm.value = true;
+}
+
+async function openEdit(row: any) {
+  isEdit.value = true;
+  editingId.value = row.id;
+  Object.assign(form, { code: row.code || "", name: row.name || "", remark: row.remark || "" });
+  showForm.value = true;
 }
 
 async function submit() {
@@ -151,9 +185,13 @@ async function submit() {
     return;
   }
   try {
-    await createRole({ ...form });
+    if (isEdit.value && editingId.value != null) {
+      await updateRole(editingId.value, { ...form });
+    } else {
+      await createRole({ ...form });
+    }
     success("common.success");
-    showCreate.value = false;
+    showForm.value = false;
     load();
   } catch (e: any) {
     error(e?.message || "common.fail");
@@ -166,6 +204,29 @@ async function del(row: any) {
   try {
     await deleteRole(row.id);
     success("common.success");
+    load();
+  } catch (e: any) {
+    error(e?.message || "common.fail");
+  }
+}
+
+async function batchDelete() {
+  if (!selectedRows.value.length) return;
+  const supers = selectedRows.value.filter(isSuperAdmin);
+  if (supers.length) {
+    error("sys.rbac.adminCannotDelete");
+    return;
+  }
+  const ok = await confirm({
+    message: "sys.rbac.confirmBatchDelete",
+    params: { n: selectedRows.value.length },
+  });
+  if (!ok) return;
+  try {
+    const ids = selectedRows.value.map((r) => r.id);
+    const msg = await batchDeleteRoles(ids);
+    success(typeof msg === "string" ? msg : "common.success");
+    selectedRows.value = [];
     load();
   } catch (e: any) {
     error(e?.message || "common.fail");
@@ -225,6 +286,51 @@ async function saveMenuPerm() {
   }
 }
 
+// ====== 树快捷操作 ======
+const flattenIds = (nodes: any[]): number[] => {
+  const ids: number[] = [];
+  const walk = (ns: any[]) => {
+    for (const n of ns) {
+      if (n.id) ids.push(n.id);
+      if (n.children?.length) walk(n.children);
+    }
+  };
+  walk(nodes);
+  return ids;
+};
+
+function treeExpandAll(expand: boolean) {
+  const ids = flattenIds(menuTree.value);
+  ids.forEach((id) => treeRef.value?.store?.nodesMap[id]?.expand()); // ponytail: expand 全部走 store;传 false 用 collapse
+  if (!expand) ids.forEach((id) => treeRef.value?.store?.nodesMap[id]?.collapse());
+}
+
+function treeSelectAll() {
+  const ids = flattenIds(menuTree.value);
+  treeRef.value?.setCheckedKeys(ids);
+}
+
+function treeInvert() {
+  if (!treeRef.value) return;
+  const all = flattenIds(menuTree.value);
+  const checked = new Set<number>(
+    treeRef.value.getCheckedKeys() as number[],
+  );
+  const half = new Set<number>(treeRef.value.getHalfCheckedKeys() as number[]);
+  // ponytail: 当前已勾的（包括半选父）取反
+  const nextChecked = all.filter((id) => !checked.has(id) && !half.has(id));
+  const nextUncheck = new Set([...checked, ...half]);
+  treeRef.value.setCheckedKeys(nextChecked);
+  // ponytail: 那些"曾经选中"的节点若不在新选中集里,要显式清掉,否则它们的子树会保留
+  for (const id of nextUncheck) {
+    if (!nextChecked.includes(id)) treeRef.value.setChecked(id, false, false);
+  }
+}
+
+function treeClear() {
+  treeRef.value?.setCheckedKeys([]);
+}
+
 onMounted(() => {
   load();
 });
@@ -236,5 +342,11 @@ onMounted(() => {
   gap: 12px;
   align-items: flex-start;
   margin-bottom: 12px;
+}
+.menu-perm-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
 }
 </style>

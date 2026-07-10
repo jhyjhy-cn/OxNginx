@@ -82,4 +82,6 @@ import HasPermission from '@/components/HasPermission/index.vue'
 |------|------|-------|
 | `OnDialog` | 增强版 el-dialog (拖拽/最大化/主题色) | `modelValue, title, width, height, maximizable, closeOnClickModal, destroyOnClose` |
 | `OnIcon` | 统一图标 (Element Plus / SVG / Sprite) | `name, svgName, svg, size, color, className, style, prefix` |
+| `OnUpload` | 统一上传 (el-upload，drag/button 双模式、v-model 接 URL 或 URL 数组) | `url, modelValue, accept, limit, drag, showFileList` |
+| `OnDictSelect` | 字典下拉 (按 code 拉 sys_dicts.items,前端过滤) | `code, vModel, multiple, clearable, disabled, placeholder` |
 | `HasPermission` | 权限码包装 slot | `code` |

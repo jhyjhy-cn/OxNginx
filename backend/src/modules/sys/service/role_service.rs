@@ -37,6 +37,10 @@ pub async fn delete_role(pool: &SqlitePool, id: i64) -> Result<bool> {
     Ok(role_dao::delete_role_protect_super_admin(pool, id).await? > 0)
 }
 
+pub async fn delete_roles(pool: &SqlitePool, ids: &[i64]) -> Result<usize> {
+    Ok(role_dao::delete_roles_protect_super_admin(pool, ids).await? as usize)
+}
+
 pub async fn set_role_menus(pool: &SqlitePool, role_id: i64, menu_ids: &[i64]) -> Result<()> {
     Ok(role_dao::replace_role_menus(pool, role_id, menu_ids).await?)
 }

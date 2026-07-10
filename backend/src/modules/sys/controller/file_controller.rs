@@ -10,7 +10,7 @@ use serde_json::json;
 use tokio_util::io::ReaderStream;
 
 use crate::modules::common::config::get_run_dir;
-use crate::modules::common::dto::{ApiResponse, BatchDeleteFilesRequest};
+use crate::modules::common::dto::{self, ApiResponse, BatchDeleteFilesRequest};
 use crate::modules::common::middleware::TokenInfo;
 use crate::modules::sys::service::file_service as svc;
 use crate::AppState;
@@ -19,8 +19,11 @@ use crate::AppState;
 
 #[derive(Debug, Deserialize)]
 pub struct PageFilesQuery {
+    #[serde(default, deserialize_with = "dto::empty_str_opt")]
     pub keyword: Option<String>,
+    #[serde(default, deserialize_with = "dto::empty_str_opt")]
     pub suffix: Option<String>,
+    #[serde(default, deserialize_with = "dto::empty_str_opt")]
     pub provider: Option<String>,
     pub page: Option<i64>,
     pub page_size: Option<i64>,

@@ -22,6 +22,7 @@
         :format="field.format"
         :visible="field.visible"
         :view-format="field.viewFormat"
+        :autocomplete="field.autocomplete"
       />
     </el-col>
   </el-row>

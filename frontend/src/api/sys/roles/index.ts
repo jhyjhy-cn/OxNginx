@@ -13,6 +13,9 @@ export const updateRole = (id: number, payload: RolePayload) =>
 
 export const deleteRole = (id: number) => deleteData(`/api/rbac/roles/${id}`)
 
+export const batchDeleteRoles = (ids: number[]) =>
+  postData(`/api/rbac/roles/batch-delete`, ids)
+
 export const getRoleMenus = (id: number) =>
   getData<number[]>(`/api/rbac/roles/${id}/menus`)
 
