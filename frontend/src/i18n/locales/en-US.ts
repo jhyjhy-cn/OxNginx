@@ -22,6 +22,8 @@ export default {
     loading: 'Loading...',
     success: 'Success',
     failed: 'Failed',
+    export: 'Export',
+    exportSuccess: 'Export succeeded',
     tip: 'Tip',
     confirmDelete: 'Are you sure to delete?',
     confirmResetPwd: 'Reset password to 123456?',
@@ -95,6 +97,11 @@ export default {
     menuPermission: 'Menu Permission',
     userCreateSuccess: 'User created',
     userUpdateSuccess: 'User updated',
+    adminCannotReset: 'Cannot reset super admin password',
+    adminCannotDisable: 'Cannot disable super admin',
+    confirmBatchResetPwd: 'Reset selected users password to 123456?',
+    confirmBatchDisable: 'Disable selected users?',
+    confirmBatchEnable: 'Enable selected users?',
   },
 
   user: {

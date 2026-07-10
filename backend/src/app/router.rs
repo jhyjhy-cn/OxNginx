@@ -122,6 +122,9 @@ pub fn build(state: AppState) -> Router {
         .route("/api/rbac/users", get(modules::sys::controller::user_controller::list_users).post(modules::sys::controller::user_controller::create_user))
         .route("/api/rbac/users/{id}", get(modules::sys::controller::user_controller::get_user).put(modules::sys::controller::user_controller::update_user).delete(modules::sys::controller::user_controller::delete_user))
         .route("/api/rbac/users/{id}/reset-password", post(modules::sys::controller::user_controller::reset_password))
+        .route("/api/rbac/users/batch/reset-password", post(modules::sys::controller::user_controller::batch_reset_password))
+        .route("/api/rbac/users/batch/disabled", post(modules::sys::controller::user_controller::batch_set_disabled))
+        .route("/api/rbac/users/export", get(modules::sys::controller::user_controller::export_users))
         // 角色
         .route("/api/rbac/roles", get(modules::sys::controller::role_controller::list_roles).post(modules::sys::controller::role_controller::create_role))
         .route("/api/rbac/roles/{id}", put(modules::sys::controller::role_controller::update_role).delete(modules::sys::controller::role_controller::delete_role))

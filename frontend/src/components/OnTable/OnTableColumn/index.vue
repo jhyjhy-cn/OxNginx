@@ -1,6 +1,15 @@
 <template>
+  <!-- 选择列 -->
+  <el-table-column v-if="column.type === 'selection'" type="selection" :width="column.width || 48" :fixed="column.fixed" />
+
+  <!-- 索引列 -->
+  <el-table-column v-else-if="column.type === 'index'" type="index" :label="t(column.label || '')" :width="column.width" :fixed="column.fixed" />
+
+  <!-- 展开列 -->
+  <el-table-column v-else-if="column.type === 'expand'" type="expand" :width="column.width" :fixed="column.fixed" />
+
   <!-- 多级表头 -->
-  <el-table-column v-if="column.children?.length" :label="t(column.label || '')" :width="column.width" :align="column.align" :fixed="column.fixed">
+  <el-table-column v-else-if="column.children?.length" :label="t(column.label || '')" :width="column.width" :align="column.align" :fixed="column.fixed">
     <OnTableColumn v-for="child in column.children" :key="child.prop" :column="child" />
   </el-table-column>
 

@@ -22,6 +22,8 @@ export default {
     loading: '加载中...',
     success: '操作成功',
     failed: '操作失败',
+    export: '导出',
+    exportSuccess: '导出成功',
     tip: '提示',
     confirmDelete: '确定要删除吗？',
     confirmResetPwd: '确定要重置密码为 123456 吗？',
@@ -95,6 +97,11 @@ export default {
     menuPermission: '菜单权限',
     userCreateSuccess: '创建用户成功',
     userUpdateSuccess: '更新用户成功',
+    adminCannotReset: '不能重置超级管理员密码',
+    adminCannotDisable: '不能禁用超级管理员',
+    confirmBatchResetPwd: '确认批量重置选中用户的密码为 123456？',
+    confirmBatchDisable: '确认批量禁用选中用户？',
+    confirmBatchEnable: '确认批量启用选中用户？',
   },
 
   user: {

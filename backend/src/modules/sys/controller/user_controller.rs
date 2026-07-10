@@ -1,4 +1,5 @@
 use axum::{extract::{Extension, Path, State}, Json};
+use axum::response::Response;
 use serde_json::json;
 
 use ox_nginx_macros::audit_log;
@@ -150,5 +151,107 @@ pub async fn me(
             Json(json!(ApiResponse::success(RbacInfo { roles, permissions, menus })))
         }
         Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
+    }
+}
+
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct BatchResetPasswordRequest {
+    pub ids: Vec<i64>,
+    #[serde(default = "default_password")]
+    pub new_password: String,
+}
+
+fn default_password() -> String {
+    "123456".to_string()
+}
+
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct BatchDisabledRequest {
+    pub ids: Vec<i64>,
+    pub disabled: i32,
+}
+
+#[audit_log(module = "rbac", action = "批量重置密码", capture = req)]
+pub async fn batch_reset_password(
+    ctx: axum::extract::Extension<crate::modules::common::audit::context::SharedAuditContext>,
+    State(state): State<AppState>,
+    Json(req): Json<BatchResetPasswordRequest>,
+) -> Json<serde_json::Value> {
+    if req.ids.is_empty() {
+        return Json(json!(ApiResponse::<()>::error("请选择要重置的用户")));
+    }
+    match user_service::batch_reset_password(&state.db.pool(), &req.ids, &req.new_password).await {
+        Ok(n) => Json(json!(ApiResponse::success(format!("已重置 {} 个用户密码", n)))),
+        Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
+    }
+}
+
+#[audit_log(module = "rbac", action = "批量禁用/启用用户", capture = req)]
+pub async fn batch_set_disabled(
+    ctx: axum::extract::Extension<crate::modules::common::audit::context::SharedAuditContext>,
+    State(state): State<AppState>,
+    Json(req): Json<BatchDisabledRequest>,
+) -> Json<serde_json::Value> {
+    if req.ids.is_empty() {
+        return Json(json!(ApiResponse::<()>::error("请选择要操作的用户")));
+    }
+    match user_service::batch_set_disabled(&state.db.pool(), &req.ids, req.disabled).await {
+        Ok(n) => {
+            let action = if req.disabled == 1 { "禁用" } else { "启用" };
+            Json(json!(ApiResponse::success(format!("已{} {} 个用户", action, n))))
+        }
+        Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
+    }
+}
+
+/// 按当前查询条件导出用户为 xlsx
+pub async fn export_users(
+    State(state): State<AppState>,
+    axum::extract::Query(q): axum::extract::Query<crate::modules::common::dto::UserQuery>,
+) -> Response {
+    use crate::modules::common::util::excel::{build_xlsx, export_error, xlsx_response, Sheet};
+
+    let list = match user_service::list_users_for_export(&state.db.pool(), &q).await {
+        Ok(v) => v,
+        Err(e) => return export_error(e),
+    };
+
+    let headers = vec![
+        "ID".into(),
+        "用户名".into(),
+        "昵称".into(),
+        "部门".into(),
+        "岗位".into(),
+        "手机".into(),
+        "邮箱".into(),
+        "性别".into(),
+        "状态".into(),
+        "创建时间".into(),
+    ];
+    let rows: Vec<Vec<String>> = list
+        .iter()
+        .map(|u| {
+            vec![
+                u.id.to_string(),
+                u.username.clone(),
+                u.nickname.clone().unwrap_or_default(),
+                u.dept_name.clone().unwrap_or_default(),
+                u.post_name.clone().unwrap_or_default(),
+                u.phone.clone().unwrap_or_default(),
+                u.email.clone().unwrap_or_default(),
+                u.gender.clone().unwrap_or_default(),
+                (if u.disabled == 1 { "禁用" } else { "启用" }).into(),
+                u.created_at
+                    .map(|d| d.format("%Y-%m-%d %H:%M:%S").to_string())
+                    .unwrap_or_default(),
+            ]
+        })
+        .collect();
+
+    let sheet = Sheet { headers, rows };
+    let filename = format!("users-{}.xlsx", chrono::Local::now().format("%Y%m%d%H%M%S"));
+    match build_xlsx("Users", &sheet) {
+        Ok(buf) => xlsx_response(filename, buf),
+        Err(e) => export_error(e),
     }
 }

@@ -1,6 +1,7 @@
 pub mod cert_service;
 pub mod cmd;
 pub mod datetime;
+pub mod excel;
 pub mod ua_parser;
 
 /// 读取日志文件最后N行

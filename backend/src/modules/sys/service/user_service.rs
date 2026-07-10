@@ -249,3 +249,47 @@ pub async fn get_user(pool: &SqlitePool, id: i64) -> Result<Option<User>> {
 pub async fn get_user_role_ids(pool: &SqlitePool, user_id: i64) -> Result<Vec<i64>> {
     Ok(user_dao::list_user_role_ids(pool, user_id).await?)
 }
+
+/// 批量重置密码（admin 用户可被重置）
+pub async fn batch_reset_password(pool: &SqlitePool, ids: &[i64], new_password: &str) -> Result<u64> {
+    let hashed = crate::modules::common::auth::hash_password(new_password)?;
+    let mut count = 0u64;
+    for id in ids {
+        user_dao::update_user_password(pool, *id, &hashed).await?;
+        count += 1;
+    }
+    Ok(count)
+}
+
+/// 批量设置 disabled（保护 admin 不允许禁用）
+pub async fn batch_set_disabled(pool: &SqlitePool, ids: &[i64], disabled: i32) -> Result<u64> {
+    if disabled == 1 {
+        for id in ids {
+            if user_dao::count_admin_by_id(pool, *id).await.unwrap_or(0) > 0 {
+                return Err(anyhow::anyhow!("禁止禁用管理员账户"));
+            }
+        }
+    }
+    let mut count = 0u64;
+    for id in ids {
+        sqlx::query("UPDATE sys_user SET disabled = ? WHERE id = ?")
+            .bind(disabled)
+            .bind(id)
+            .execute(pool)
+            .await?;
+        count += 1;
+    }
+    Ok(count)
+}
+
+/// 按查询条件导出用户（不分页，限制 10000 防爆）
+pub async fn list_users_for_export(pool: &SqlitePool, q: &UserQuery) -> Result<Vec<UserListItem>> {
+    // 限制导出上限：page_size 字段借用来传 limit（无 page/offset = 拉全量）
+    let limit = q.page_size.unwrap_or(10000).min(10000) as i64;
+    // ponytail: 偷个懒，直接借 list_users_paged 拿第一页数据（limit 当 page_size 传）
+    let mut q2 = q.clone();
+    q2.page = Some(1);
+    q2.page_size = Some(limit);
+    let (list, _total) = list_users_paged(pool, &q2).await?;
+    Ok(list)
+}

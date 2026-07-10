@@ -70,6 +70,8 @@ sysinfo = "0.39"
 
 # zip 解压（首次运行 setup 用 + 文件管理压缩）
 zip = "8.6"
+# xlsx 导出
+rust_xlsxwriter = "0.96"
 
 # 文件压缩/解压（tar.gz）
 flate2 = "1"

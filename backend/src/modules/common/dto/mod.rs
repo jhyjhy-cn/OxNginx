@@ -307,7 +307,7 @@ pub struct PageQuery {
 }
 
 /// 用户列表查询参数
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct UserQuery {
     pub page: Option<i64>,
     pub page_size: Option<i64>,

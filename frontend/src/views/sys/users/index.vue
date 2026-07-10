@@ -49,10 +49,41 @@
             @page-change="onPageChange"
             @command="handleCommand"
             @reload="load"
+            @selectionChange="(rows: any[]) => (selectedRows = rows)"
           >
             <template #toolbar-left>
               <el-button type="primary" @click="openCreate">
                 {{ $t("common.add") }}
+              </el-button>
+              <el-button
+                type="warning"
+                :disabled="!selectedRows.length"
+                @click="batchResetPwd"
+              >
+                {{ $t("rbac.resetPassword") }} ({{ selectedRows.length }})
+              </el-button>
+              <el-dropdown
+                :disabled="!selectedRows.length"
+                @command="batchSetDisabled"
+              >
+                <el-button type="success" :disabled="!selectedRows.length">
+                  {{ $t("common.status") }} ({{ selectedRows.length }})
+                  <el-icon style="margin-left: 4px"><ArrowDown /></el-icon>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item :command="1">{{
+                      $t("common.disabled")
+                    }}</el-dropdown-item>
+                    <el-dropdown-item :command="0">{{
+                      $t("common.enabled")
+                    }}</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+              <el-button @click="exportXlsx">
+                <el-icon style="margin-right: 4px"><Download /></el-icon>
+                {{ $t("common.export") }}
               </el-button>
             </template>
             <template #status="{ row }">
@@ -89,6 +120,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from "vue";
+import { ArrowDown, Download } from "@element-plus/icons-vue";
 import api from "@/api";
 import OnForm from "@/components/OnForm/OnForm/index.vue";
 import OnFormGrid from "@/components/OnForm/OnFormGrid/index.vue";
@@ -97,8 +129,12 @@ import type { FormField } from "@/components/OnForm/types";
 import type { TableColumn } from "@/components/OnTable/types";
 import OnTable from "@/components/OnTable/index.vue";
 import { useCrud, useMessage } from "@/hooks";
+import { downloadXlsx } from "@/utils/export";
 
 const { confirm, success, error } = useMessage();
+
+// 已选行
+const selectedRows = ref<any[]>([]);
 
 // 部门树
 const deptTree = ref<any[]>([]);
@@ -211,6 +247,7 @@ const searchFields: FormField[] = [
 
 // 表格列
 const tableColumns: TableColumn[] = [
+  { type: "selection", width: 48 },
   { prop: "id", label: "user.id", width: 70 },
   { prop: "username", label: "login.username" },
   { prop: "nickname", label: "user.nickname" },
@@ -440,6 +477,67 @@ async function del(row: any) {
       load();
     } else error(data.message);
   } catch {}
+}
+
+// 批量操作
+async function batchResetPwd() {
+  if (!selectedRows.value.length) return;
+  const adminCount = selectedRows.value.filter((r) => r.username === "admin").length;
+  if (adminCount > 0) {
+    error("rbac.adminCannotReset");
+    return;
+  }
+  const ok = await confirm({ message: "rbac.confirmBatchResetPwd" });
+  if (!ok) return;
+  try {
+    const ids = selectedRows.value.map((r) => r.id);
+    const { data } = await api.post("/api/rbac/users/batch/reset-password", { ids });
+    if (data.code === 0) {
+      success(data.data);
+      selectedRows.value = [];
+    } else error(data.message);
+  } catch (e: any) {
+    error(e?.response?.data?.message || e?.message || "common.fail");
+  }
+}
+
+async function batchSetDisabled(disabled: number) {
+  if (!selectedRows.value.length) return;
+  const adminCount = selectedRows.value.filter((r) => r.username === "admin").length;
+  if (adminCount > 0 && disabled === 1) {
+    error("rbac.adminCannotDisable");
+    return;
+  }
+  const ok = await confirm({
+    message: disabled === 1 ? "rbac.confirmBatchDisable" : "rbac.confirmBatchEnable",
+  });
+  if (!ok) return;
+  try {
+    const ids = selectedRows.value.map((r) => r.id);
+    const { data } = await api.post("/api/rbac/users/batch/disabled", { ids, disabled });
+    if (data.code === 0) {
+      success(data.data);
+      selectedRows.value = [];
+      load();
+    } else error(data.message);
+  } catch (e: any) {
+    error(e?.response?.data?.message || e?.message || "common.fail");
+  }
+}
+
+// 导出 xlsx（按当前查询条件）
+async function exportXlsx() {
+  const params: Record<string, any> = {
+    page_size: 10000, // 借 page_size 当 limit
+    ...searchForm,
+  };
+  Object.keys(params).forEach((k) => {
+    if (params[k] === null || params[k] === undefined || params[k] === "") {
+      delete params[k];
+    }
+  });
+  const ts = new Date().toISOString().slice(0, 10);
+  await downloadXlsx("/api/rbac/users/export", params, `users-${ts}.xlsx`);
 }
 
 onMounted(() => {
