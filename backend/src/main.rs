@@ -1,5 +1,8 @@
 // Windows: 隐藏控制台（仅在release版本生效）
-#![cfg_attr(all(target_os = "windows", not(debug_assertions)), windows_subsystem = "windows")]
+#![cfg_attr(
+    all(target_os = "windows", not(debug_assertions)),
+    windows_subsystem = "windows"
+)]
 
 mod app;
 mod modules;
@@ -54,22 +57,40 @@ fn main() -> anyhow::Result<()> {
 
     // 首次运行自动初始化（cargo-packager 安装后）
     let exe_dir = std::env::current_exe()?
-        .parent().map(|p| p.to_path_buf())
+        .parent()
+        .map(|p| p.to_path_buf())
         .unwrap_or_else(|| std::path::PathBuf::from("."));
     startup::setup::first_run_setup(&exe_dir)?;
 
     // 先加载配置（首次运行若无配置则自动生成默认配置）
-    let config_path = std::env::var("CONFIG_PATH")
-        .unwrap_or_else(|_| exe_dir.join("configs").join("config.toml").to_string_lossy().to_string());
+    let config_path = std::env::var("CONFIG_PATH").unwrap_or_else(|_| {
+        exe_dir
+            .join("configs")
+            .join("config.toml")
+            .to_string_lossy()
+            .to_string()
+    });
     if !std::path::Path::new(&config_path).exists() {
         startup::setup::generate_default_config(&config_path, &exe_dir)?;
     }
-    unsafe { std::env::set_var("CONFIG_PATH", &config_path); }
+    unsafe {
+        std::env::set_var("CONFIG_PATH", &config_path);
+    }
     let config = AppConfig::load()?;
 
     // 初始化日志（控制台 + 文件双输出，大小轮转写入 wwwlogs/panel/）
-    let log_dir = exe_dir.parent().and_then(|p| p.parent()).unwrap_or(&exe_dir).join("wwwlogs").join("panel");
-    startup::logging::init(&log_dir, &config.log.level, config.log.max_size_mb, config.database.log_sql);
+    let log_dir = exe_dir
+        .parent()
+        .and_then(|p| p.parent())
+        .unwrap_or(&exe_dir)
+        .join("wwwlogs")
+        .join("panel");
+    startup::logging::init(
+        &log_dir,
+        &config.log.level,
+        config.log.max_size_mb,
+        config.database.log_sql,
+    );
     tracing::info!("配置加载完成");
 
     // 运行服务
@@ -86,7 +107,8 @@ fn main() -> anyhow::Result<()> {
 
         // 创建应用状态 & 构建路由
         tracing::info!("[3/4] 生成 RSA 密钥对...");
-        let (rsa_private_key, rsa_public_key_b64) = crate::modules::common::auth::generate_rsa_keypair()?;
+        let (rsa_private_key, rsa_public_key_b64) =
+            crate::modules::common::auth::generate_rsa_keypair()?;
         tracing::info!("[3/4] RSA 密钥对已生成");
 
         let state = AppState::new(db, config.clone(), rsa_private_key, rsa_public_key_b64);
@@ -104,9 +126,13 @@ fn main() -> anyhow::Result<()> {
         // 启动服务
         let addr = format!("{}:{}", config.server.host, config.server.port);
         let listener = tokio::net::TcpListener::bind(&addr).await?;
-        tracing::info!("OxNginx 启动于 http://{}", addr);
+        tracing::info!("OxNginx 启动于 http://localhost:{}", config.server.port);
 
-        axum::serve(listener, app.into_make_service_with_connect_info::<std::net::SocketAddr>()).await?;
+        axum::serve(
+            listener,
+            app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+        )
+        .await?;
 
         Ok::<(), anyhow::Error>(())
     })?;
