@@ -85,15 +85,9 @@ if (Test-Path $StaticDir) {
     Write-Info "已复制 static/ -> server/panel/"
 }
 
-# 复制配置和数据目录（如果存在）
-$ConfigsDir = Join-Path $BackendDir "configs"
-$DatasDir = Join-Path $BackendDir "datas"
-if (Test-Path $ConfigsDir) {
-    Copy-Item -Recurse -Force $ConfigsDir $PanelDir
-}
-if (Test-Path $DatasDir) {
-    Copy-Item -Recurse -Force $DatasDir $PanelDir
-}
+# configs/ 和 datas/ 不打包到安装包；首次启动由程序自动初始化
+# 模板配置文件（如需）应放在 configs.template/ 等位置，单独复制
+Write-Info "跳过 configs/ 与 datas/（首次启动自动初始化）"
 
 # 复制 libs 到 server/panel/libs/
 if (Test-Path "$LibsDir\nginx\windows\nginx-1.30.3.zip") {
