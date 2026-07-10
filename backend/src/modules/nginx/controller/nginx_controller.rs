@@ -87,11 +87,12 @@ pub async fn install(
     State(state): State<AppState>,
 ) -> Json<serde_json::Value> {
     let _ = ctx;
-    let config = state.get_config();
-    let install_dir = std::path::Path::new(&config.nginx.bin)
-        .parent().and_then(|p| p.parent())
-        .map(|p| p.to_string_lossy().to_string())
-        .unwrap_or_else(|| ".".into());
+    // 解压到 server/nginx/ 目录
+    let install_dir = crate::modules::common::config::get_run_dir()
+        .join("server")
+        .join("nginx")
+        .to_string_lossy()
+        .to_string();
     match crate::modules::common::nginx::install_nginx(&install_dir).await {
         Ok(_) => { crate::modules::dashboard::controller::dashboard_ws::trigger_push(&state).await; Json(json!(ApiResponse::success("Nginx安装成功"))) }
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("安装失败: {}", e)))),

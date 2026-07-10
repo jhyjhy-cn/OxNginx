@@ -192,7 +192,7 @@ pub fn generate_default_config(config_path: &str, exe_dir: &Path) -> anyhow::Res
 
     #[cfg(target_os = "windows")]
     let (nginx_bin, nginx_conf, sites_enabled) = {
-        let nginx_dir = exe_dir.join("nginx");
+        let nginx_dir = exe_dir.join("server").join("nginx");
         (
             nginx_dir.join("nginx.exe").to_string_lossy().replace('\\', "/"),
             nginx_dir.join("conf").join("nginx.conf").to_string_lossy().replace('\\', "/"),
@@ -243,7 +243,7 @@ max_size_mb = 10
         base = exe_dir.to_string_lossy().replace('\\', "/"),
     ))?;
 
-    for dir in &["datas", "wwwroot", "wwwlogs/nginx", "wwwlogs/panel", "ssl", "backup"] {
+    for dir in &["datas", "wwwroot", "wwwlogs/nginx", "wwwlogs/panel", "ssl", "backup", "server"] {
         let _ = std::fs::create_dir_all(exe_dir.join(dir));
     }
 

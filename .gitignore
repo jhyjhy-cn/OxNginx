@@ -7,6 +7,7 @@ backend/datas/
 backend/ssl/
 backend/wwwlogs/
 backend/wwwroot/
+backend/server/
 backend/configs/config.toml
 backend-gui/target/
 backend-gui/gen/

@@ -1,3 +1,4 @@
+use std::path::Path;
 use crate::modules::common::dto::{CreateUpstreamRequest, NginxTestResult};
 use crate::modules::site::entity::site::Site; use crate::modules::site::entity::upstream::{Upstream, UpstreamServer}; use crate::modules::site::entity::reverse_proxy::ReverseProxy;
 use crate::modules::common::util::cmd;
@@ -816,6 +817,54 @@ pub async fn restart_nginx(nginx_bin: &str, config_path: &str) -> anyhow::Result
     start_nginx(nginx_bin, config_path).await
 }
 
+/// 把 zip 解压到 install_dir；zip 内若只有 nginx-{ver}/ 单层子目录，提到 install_dir 根。
+pub fn extract_zip_to_install_dir(zip_path: &Path, install_dir: &Path, version: &str) -> anyhow::Result<()> {
+    let top_subdir_name = format!("nginx-{}", version);
+
+    // 清理上次失败留下的版本号子目录
+    let stale = install_dir.join(&top_subdir_name);
+    let _ = std::fs::remove_dir_all(&stale);
+
+    std::fs::create_dir_all(install_dir)?;
+
+    let file = std::fs::File::open(zip_path)?;
+    let mut archive = zip::ZipArchive::new(file)?;
+
+    for i in 0..archive.len() {
+        let mut entry = archive.by_index(i)?;
+        let out = install_dir.join(entry.mangled_name());
+        if entry.is_dir() {
+            std::fs::create_dir_all(&out)?;
+        } else {
+            if let Some(p) = out.parent() {
+                std::fs::create_dir_all(p)?;
+            }
+            let mut out_file = std::fs::File::create(&out)?;
+            std::io::copy(&mut entry, &mut out_file)?;
+        }
+    }
+
+    // 若产物是 install_dir/nginx-{ver}/ 单层子目录，提一层
+    let subdir = install_dir.join(&top_subdir_name);
+    if subdir.is_dir() {
+        for entry in std::fs::read_dir(&subdir)? {
+            let entry = entry?;
+            let dest = install_dir.join(entry.file_name());
+            if !dest.exists() {
+                std::fs::rename(entry.path(), &dest)?;
+            } else {
+                return Err(anyhow::anyhow!(
+                    "目标已存在，无法合并: {} -> {}",
+                    entry.path().display(),
+                    dest.display()
+                ));
+            }
+        }
+        std::fs::remove_dir_all(&subdir)?;
+    }
+    Ok(())
+}
+
 /// 一键安装 Nginx（Windows/Linux）
 pub async fn install_nginx(install_dir: &str) -> anyhow::Result<NginxInstallResult> {
     use std::env::consts::OS;
@@ -823,50 +872,77 @@ pub async fn install_nginx(install_dir: &str) -> anyhow::Result<NginxInstallResu
     let os = OS;
 
     if os == "windows" {
-        // Windows: 下载 nginx 并解压到安装目录
+        // Windows: 解压 nginx 到安装目录
         let nginx_version = "1.30.3";
-        let download_url = format!(
-            "https://nginx.org/download/nginx-{}.zip",
-            nginx_version
-        );
-        let zip_path = format!("{}\\nginx-{}.zip", install_dir, nginx_version);
 
-        // 创建安装目录
+        // 开发模式用本地 zip（libs 在项目根目录），release 模式下载
+        let zip_path = if cfg!(debug_assertions) {
+            let libs_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .parent()
+                .unwrap()
+                .join("libs")
+                .join("nginx")
+                .join("windows");
+            let local_zip = libs_dir.join(format!("nginx-{}.zip", nginx_version));
+            if local_zip.exists() {
+                tracing::info!("使用本地 Nginx 包: {}", local_zip.display());
+                local_zip.to_string_lossy().to_string()
+            } else {
+                // 本地不存在则下载
+                let dl_path = format!("{}\\{}.zip", install_dir, nginx_version);
+                tracing::info!("下载 Nginx {}...", nginx_version);
+                let output = cmd::silent_tokio_command("curl")
+                    .args(["-L", "-o", &dl_path, &format!("https://nginx.org/download/nginx-{}.zip", nginx_version)])
+                    .output()
+                    .await?;
+                if !output.status.success() {
+                    return Err(anyhow::anyhow!("下载 Nginx 失败"));
+                }
+                dl_path
+            }
+        } else {
+            // Release 模式下载
+            let dl_path = format!("{}\\{}.zip", install_dir, nginx_version);
+            tracing::info!("下载 Nginx {}...", nginx_version);
+            let output = cmd::silent_tokio_command("curl")
+                .args(["-L", "-o", &dl_path, &format!("https://nginx.org/download/nginx-{}.zip", nginx_version)])
+                .output()
+                .await?;
+            if !output.status.success() {
+                return Err(anyhow::anyhow!("下载 Nginx 失败"));
+            }
+            dl_path
+        };
+
+        // 解压（用 zip crate，避免 PowerShell 跨目录合并失败）
+        tracing::info!("解压 Nginx...");
+
         tokio::fs::create_dir_all(install_dir).await?;
 
-        // 下载
-        tracing::info!("下载 Nginx {}...", nginx_version);
-        let output = cmd::silent_tokio_command("curl")
-            .args(["-L", "-o", &zip_path, &download_url])
-            .output()
-            .await?;
-
-        if !output.status.success() {
-            return Err(anyhow::anyhow!("下载 Nginx 失败"));
+        // 已安装则跳过，避免覆盖用户配置（conf/、logs/ 等）
+        let nginx_exe_path = Path::new(install_dir).join("nginx.exe");
+        if nginx_exe_path.exists() {
+            tracing::info!("Nginx 已存在，跳过解压: {}", nginx_exe_path.display());
+        } else {
+            let zip_path_pb = std::path::PathBuf::from(&zip_path);
+            let install_dir_pb = std::path::PathBuf::from(install_dir);
+            let version = nginx_version.to_string();
+            tokio::task::spawn_blocking(move || {
+                extract_zip_to_install_dir(&zip_path_pb, &install_dir_pb, &version)
+            })
+            .await??;
         }
 
-        // 解压 - Windows 用 PowerShell Expand-Archive
-        tracing::info!("解压 Nginx...");
-        let ps_cmd = format!(
-            "Expand-Archive -Path '{}' -DestinationPath '{}' -Force",
-            zip_path, install_dir
-        );
-        let output = cmd::silent_tokio_command("powershell")
-            .args(["-Command", &ps_cmd])
-            .output()
-            .await?;
-
-        if !output.status.success() {
-            return Err(anyhow::anyhow!("解压 Nginx 失败"));
+        // 下载的 zip 才清理，本地 zip 不清理
+        let project_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+        if !Path::new(&zip_path).starts_with(project_root) {
+            let _ = tokio::fs::remove_file(&zip_path).await;
         }
-
-        // 清理 zip
-        let _ = tokio::fs::remove_file(&zip_path).await;
 
         // 返回 nginx.exe 路径和配置路径
-        let nginx_exe = format!("{}\\nginx-{}\\nginx.exe", install_dir, nginx_version);
-        let nginx_conf = format!("{}\\nginx-{}\\conf\\nginx.conf", install_dir, nginx_version);
-        let sites_enabled = format!("{}\\nginx-{}\\conf\\sites-enabled", install_dir, nginx_version);
+        let nginx_exe = format!("{}\\nginx.exe", install_dir);
+        let nginx_conf = format!("{}\\conf\\nginx.conf", install_dir);
+        let sites_enabled = format!("{}\\conf\\sites-enabled", install_dir);
 
         tracing::info!("Nginx 安装完成: {}", nginx_exe);
         Ok(NginxInstallResult {
