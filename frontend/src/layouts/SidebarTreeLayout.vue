@@ -80,7 +80,7 @@ import TabBar from './components/TabBar.vue'
 import { useSidebarTheme } from '@/composables/useSidebarTheme'
 import { useSettingsStore } from '@/stores/settings'
 import { useAuthStore } from '@/stores/auth'
-import { MenuType } from '@/enums'
+import { MenuType } from '@/consts'
 
 const route = useRoute()
 const { t } = useI18n()

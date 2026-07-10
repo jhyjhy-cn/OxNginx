@@ -83,7 +83,7 @@ import type { TableColumn } from '@/components/OnTable/types'
 import { listMenus, createMenu, updateMenu, deleteMenu, batchDeleteMenus } from '@/api/sys/menus'
 import type { MenuItem } from '@/api/sys/menus/type'
 import { useCrud, useMessage } from '@/hooks'
-import { MenuType } from '@/enums'
+import { MenuType } from '@/consts'
 
 const { success, error, confirm } = useMessage()
 

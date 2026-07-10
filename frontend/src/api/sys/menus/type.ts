@@ -1,4 +1,4 @@
-import type { MenuType } from '@/enums'
+import type { MenuType } from '@/consts'
 
 export interface MenuItem {
   id: number

@@ -81,7 +81,7 @@ import { useAuthStore, type MenuNode } from '@/stores/auth'
 import { tabIconMap } from '@/config/menu'
 import TopBarRight from '@/layouts/components/TopBarRight.vue'
 import TabBar from '@/layouts/components/TabBar.vue'
-import { MenuType } from '@/enums'
+import { MenuType } from '@/consts'
 
 const router = useRouter()
 const route = useRoute()

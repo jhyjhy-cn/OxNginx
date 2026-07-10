@@ -1,4 +1,4 @@
-import { MenuType } from '@/enums'
+import { MenuType } from '@/consts'
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore, type MenuNode } from '@/stores/auth'
 

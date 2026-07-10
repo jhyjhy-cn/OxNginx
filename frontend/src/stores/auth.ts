@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import api from '@/api'
 import { mergeI18nMessages } from '@/i18n'
 import { encryptPassword } from '@/utils/crypto'
-import type { MenuType } from '@/enums'
+import type { MenuType } from '@/consts'
 
 export interface MenuNode {
   id: number

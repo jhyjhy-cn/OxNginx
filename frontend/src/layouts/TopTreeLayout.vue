@@ -1,4 +1,4 @@
-import { MenuType } from '@/enums'
+import { MenuType } from '@/consts'
 <template>
   <el-container class="layout-container" direction="vertical">
     <div class="top-header" :style="{ background: sidebarBg, '--menu-active-bg': menuActiveBg }">
