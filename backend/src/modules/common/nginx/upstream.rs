@@ -19,7 +19,7 @@ pub fn generate_upstream_config(upstream: &Upstream, servers: &[UpstreamServer])
     }
 
     for server in servers {
-        if server.status != "enabled" {
+        if server.status != 1 {
             continue;
         }
 

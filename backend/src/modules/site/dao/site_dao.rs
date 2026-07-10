@@ -64,7 +64,7 @@ pub async fn update_site_returning(
     hotlink_config: Option<&String>,
     log_access_path: Option<&String>,
     log_error_path: Option<&String>,
-    status: &str,
+    status: i32,
 ) -> sqlx::Result<Option<Site>> {
     sqlx::query_as::<_, Site>(
         r#"

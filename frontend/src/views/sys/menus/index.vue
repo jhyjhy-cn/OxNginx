@@ -14,8 +14,8 @@
         :columns="tableColumns"
         :loading="loading"
         :pagination="false"
-        :options="{ height: 'auto' }"
-        row-key="id"
+        :options="{ height: 'auto', rowKey: 'id' }"
+        default-expand-all
         :tree-props="{ children: 'children' }"
         @selectionChange="onSelect"
         @command="handleCommand"
@@ -35,7 +35,7 @@
         <template #title="{ row }">{{ $t(row.title) }}</template>
         <template #type="{ row }">
           <el-tag size="small" :type="typeColor(row.type)">
-            {{ $t(row.type === 'M' ? 'sys.rbac.typeM' : row.type === 'C' ? 'sys.rbac.typeC' : 'sys.rbac.typeF') }}
+            {{ $t(row.type === MenuType.Directory ? 'sys.rbac.typeM' : row.type === MenuType.Menu ? 'sys.rbac.typeC' : 'sys.rbac.typeF') }}
           </el-tag>
         </template>
       </OnTable>
@@ -45,9 +45,9 @@
       <OnForm ref="formRef" :model="form">
         <el-form-item :label="$t('sys.rbac.colType')" prop="type" label-width="120px">
           <el-radio-group v-model="form.type">
-            <el-radio-button value="M">{{ $t('sys.rbac.typeM') }}</el-radio-button>
-            <el-radio-button value="C">{{ $t('sys.rbac.typeC') }}</el-radio-button>
-            <el-radio-button value="F">{{ $t('sys.rbac.typeF') }}</el-radio-button>
+            <el-radio-button :value="MenuType.Directory">{{ $t('sys.rbac.typeM') }}</el-radio-button>
+            <el-radio-button :value="MenuType.Menu">{{ $t('sys.rbac.typeC') }}</el-radio-button>
+            <el-radio-button :value="MenuType.Button">{{ $t('sys.rbac.typeF') }}</el-radio-button>
           </el-radio-group>
         </el-form-item>
         <!-- ponytail: 父级用 el-tree-select，OnFormItem 无此类型，走默认插槽 -->
@@ -83,6 +83,7 @@ import type { TableColumn } from '@/components/OnTable/types'
 import { listMenus, createMenu, updateMenu, deleteMenu, batchDeleteMenus } from '@/api/sys/menus'
 import type { MenuItem } from '@/api/sys/menus/type'
 import { useCrud, useMessage } from '@/hooks'
+import { MenuType } from '@/enums'
 
 const { success, error, confirm } = useMessage()
 
@@ -95,7 +96,7 @@ const formRef = ref<InstanceType<typeof OnForm>>()
 
 const form = reactive({
   id: null as number | null,
-  type: 'C' as 'M' | 'C' | 'F',
+  type: MenuType.Menu as MenuType,
   parent_id: null as number | null,
   name: '',
   title: '',
@@ -132,15 +133,15 @@ const treeData = computed<Menu[]>(() => {
 
 const parentOptions = computed(() => {
   const filter = (nodes: Menu[]): Menu[] =>
-    nodes.filter((n) => n.type !== 'F').map((n) => ({ ...n, children: n.children ? filter(n.children) : [] }))
+    nodes.filter((n) => n.type !== MenuType.Button).map((n) => ({ ...n, children: n.children ? filter(n.children) : [] }))
   return filter(treeData.value)
 })
 
-function typeColor(t: string) {
-  return t === 'M' ? 'success' : t === 'C' ? undefined : 'info'
+function typeColor(t: number) {
+  return t === MenuType.Directory ? 'success' : t === MenuType.Menu ? undefined : 'info'
 }
 
-const isFolder = (row: Menu) => row.type === 'F'
+const isFolder = (row: Menu) => row.type === MenuType.Button
 
 const tableColumns: TableColumn[] = [
   { type: 'selection', width: 48 },
@@ -166,10 +167,10 @@ const tableColumns: TableColumn[] = [
 const formFields = computed<FormField[]>(() => [
   { prop: 'name', label: 'sys.rbac.colName', type: 'input', required: true },
   { prop: 'title', label: 'sys.rbac.colTitle', type: 'input', required: true, placeholder: 'sys.menu.sites' },
-  { prop: 'path', label: 'sys.rbac.colPath', type: 'input', visible: form.type !== 'F', placeholder: '/sites' },
-  { prop: 'component', label: 'sys.rbac.colComponent', type: 'input', visible: form.type === 'C', placeholder: 'sites/index' },
+  { prop: 'path', label: 'sys.rbac.colPath', type: 'input', visible: form.type !== MenuType.Button, placeholder: '/sites' },
+  { prop: 'component', label: 'sys.rbac.colComponent', type: 'input', visible: form.type === MenuType.Menu, placeholder: 'sites/index' },
   { prop: 'permission', label: 'sys.rbac.colPermission', type: 'input', placeholder: 'sys:site:view' },
-  { prop: 'icon', label: 'sys.rbac.colIcon', type: 'input', visible: form.type !== 'F', placeholder: 'House / Connection / Lock...' },
+  { prop: 'icon', label: 'sys.rbac.colIcon', type: 'input', visible: form.type !== MenuType.Button, placeholder: 'House / Connection / Lock...' },
   { prop: 'sort', label: 'sys.rbac.colSort', type: 'number', min: 0, max: 9999 },
 ])
 
@@ -198,7 +199,7 @@ function collectIds(rows: Menu[]): number[] {
 function openCreate(parent: Menu | null) {
   Object.assign(form, {
     id: null,
-    type: 'C',
+    type: MenuType.Menu,
     parent_id: parent?.id ?? null,
     name: '',
     title: '',

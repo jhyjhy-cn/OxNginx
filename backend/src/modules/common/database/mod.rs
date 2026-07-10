@@ -90,7 +90,7 @@ impl Database {
                 dept_id INTEGER,                        -- 部门ID
                 post_id INTEGER,                        -- 岗位ID
                 disabled INTEGER NOT NULL DEFAULT 0,    -- 是否禁用
-                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
+                status INTEGER NOT NULL DEFAULT 1,  -- 状态：1=启用 0=禁用
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 更新时间
             );
@@ -113,7 +113,7 @@ impl Database {
                 hotlink_config TEXT,                     -- 防盗链配置
                 log_access_path TEXT,                    -- 访问日志路径
                 log_error_path TEXT,                     -- 错误日志路径
-                status TEXT NOT NULL DEFAULT 'enabled',  -- 状态
+                status INTEGER NOT NULL DEFAULT 1,  -- 状态：1=启用 0=禁用
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 更新时间
             );
@@ -143,7 +143,7 @@ impl Database {
                 name TEXT NOT NULL UNIQUE,             -- 名称
                 method TEXT NOT NULL DEFAULT 'round_robin', -- 负载均衡算法
                 keepalive INTEGER DEFAULT 32,         -- 保持连接数
-                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
+                status INTEGER NOT NULL DEFAULT 1,  -- 状态：1=启用 0=禁用
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 更新时间
             );
@@ -156,7 +156,7 @@ impl Database {
                 max_fails INTEGER DEFAULT 3,            -- 最大失败次数
                 fail_timeout TEXT DEFAULT '30s',        -- 失败超时
                 backup INTEGER DEFAULT 0,               -- 备用服务器
-                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
+                status INTEGER NOT NULL DEFAULT 1,  -- 状态：1=启用 0=禁用
                 FOREIGN KEY (upstream_id) REFERENCES sys_upstreams(id) ON DELETE CASCADE
             );
 
@@ -166,7 +166,7 @@ impl Database {
                 rule_type TEXT NOT NULL,               -- 规则类型
                 value TEXT NOT NULL,                   -- 规则值
                 description TEXT,                     -- 描述
-                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
+                status INTEGER NOT NULL DEFAULT 1,  -- 状态：1=启用 0=禁用
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
                 FOREIGN KEY (site_id) REFERENCES sys_sites(id) ON DELETE CASCADE
             );
@@ -194,7 +194,7 @@ impl Database {
                 proxy_dir TEXT NOT NULL DEFAULT '/',   -- 代理路径
                 target_url TEXT NOT NULL,              -- 目标URL
                 cache INTEGER NOT NULL DEFAULT 0,      -- 是否启用缓存
-                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
+                status INTEGER NOT NULL DEFAULT 1,  -- 状态：1=启用 0=禁用
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 更新时间
                 FOREIGN KEY (site_id) REFERENCES sys_sites(id) ON DELETE CASCADE
@@ -206,7 +206,7 @@ impl Database {
                 code TEXT NOT NULL UNIQUE,             -- 角色代码
                 name TEXT NOT NULL,                    -- 角色名称
                 remark TEXT,                           -- 备注
-                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
+                status INTEGER NOT NULL DEFAULT 1,  -- 状态：1=启用 0=禁用
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 更新时间
             );
@@ -216,7 +216,7 @@ impl Database {
                 parent_id INTEGER,                     -- 父部门ID
                 name TEXT NOT NULL,                    -- 部门名称
                 sort INTEGER NOT NULL DEFAULT 0,       -- 排序
-                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
+                status INTEGER NOT NULL DEFAULT 1,  -- 状态：1=启用 0=禁用
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 更新时间
             );
@@ -226,7 +226,7 @@ impl Database {
                 code TEXT NOT NULL UNIQUE,             -- 岗位代码
                 name TEXT NOT NULL,                    -- 岗位名称
                 sort INTEGER NOT NULL DEFAULT 0,       -- 排序
-                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
+                status INTEGER NOT NULL DEFAULT 1,  -- 状态：1=启用 0=禁用
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 更新时间
             );
@@ -239,10 +239,10 @@ impl Database {
                 icon TEXT,                             -- 图标
                 path TEXT,                             -- 路由路径
                 component TEXT,                        -- 组件路径
-                type TEXT NOT NULL,                   -- 菜单类型
+                type INTEGER NOT NULL,              -- 菜单类型：1=目录 2=菜单 3=按钮
                 permission TEXT,                      -- 权限标识
                 sort INTEGER NOT NULL DEFAULT 0,      -- 排序
-                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
+                status INTEGER NOT NULL DEFAULT 1,  -- 状态：1=启用 0=禁用
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 更新时间
             );
@@ -276,7 +276,7 @@ impl Database {
                 name TEXT NOT NULL,                     -- 字典名称
                 code TEXT NOT NULL UNIQUE,              -- 字典代码
                 description TEXT,                        -- 描述
-                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
+                status INTEGER NOT NULL DEFAULT 1,  -- 状态：1=启用 0=禁用
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 更新时间
             );
@@ -287,7 +287,7 @@ impl Database {
                 label TEXT NOT NULL,                   -- 标签
                 value TEXT NOT NULL,                   -- 值
                 sort INTEGER NOT NULL DEFAULT 0,       -- 排序
-                status TEXT NOT NULL DEFAULT 'enabled', -- 状态
+                status INTEGER NOT NULL DEFAULT 1,  -- 状态：1=启用 0=禁用
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 更新时间
                 FOREIGN KEY (dict_id) REFERENCES sys_dict(id) ON DELETE CASCADE
@@ -343,7 +343,7 @@ impl Database {
                 method TEXT,                            -- 请求方法
                 uri TEXT,                              -- 请求路径
                 ip TEXT,                               -- IP地址
-                status TEXT NOT NULL DEFAULT 'success', -- 状态
+                status INTEGER NOT NULL DEFAULT 1, -- 状态
                 cost_ms INTEGER,                       -- 耗时（毫秒）
                 duration_ms INTEGER,                   -- 持续时间
                 request_body TEXT,                      -- 请求体
@@ -359,8 +359,8 @@ impl Database {
                 os TEXT,                               -- 操作系统
                 browser TEXT,                           -- 浏览器
                 user_agent TEXT,                       -- UserAgent
-                type TEXT NOT NULL DEFAULT 'login',     -- 日志类型
-                status TEXT NOT NULL DEFAULT 'success', -- 状态
+                type INTEGER NOT NULL DEFAULT 1, -- 日志类型
+                status INTEGER NOT NULL DEFAULT 1, -- 状态
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 创建时间
             );
             "#,

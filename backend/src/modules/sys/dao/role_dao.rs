@@ -66,7 +66,7 @@ pub async fn update_role_fields(
     id: i64,
     name: Option<&str>,
     remark: Option<&str>,
-    status: Option<&str>,
+    status: Option<i32>,
 ) -> sqlx::Result<()> {
     if let Some(n) = name {
         sqlx::query("UPDATE sys_roles SET name=? WHERE id=?")

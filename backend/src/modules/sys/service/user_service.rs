@@ -157,7 +157,7 @@ pub async fn list_users_paged(
     }
     if let Some(s) = &query.status {
         where_clause.push_str(" AND u.disabled=?");
-        dis_binds.push(if s == "enabled" { 0 } else { 1 });
+        dis_binds.push(*s);
     }
     if let Some(s) = &query.start_date {
         where_clause.push_str(" AND u.created_at>=?");

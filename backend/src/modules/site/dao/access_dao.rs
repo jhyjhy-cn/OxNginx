@@ -41,7 +41,7 @@ pub async fn update_rule_returning(
     rule_type: &str,
     value: &str,
     description: Option<&String>,
-    status: &str,
+    status: i32,
 ) -> sqlx::Result<Option<AccessRule>> {
     sqlx::query_as::<_, AccessRule>(
         r#"

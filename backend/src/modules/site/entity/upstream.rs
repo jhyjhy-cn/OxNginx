@@ -10,7 +10,7 @@ pub struct Upstream {
     pub name: String,
     pub method: String,
     pub keepalive: i32,
-    pub status: String,
+    pub status: i32, // 1=启用 0=禁用
     #[serde(with = "option_naive_datetime")]
     pub created_at: Option<NaiveDateTime>,
     #[serde(with = "option_naive_datetime")]
@@ -27,5 +27,5 @@ pub struct UpstreamServer {
     pub max_fails: i32,
     pub fail_timeout: String,
     pub backup: i32,
-    pub status: String,
+    pub status: i32, // 1=启用 0=禁用
 }

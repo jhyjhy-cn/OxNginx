@@ -20,12 +20,12 @@ pub struct RedirectRule {
     #[serde(default)]
     pub target_url: String,
     #[serde(default = "default_status")]
-    pub status: String,
+    pub status: i32, // 1=启用 0=禁用
 }
 
 fn default_redirect_type() -> String { "type".to_string() }
 fn default_redirect_method() -> u16 { 301 }
-fn default_status() -> String { "enabled".to_string() }
+fn default_status() -> i32 { 1 }
 
 /// 防盗链配置
 #[derive(Debug, Deserialize)]
@@ -90,7 +90,7 @@ pub fn append_common_directives(config: &mut String, site: &Site, indent: &str) 
     if let Some(ref json) = site.redirect_rules {
         if let Ok(rules) = serde_json::from_str::<Vec<RedirectRule>>(json) {
             for rule in &rules {
-                if rule.status != "enabled" || rule.target_url.is_empty() {
+                if rule.status != 1 || rule.target_url.is_empty() {
                     continue;
                 }
                 let code = rule.redirect_method;
@@ -143,7 +143,7 @@ pub fn append_common_directives(config: &mut String, site: &Site, indent: &str) 
 /// 生成反向代理 location 块
 pub fn append_proxy_locations(config: &mut String, proxies: &[ReverseProxy], indent: &str) {
     for proxy in proxies {
-        if proxy.status != "enabled" {
+        if proxy.status != 1 {
             continue;
         }
         config.push_str(&format!("\n{}location {} {{\n", indent, proxy.proxy_dir));

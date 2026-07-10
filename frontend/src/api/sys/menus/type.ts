@@ -1,3 +1,5 @@
+import type { MenuType } from '@/enums'
+
 export interface MenuItem {
   id: number
   parent_id: number | null
@@ -7,7 +9,7 @@ export interface MenuItem {
   path: string | null
   component: string | null
   permission: string | null
-  type: 'M' | 'C' | 'F'
+  type: MenuType
   sort: number
   children?: MenuItem[]
 }

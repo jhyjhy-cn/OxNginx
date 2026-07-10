@@ -149,7 +149,7 @@ pub async fn create_site(
         hotlink_config: req.hotlink_config.clone(),
         log_access_path: req.log_access_path.clone(),
         log_error_path: req.log_error_path.clone(),
-        status: "enabled".into(),
+        status: 1,
         created_at: None,
         updated_at: None,
     };
@@ -193,7 +193,7 @@ pub async fn update_site(
             let config = state.get_config();
             let sites_enabled = &config.nginx.sites_enabled;
 
-            if site.status == "disabled" {
+            if site.status == 0 {
                 // 禁用：删除配置文件
                 let _ = crate::modules::common::nginx::remove_site_config(sites_enabled, &site.name).await;
             } else {
@@ -289,7 +289,7 @@ pub async fn batch_enable(
             hotlink_config: None,
             log_access_path: None,
             log_error_path: None,
-            status: Some("enabled".to_string()),
+            status: Some(1),
         };
 
         match site_service::update_site(&state, *id, update_req).await {
@@ -342,7 +342,7 @@ pub async fn batch_disable(
             hotlink_config: None,
             log_access_path: None,
             log_error_path: None,
-            status: Some("disabled".to_string()),
+            status: Some(0),
         };
 
         match site_service::update_site(&state, *id, update_req).await {

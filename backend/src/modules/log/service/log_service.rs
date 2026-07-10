@@ -12,7 +12,7 @@ pub struct OperationLogQuery {
     pub page: i64,
     pub page_size: i64,
     pub username: Option<String>,
-    pub status: Option<String>,
+    pub status: Option<i32>,
     pub start_time: Option<String>,
     pub end_time: Option<String>,
 }
@@ -38,7 +38,7 @@ pub async fn list_operation_logs(
     Ok(log_dao::list_operation_logs(
         pool,
         q.username.as_deref(),
-        q.status.as_deref(),
+        q.status,
         q.start_time.as_deref(),
         q.end_time.as_deref(),
         q.trace_id.as_deref(),
@@ -77,6 +77,8 @@ pub async fn export_operation_logs_csv(
 }
 
 #[allow(clippy::too_many_arguments)]
+use crate::modules::common::enums::{LoginLogType, LogStatus};
+
 pub async fn log_login(
     pool: &SqlitePool,
     username: &str,
@@ -84,8 +86,8 @@ pub async fn log_login(
     os: Option<&str>,
     browser: Option<&str>,
     user_agent: Option<&str>,
-    log_type: &str,
-    status: &str,
+    log_type: LoginLogType,
+    status: LogStatus,
 ) -> Result<()> {
     Ok(log_dao::insert_login_log(pool, username, ip, os, browser, user_agent, log_type, status).await?)
 }
@@ -96,7 +98,7 @@ pub struct LoginLogQuery {
     pub page_size: i64,
     pub username: Option<String>,
     pub ip: Option<String>,
-    pub status: Option<String>,
+    pub status: Option<i32>,
     pub start_time: Option<String>,
     pub end_time: Option<String>,
 }
@@ -110,7 +112,7 @@ pub async fn list_login_logs(
         pool,
         q.username.as_deref(),
         q.ip.as_deref(),
-        q.status.as_deref(),
+        q.status,
         q.start_time.as_deref(),
         q.end_time.as_deref(),
         q.page_size,

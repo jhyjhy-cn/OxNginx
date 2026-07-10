@@ -30,7 +30,7 @@ pub async fn create_menu(
         req.icon.as_deref(),
         req.path.as_deref(),
         req.component.as_deref(),
-        &req.menu_type,
+        req.menu_type,
         req.permission.as_deref(),
         req.sort.unwrap_or(0),
     )

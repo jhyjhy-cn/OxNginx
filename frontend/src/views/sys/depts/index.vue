@@ -13,8 +13,8 @@
         :columns="tableColumns"
         :loading="loading"
         :pagination="{ total, currentPage: page, pageSize }"
-        :options="{ height: 'auto' }"
-        row-key="id"
+        :options="{ height: 'auto', rowKey: 'id' }"
+        default-expand-all
         :tree-props="{ children: 'children' }"
         @page-change="onPageChange"
         @command="handleCommand"

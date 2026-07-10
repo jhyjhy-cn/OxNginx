@@ -79,7 +79,7 @@ pub async fn update_upstream_returning(
     name: &str,
     method: &str,
     keepalive: i32,
-    status: &str,
+    status: i32,
 ) -> sqlx::Result<Option<Upstream>> {
     sqlx::query_as::<_, Upstream>(
         r#"

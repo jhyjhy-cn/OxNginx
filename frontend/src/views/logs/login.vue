@@ -32,8 +32,8 @@
         @reload="load"
       >
         <template #type="{ row }">
-          <el-tag :type="row.type === 'login' ? 'primary' : 'info'" size="small">
-            {{ row.type === 'login' ? $t('sys.log.login') : $t('sys.log.logout') }}
+          <el-tag :type="row.type === 1 ? 'primary' : 'info'" size="small">
+            {{ row.type === 1 ? $t('sys.log.login') : $t('sys.log.logout') }}
           </el-tag>
         </template>
         <template #status="{ row }">

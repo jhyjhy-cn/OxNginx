@@ -151,7 +151,7 @@ pub struct UpdateSiteRequest {
     pub log_access_path: Option<Option<String>>,
     #[serde(default, deserialize_with = "deserialize_clearable")]
     pub log_error_path: Option<Option<String>>,
-    pub status: Option<String>,
+    pub status: Option<i32>,
 }
 
 /// Dashboard数据
@@ -230,7 +230,7 @@ pub struct UpdateUpstreamRequest {
     pub name: Option<String>,
     pub method: Option<String>,
     pub keepalive: Option<i32>,
-    pub status: Option<String>,
+    pub status: Option<i32>,
     pub servers: Option<Vec<UpstreamServerRequest>>,
 }
 
@@ -250,7 +250,7 @@ pub struct UpdateAccessRuleRequest {
     pub rule_type: Option<String>,
     pub value: Option<String>,
     pub description: Option<String>,
-    pub status: Option<String>,
+    pub status: Option<i32>,
 }
 
 /// 创建配置模板请求
@@ -284,7 +284,7 @@ pub struct MenuNode {
     pub path: Option<String>,
     pub component: Option<String>,
     #[serde(rename = "type")]
-    pub menu_type: String,
+    pub menu_type: i32,
     pub permission: Option<String>,
     pub sort: i32,
     pub children: Vec<MenuNode>,
@@ -319,8 +319,8 @@ pub struct UserQuery {
     pub dept_id: Option<i64>,
     #[serde(default, deserialize_with = "empty_str_opt")]
     pub phone: Option<String>,
-    #[serde(default, deserialize_with = "empty_str_opt")]
-    pub status: Option<String>,
+    #[serde(default, deserialize_with = "empty_str_opt_i32")]
+    pub status: Option<i32>,
     #[serde(default, deserialize_with = "empty_str_opt")]
     pub start_date: Option<String>,
     #[serde(default, deserialize_with = "empty_str_opt")]
@@ -343,6 +343,18 @@ where
     match opt {
         Some(s) if s.is_empty() => Ok(None),
         Some(s) => s.parse::<i64>().map(Some).map_err(serde::de::Error::custom),
+        None => Ok(None),
+    }
+}
+
+fn empty_str_opt_i32<'de, D>(deserializer: D) -> Result<Option<i32>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = Option::<String>::deserialize(deserializer)?;
+    match opt {
+        Some(s) if s.is_empty() => Ok(None),
+        Some(s) => s.parse::<i32>().map(Some).map_err(serde::de::Error::custom),
         None => Ok(None),
     }
 }
@@ -384,7 +396,7 @@ pub struct UpsertRoleRequest {
     pub code: String,
     pub name: String,
     pub remark: Option<String>,
-    pub status: Option<String>,
+    pub status: Option<i32>,
     pub menu_ids: Option<Vec<i64>>,
 }
 
@@ -414,7 +426,7 @@ pub struct UpsertMenuRequest {
     pub path: Option<String>,
     pub component: Option<String>,
     #[serde(rename = "type")]
-    pub menu_type: String,
+    pub menu_type: i32,
     pub permission: Option<String>,
     pub sort: Option<i32>,
 }
@@ -457,7 +469,7 @@ pub struct UpsertDictItemRequest {
     pub label: String,
     pub value: String,
     pub sort: Option<i32>,
-    pub status: Option<String>,
+    pub status: Option<i32>,
 }
 
 /// 字典+明细响应
@@ -467,7 +479,7 @@ pub struct DictWithItems {
     pub name: String,
     pub code: String,
     pub description: Option<String>,
-    pub status: String,
+    pub status: i32, // 1=启用 0=禁用
     pub items: Vec<crate::modules::sys::entity::dict::DictItem>,
 }
 

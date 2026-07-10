@@ -1,3 +1,4 @@
+import { MenuType } from '@/enums'
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore, type MenuNode } from '@/stores/auth'
 
@@ -36,7 +37,7 @@ function loadComponent(component: string) {
 function addRoutesFromMenus(menus: MenuNode[]) {
   const walk = (nodes: MenuNode[]) => {
     for (const n of nodes) {
-      if (n.type === 'C' && n.path && n.component) {
+      if (n.type === MenuType.Menu && n.path && n.component) {
         const loader = loadComponent(n.component)
         if (loader) {
           const path = n.path.replace(/^\//, '')

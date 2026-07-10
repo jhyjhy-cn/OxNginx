@@ -80,7 +80,7 @@ pub async fn update_dict_item(
     Path(id): Path<i64>,
     Json(req): Json<UpsertDictItemRequest>,
 ) -> Json<serde_json::Value> {
-    match rbac_service::update_dict_item(&state.db.pool(), id, Some(&req.label), Some(&req.value), req.sort, req.status.as_deref()).await {
+    match rbac_service::update_dict_item(&state.db.pool(), id, Some(&req.label), Some(&req.value), req.sort, req.status).await {
         Ok(_) => Json(json!(ApiResponse::success("ok"))),
         Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
     }

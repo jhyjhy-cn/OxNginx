@@ -23,7 +23,7 @@ pub struct Site {
     pub hotlink_config: Option<String>,
     pub log_access_path: Option<String>,
     pub log_error_path: Option<String>,
-    pub status: String,
+    pub status: i32, // 1=启用 0=禁用
     #[serde(with = "option_naive_datetime")]
     pub created_at: Option<NaiveDateTime>,
     #[serde(with = "option_naive_datetime")]

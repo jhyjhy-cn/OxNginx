@@ -20,20 +20,20 @@
       >
         <template v-for="node in authStore.menus" :key="node.id">
           <!-- M 类型:目录,渲染子菜单 -->
-          <el-sub-menu v-if="node.type === 'M' && node.children?.length" :index="node.id.toString()">
+          <el-sub-menu v-if="node.type === MenuType.Directory && node.children?.length" :index="node.id.toString()">
             <template #title>
               <el-icon v-if="node.icon"><component :is="node.icon" /></el-icon>
               <span>{{ t(node.title) }}</span>
             </template>
             <template v-for="child in node.children" :key="child.id">
-              <el-menu-item v-if="child.type === 'C' && child.path" :index="child.path">
+              <el-menu-item v-if="child.type === MenuType.Menu && child.path" :index="child.path">
                 <el-icon v-if="child.icon"><component :is="child.icon" /></el-icon>
                 <template #title>{{ t(child.title) }}</template>
               </el-menu-item>
             </template>
           </el-sub-menu>
           <!-- C 类型:菜单项,直接渲染 -->
-          <el-menu-item v-else-if="node.type === 'C' && node.path" :index="node.path">
+          <el-menu-item v-else-if="node.type === MenuType.Menu && node.path" :index="node.path">
             <el-icon v-if="node.icon"><component :is="node.icon" /></el-icon>
             <template #title>{{ t(node.title) }}</template>
           </el-menu-item>
@@ -80,6 +80,7 @@ import TabBar from './components/TabBar.vue'
 import { useSidebarTheme } from '@/composables/useSidebarTheme'
 import { useSettingsStore } from '@/stores/settings'
 import { useAuthStore } from '@/stores/auth'
+import { MenuType } from '@/enums'
 
 const route = useRoute()
 const { t } = useI18n()

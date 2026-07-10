@@ -2,6 +2,7 @@ use axum::{extract::{ConnectInfo, Extension, State}, http::header, Json};
 use serde_json::json;
 
 use crate::modules::common::dto::{ApiResponse, ChangePasswordRequest, ChangeUsernameRequest, LoginRequest, LoginResponse};
+use crate::modules::common::enums::{LoginLogType, LogStatus};
 use crate::modules::common::middleware::TokenInfo;
 use crate::AppState;
 
@@ -39,7 +40,7 @@ pub async fn login(
     let user = match user {
         Ok(Some(u)) => u,
         Ok(None) => {
-            let _ = crate::modules::log::service::log_service::log_login(state.db.pool(), &req.username, Some(&ip), Some(&os), Some(&browser), Some(&ua), "login", "failed").await;
+            let _ = crate::modules::log::service::log_service::log_login(state.db.pool(), &req.username, Some(&ip), Some(&os), Some(&browser), Some(&ua), LoginLogType::Login, LogStatus::Failed).await;
             return Json(json!(ApiResponse::<()>::error("用户名或密码错误")));
         }
         Err(e) => {
@@ -51,7 +52,7 @@ pub async fn login(
     match crate::modules::common::auth::verify_password(&password, &user.password) {
         Ok(true) => {}
         _ => {
-            let _ = crate::modules::log::service::log_service::log_login(state.db.pool(), &req.username, Some(&ip), Some(&os), Some(&browser), Some(&ua), "login", "failed").await;
+            let _ = crate::modules::log::service::log_service::log_login(state.db.pool(), &req.username, Some(&ip), Some(&os), Some(&browser), Some(&ua), LoginLogType::Login, LogStatus::Failed).await;
             return Json(json!(ApiResponse::<()>::error("用户名或密码错误")));
         }
     };
@@ -68,7 +69,7 @@ pub async fn login(
     .await
     {
         Ok(token) => {
-            let _ = crate::modules::log::service::log_service::log_login(state.db.pool(), &user.username, Some(&ip), Some(&os), Some(&browser), Some(&ua), "login", "success").await;
+            let _ = crate::modules::log::service::log_service::log_login(state.db.pool(), &user.username, Some(&ip), Some(&os), Some(&browser), Some(&ua), LoginLogType::Login, LogStatus::Success).await;
             Json(json!(ApiResponse::success(LoginResponse {
                 token,
                 username: user.username,
@@ -88,7 +89,7 @@ pub async fn logout(State(state): State<AppState>, headers: header::HeaderMap) -
     if let Some(token) = token {
         if let Ok(Some(username)) = crate::modules::auth::service::token_service::verify_token(state.db.pool(), token).await {
             let _ = crate::modules::auth::service::token_service::delete_token(state.db.pool(), token).await;
-            let _ = crate::modules::log::service::log_service::log_login(state.db.pool(), &username, None, None, None, None, "logout", "success").await;
+            let _ = crate::modules::log::service::log_service::log_login(state.db.pool(), &username, None, None, None, None, LoginLogType::Logout, LogStatus::Success).await;
         }
     }
 

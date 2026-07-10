@@ -95,13 +95,9 @@ pub async fn audit_middleware(
     // 同时检查 HTTP status 和响应体中的 code 字段
     let is_success_http = (200..300).contains(&status_code);
     let is_success_body = check_response_success(&resp_body_log);
-    let status_str = if is_success_http && is_success_body {
-        "success"
-    } else {
-        "failed"
-    };
+    let status_str: i32 = if is_success_http && is_success_body { 1 } else { 0 };
 
-    let error_msg = if status_str == "failed" {
+    let error_msg = if status_str == 0 {
         ctx_data
             .error
             .clone()
@@ -117,7 +113,7 @@ pub async fn audit_middleware(
     ev.method = method.to_string();
     ev.uri = uri_s;
     ev.ip = ip_from_auth;
-    ev.status = status_str.into();
+    ev.status = status_str;
     ev.duration_ms = duration_ms;
     ev.request_body = req_body_log;
     ev.response_body = resp_body_log;

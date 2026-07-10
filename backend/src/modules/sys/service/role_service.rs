@@ -28,7 +28,7 @@ pub async fn update_role(
     id: i64,
     name: Option<&str>,
     remark: Option<&str>,
-    status: Option<&str>,
+    status: Option<i32>,
 ) -> Result<()> {
     Ok(role_dao::update_role_fields(pool, id, name, remark, status).await?)
 }

@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import api from '@/api'
 import { mergeI18nMessages } from '@/i18n'
 import { encryptPassword } from '@/utils/crypto'
+import type { MenuType } from '@/enums'
 
 export interface MenuNode {
   id: number
@@ -12,7 +13,7 @@ export interface MenuNode {
   icon: string | null
   path: string | null
   component: string | null
-  type: 'M' | 'C' | 'F'
+  type: MenuType
   permission: string | null
   sort: number
   children: MenuNode[]

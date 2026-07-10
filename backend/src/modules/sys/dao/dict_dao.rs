@@ -36,7 +36,7 @@ pub async fn update_dict_fields(
     id: i64,
     name: Option<&str>,
     description: Option<&str>,
-    status: Option<&str>,
+    status: Option<i32>,
 ) -> sqlx::Result<()> {
     if let Some(n) = name {
         sqlx::query("UPDATE sys_dict SET name=? WHERE id=?")
@@ -94,7 +94,7 @@ pub async fn update_dict_item_fields(
     label: Option<&str>,
     value: Option<&str>,
     sort: Option<i32>,
-    status: Option<&str>,
+    status: Option<i32>,
 ) -> sqlx::Result<()> {
     if let Some(l) = label {
         sqlx::query("UPDATE sys_dict_item SET label=? WHERE id=?")

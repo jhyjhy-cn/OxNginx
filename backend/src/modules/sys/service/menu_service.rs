@@ -17,7 +17,7 @@ pub async fn create_menu(
     icon: Option<&str>,
     path: Option<&str>,
     component: Option<&str>,
-    menu_type: &str,
+    menu_type: i32,
     permission: Option<&str>,
     sort: i32,
 ) -> Result<i64> {

@@ -1,5 +1,6 @@
 use sqlx::{Row, Sqlite, SqlitePool, QueryBuilder};
 
+use crate::modules::common::enums::LogStatus;
 use crate::modules::sys::entity::menu::Menu;
 use crate::modules::sys::entity::user::User;
 use crate::modules::sys::service::user_service::UserListItem;
@@ -9,8 +10,9 @@ use crate::modules::sys::service::user_service::UserListItem;
 /// 列出所有启用的菜单权限码（admin 用）
 pub async fn list_all_enabled_permissions(pool: &SqlitePool) -> sqlx::Result<Vec<String>> {
     sqlx::query_scalar(
-        "SELECT permission FROM sys_menus WHERE permission IS NOT NULL AND status='enabled'",
+        "SELECT permission FROM sys_menus WHERE permission IS NOT NULL AND status=?",
     )
+    .bind(LogStatus::Success.as_i32())
     .fetch_all(pool)
     .await
 }
@@ -37,9 +39,10 @@ pub async fn list_enabled_role_codes_by_username(
         "SELECT r.code FROM sys_roles r
          JOIN sys_user_roles ur ON r.id = ur.role_id
          JOIN sys_users u ON ur.user_id = u.id
-         WHERE u.username = ? AND r.status='enabled'",
+         WHERE u.username = ? AND r.status=?",
     )
     .bind(username)
+    .bind(LogStatus::Success.as_i32())
     .fetch_all(pool)
     .await
 }
@@ -51,9 +54,10 @@ pub async fn list_user_permissions(pool: &SqlitePool, username: &str) -> sqlx::R
          JOIN sys_role_menus rm ON m.id = rm.menu_id
          JOIN sys_user_roles ur ON rm.role_id = ur.role_id
          JOIN sys_users u ON ur.user_id = u.id
-         WHERE u.username = ? AND m.permission IS NOT NULL AND m.status='enabled'",
+         WHERE u.username = ? AND m.permission IS NOT NULL AND m.status=?",
     )
     .bind(username)
+    .bind(LogStatus::Success.as_i32())
     .fetch_all(pool)
     .await
 }
@@ -62,8 +66,9 @@ pub async fn list_user_permissions(pool: &SqlitePool, username: &str) -> sqlx::R
 pub async fn list_all_enabled_menus(pool: &SqlitePool) -> sqlx::Result<Vec<Menu>> {
     sqlx::query_as::<_, Menu>(
         "SELECT id, parent_id, name, title, icon, path, component, type, permission, sort, status, created_at, updated_at
-         FROM sys_menus WHERE status='enabled' ORDER BY sort, id",
+         FROM sys_menus WHERE status=? ORDER BY sort, id",
     )
+    .bind(LogStatus::Success.as_i32())
     .fetch_all(pool)
     .await
 }
@@ -76,10 +81,11 @@ pub async fn list_user_menus(pool: &SqlitePool, username: &str) -> sqlx::Result<
          JOIN sys_role_menus rm ON m.id = rm.menu_id
          JOIN sys_user_roles ur ON rm.role_id = ur.role_id
          JOIN sys_users u ON ur.user_id = u.id
-         WHERE u.username = ? AND m.status='enabled'
+         WHERE u.username = ? AND m.status=?
          ORDER BY m.sort, m.id",
     )
     .bind(username)
+    .bind(LogStatus::Success.as_i32())
     .fetch_all(pool)
     .await
 }

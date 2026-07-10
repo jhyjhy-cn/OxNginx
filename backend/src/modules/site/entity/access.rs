@@ -11,7 +11,7 @@ pub struct AccessRule {
     pub rule_type: String,
     pub value: String,
     pub description: Option<String>,
-    pub status: String,
+    pub status: i32, // 1=启用 0=禁用
     #[serde(with = "option_naive_datetime")]
     pub created_at: Option<NaiveDateTime>,
 }

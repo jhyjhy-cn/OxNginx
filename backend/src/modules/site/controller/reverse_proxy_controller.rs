@@ -26,7 +26,7 @@ pub struct UpdateProxyRequest {
     pub proxy_dir: Option<String>,
     pub target_url: Option<String>,
     pub cache: Option<i32>,
-    pub status: Option<String>,
+    pub status: Option<i32>,
 }
 
 /// 列出站点的反向代理
@@ -81,7 +81,7 @@ pub async fn update_proxy(
         req.proxy_dir.as_deref(),
         req.target_url.as_deref(),
         req.cache,
-        req.status.as_deref(),
+        req.status,
     )
     .await
     {
@@ -129,7 +129,7 @@ async fn get_proxy_site_id(state: &AppState, proxy_id: i64) -> Option<i64> {
 async fn regenerate_and_reload(state: &AppState, site_id: i64) {
     let config = state.get_config();
     if let Ok(Some(site)) = crate::modules::site::service::site_service::get_site(state, site_id).await {
-        if site.status != "disabled" {
+        if site.status != 0 {
             let proxies = reverse_proxy_service::list_by_site(state, site_id).await.unwrap_or_default();
             let content = crate::modules::common::nginx::generate_site_config_with_proxies(&site, &proxies);
             let _ = crate::modules::common::nginx::write_site_config(&config.nginx.sites_enabled, &site.name, &content).await;

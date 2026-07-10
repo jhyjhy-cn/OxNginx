@@ -1,6 +1,7 @@
 use sqlx::SqlitePool;
 
 use crate::modules::common::audit::event::AuditEvent;
+use crate::modules::common::enums::{LoginLogType, LogStatus};
 use crate::modules::log::entity::log::{LoginLog, OperationLog};
 
 /// 多行 VALUES 一次插入。50 条事件对应一条 SQL。
@@ -71,7 +72,7 @@ pub async fn insert_operation_log_single(
 pub async fn list_operation_logs(
     pool: &SqlitePool,
     username: Option<&str>,
-    status: Option<&str>,
+    status: Option<i32>,
     start_time: Option<&str>,
     end_time: Option<&str>,
     trace_id: Option<&str>,
@@ -151,11 +152,11 @@ pub async fn insert_login_log(
     os: Option<&str>,
     browser: Option<&str>,
     user_agent: Option<&str>,
-    log_type: &str,
-    status: &str,
+    log_type: LoginLogType,
+    status: LogStatus,
 ) -> sqlx::Result<()> {
     sqlx::query("INSERT INTO sys_login_logs (username, ip, os, browser, user_agent, type, status) VALUES (?, ?, ?, ?, ?, ?, ?)")
-        .bind(username).bind(ip).bind(os).bind(browser).bind(user_agent).bind(log_type).bind(status)
+        .bind(username).bind(ip).bind(os).bind(browser).bind(user_agent).bind(log_type.as_i32()).bind(status.as_i32())
         .execute(pool).await?;
     Ok(())
 }
@@ -165,7 +166,7 @@ pub async fn list_login_logs(
     pool: &SqlitePool,
     username: Option<&str>,
     ip: Option<&str>,
-    status: Option<&str>,
+    status: Option<i32>,
     start_time: Option<&str>,
     end_time: Option<&str>,
     page_size: i64,

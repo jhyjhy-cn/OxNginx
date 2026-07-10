@@ -81,6 +81,7 @@ import { useAuthStore, type MenuNode } from '@/stores/auth'
 import { tabIconMap } from '@/config/menu'
 import TopBarRight from '@/layouts/components/TopBarRight.vue'
 import TabBar from '@/layouts/components/TabBar.vue'
+import { MenuType } from '@/enums'
 
 const router = useRouter()
 const route = useRoute()
@@ -95,11 +96,11 @@ const flatMenus = computed(() => {
   const out: FlatItem[] = []
   const walk = (nodes: MenuNode[]) => {
     for (const n of nodes) {
-      if (n.type === 'M' && n.children?.length) {
+      if (n.type === MenuType.Directory && n.children?.length) {
         // M 类型目录：渲染为分组标题,然后展开子项
         out.push({ path: '', title: n.title, icon: n.icon || '', isGroup: true })
         walk(n.children)
-      } else if (n.type === 'C' && n.path) {
+      } else if (n.type === MenuType.Menu && n.path) {
         out.push({
           path: n.path,
           title: n.title,

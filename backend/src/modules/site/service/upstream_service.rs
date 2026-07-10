@@ -81,7 +81,7 @@ pub async fn update_upstream(
         &name,
         &method,
         keepalive,
-        &status,
+        status,
     )
     .await?;
 

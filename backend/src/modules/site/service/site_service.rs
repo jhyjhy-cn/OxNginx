@@ -93,7 +93,7 @@ pub async fn update_site(
         hotlink_config.as_ref(),
         log_access_path.as_ref(),
         log_error_path.as_ref(),
-        &status,
+        status,
     )
     .await?)
 }

@@ -35,7 +35,7 @@ pub async fn update(
     proxy_dir: Option<&str>,
     target_url: Option<&str>,
     cache: Option<i32>,
-    status: Option<&str>,
+    status: Option<i32>,
 ) -> anyhow::Result<Option<ReverseProxy>> {
     let existing = reverse_proxy_dao::find_proxy_by_id(state.db.pool(), id).await?;
     let existing = match existing {
@@ -47,7 +47,7 @@ pub async fn update(
     let proxy_dir = proxy_dir.unwrap_or(&existing.proxy_dir);
     let target_url = target_url.unwrap_or(&existing.target_url);
     let cache = cache.unwrap_or(existing.cache);
-    let status = status.unwrap_or(&existing.status);
+    let status = status.unwrap_or(existing.status);
 
     Ok(reverse_proxy_dao::update_proxy_returning(
         state.db.pool(),

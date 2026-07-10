@@ -46,7 +46,7 @@ pub async fn update_role(
     Path(id): Path<i64>,
     Json(req): Json<UpsertRoleRequest>,
 ) -> Json<serde_json::Value> {
-    let r = rbac_service::update_role(&state.db.pool(), id, Some(req.name.as_str()), req.remark.as_deref(), req.status.as_deref()).await;
+    let r = rbac_service::update_role(&state.db.pool(), id, Some(req.name.as_str()), req.remark.as_deref(), req.status).await;
     match r {
         Ok(_) => {
             if let Some(mids) = req.menu_ids {

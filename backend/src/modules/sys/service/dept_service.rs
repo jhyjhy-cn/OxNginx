@@ -12,7 +12,7 @@ pub struct DeptNode {
     pub parent_id: Option<i64>,
     pub name: String,
     pub sort: i32,
-    pub status: String,
+    pub status: i32, // 1=启用 0=禁用
     pub children: Vec<DeptNode>,
 }
 

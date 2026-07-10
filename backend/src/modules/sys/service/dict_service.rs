@@ -24,7 +24,7 @@ pub async fn update_dict(
     id: i64,
     name: Option<&str>,
     description: Option<&str>,
-    status: Option<&str>,
+    status: Option<i32>,
 ) -> Result<()> {
     Ok(dict_dao::update_dict_fields(pool, id, name, description, status).await?)
 }
@@ -68,7 +68,7 @@ pub async fn update_dict_item(
     label: Option<&str>,
     value: Option<&str>,
     sort: Option<i32>,
-    status: Option<&str>,
+    status: Option<i32>,
 ) -> Result<()> {
     Ok(dict_dao::update_dict_item_fields(pool, id, label, value, sort, status).await?)
 }

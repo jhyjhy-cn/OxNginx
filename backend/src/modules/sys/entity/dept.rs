@@ -10,7 +10,7 @@ pub struct Dept {
     pub parent_id: Option<i64>,
     pub name: String,
     pub sort: i32,
-    pub status: String,
+    pub status: i32, // 1=启用 0=禁用
     #[serde(with = "option_naive_datetime")]
     pub created_at: Option<NaiveDateTime>,
     #[serde(with = "option_naive_datetime")]

@@ -13,7 +13,7 @@ pub struct OperationLog {
     pub method: Option<String>,
     pub uri: Option<String>,
     pub ip: Option<String>,
-    pub status: String,
+    pub status: i32, // 1=启用 0=禁用
     pub cost_ms: Option<i64>,
     pub duration_ms: Option<i64>,
     pub request_body: Option<String>,
@@ -32,8 +32,8 @@ pub struct LoginLog {
     pub browser: Option<String>,
     #[sqlx(rename = "type")]
     #[serde(rename = "type")]
-    pub log_type: String,
-    pub status: String,
+    pub log_type: i32,
+    pub status: i32, // 1=启用 0=禁用
     #[serde(with = "option_naive_datetime")]
     pub created_at: Option<NaiveDateTime>,
 }

@@ -9,7 +9,7 @@ pub struct AuditEvent {
     pub method: String,
     pub uri: String,
     pub ip: Option<String>,
-    pub status: String,
+    pub status: i32, // 1=启用 0=禁用
     pub duration_ms: i64,
     pub request_body: Option<String>,
     pub response_body: Option<String>,
@@ -28,7 +28,7 @@ impl AuditEvent {
             method: String::new(),
             uri: String::new(),
             ip: None,
-            status: "success".into(),
+            status: 1,
             duration_ms: 0,
             request_body: None,
             response_body: None,

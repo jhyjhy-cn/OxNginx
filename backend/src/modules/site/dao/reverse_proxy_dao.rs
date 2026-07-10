@@ -49,7 +49,7 @@ pub async fn update_proxy_returning(
     proxy_dir: &str,
     target_url: &str,
     cache: i32,
-    status: &str,
+    status: i32,
 ) -> sqlx::Result<Option<ReverseProxy>> {
     sqlx::query_as::<_, ReverseProxy>(
         r#"

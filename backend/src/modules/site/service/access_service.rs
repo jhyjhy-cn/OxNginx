@@ -46,7 +46,7 @@ pub async fn update_rule(
         &rule_type,
         &value,
         description.as_ref(),
-        &status,
+        status,
     )
     .await?)
 }
