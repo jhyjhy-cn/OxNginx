@@ -11,28 +11,23 @@
         </div>
       </template>
 
-      <el-table :data="upstreams" style="width: 100%" v-loading="loading">
-        <el-table-column prop="name" :label="$t('sys.upstreams.name')" width="200" />
-        <el-table-column prop="method" :label="$t('sys.upstreams.method')" width="150">
-          <template #default="{ row }">
-            <el-tag size="small">{{ getMethodLabel(row.method) }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="keepalive" label="Keepalive" width="100" />
-        <el-table-column prop="status" :label="$t('common.status')" width="100">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 'enabled' ? 'success' : 'danger'" size="small">
-              {{ row.status === 'enabled' ? $t('common.enabled') : $t('common.disabled') }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column :label="$t('common.action')" width="200" fixed="right">
-          <template #default="{ row }">
-            <el-button size="small" @click="editUpstream(row)">{{ $t('common.edit') }}</el-button>
-            <el-button size="small" type="danger" @click="deleteUpstream(row)">{{ $t('common.delete') }}</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <OnTable
+        :data="dataList"
+        :columns="tableColumns"
+        :loading="loading"
+        :pagination="false"
+        @command="handleCommand"
+        @reload="load"
+      >
+        <template #method="{ row }">
+          <el-tag size="small">{{ getMethodLabel(row.method) }}</el-tag>
+        </template>
+        <template #status="{ row }">
+          <el-tag :type="row.status === 'enabled' ? 'success' : 'danger'" size="small">
+            {{ row.status === 'enabled' ? $t('common.enabled') : $t('common.disabled') }}
+          </el-tag>
+        </template>
+      </OnTable>
     </el-card>
 
     <!-- 添加/编辑对话框 -->
@@ -115,6 +110,8 @@ import { ref, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import type { FormInstance } from 'element-plus'
+import type { TableColumn } from '@/components/OnTable/types'
+import OnTable from '@/components/OnTable/index.vue'
 import {
   listUpstreams,
   getUpstream,
@@ -122,7 +119,7 @@ import {
   updateUpstream,
   deleteUpstream as deleteUpstreamApi,
 } from '@/api/sites'
-import { useMessage } from '@/hooks'
+import { useCrud, useMessage } from '@/hooks'
 
 const { confirm } = useMessage()
 import OnDialog from '@/components/OnDialog/index.vue'
@@ -155,13 +152,33 @@ function getMethodLabel(method: string): string {
   return labels[method] || method
 }
 
-const upstreams = ref<Upstream[]>([])
-const loading = ref(false)
+// ponytail: 上游接口返回整表，无分页，用 isPage:false
+const { loading, dataList, load } = useCrud({
+  getListApi: listUpstreams,
+  isPage: false,
+})
+
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const submitting = ref(false)
 const editId = ref<number | null>(null)
 const formRef = ref<FormInstance>()
+
+const tableColumns: TableColumn[] = [
+  { prop: 'name', label: 'sys.upstreams.name', width: 200 },
+  { prop: 'method', label: 'sys.upstreams.method', width: 150, slot: 'method' },
+  { prop: 'keepalive', label: 'Keepalive', width: 100 },
+  { prop: 'status', label: 'common.status', width: 100, slot: 'status' },
+  {
+    label: 'common.action',
+    width: 200,
+    fixed: 'right',
+    buttons: [
+      { name: 'common.edit', command: 'edit', size: 'small' },
+      { name: 'common.delete', command: 'delete', type: 'danger', size: 'small' },
+    ],
+  },
+]
 
 const form = reactive({
   name: '',
@@ -184,18 +201,12 @@ const rules = {
 }
 
 onMounted(() => {
-  fetchUpstreams()
+  load()
 })
 
-async function fetchUpstreams() {
-  loading.value = true
-  try {
-    upstreams.value = (await listUpstreams()) as any || []
-  } catch (error) {
-    console.error('获取上游服务器列表失败:', error)
-  } finally {
-    loading.value = false
-  }
+function handleCommand(command: string | number, row: Upstream) {
+  if (command === 'edit') editUpstream(row)
+  else if (command === 'delete') deleteUpstream(row)
 }
 
 function showAddDialog() {
@@ -281,7 +292,7 @@ async function submitForm() {
     }
 
     dialogVisible.value = false
-    fetchUpstreams()
+    load()
   } catch (error: any) {
     ElMessage.error(error.message || t('sys.upstreams.operationFailed'))
   } finally {
@@ -298,7 +309,7 @@ async function deleteUpstream(upstream: Upstream) {
   try {
     await deleteUpstreamApi(upstream.id)
     ElMessage.success(t('sys.upstreams.deleteSuccess'))
-    fetchUpstreams()
+    load()
   } catch (error: any) {
     ElMessage.error(error.message || t('sys.upstreams.deleteFailed'))
   }

@@ -10,46 +10,22 @@
         {{ $t('sys.sites.backupSite') }}
       </el-button>
     </div>
-    <el-table
+    <OnTable
       :data="list"
-      v-loading="tableLoading"
-      style="width: 100%; height: 400px"
-      height="400"
-      @selection-change="(val: BackupFile[]) => (selected = val)"
+      :columns="tableColumns"
+      :loading="tableLoading"
+      :pagination="{ total, currentPage: page, pageSize }"
+      :options="{ height: 400 }"
+      @selectionChange="(val: BackupFile[]) => (selected = val)"
+      @page-change="onPageChange"
+      @command="handleCommand"
     >
-      <el-table-column type="selection" width="45" />
-      <el-table-column prop="filename" :label="$t('sys.sites.backupFilename')" min-width="180" show-overflow-tooltip />
-      <el-table-column :label="$t('sys.sites.backupPath')" min-width="160" show-overflow-tooltip>
-        <template #default="{ row }">
-          <el-button type="primary" link @click="openFileManager(row.path)">{{ row.path }}</el-button>
-        </template>
-      </el-table-column>
-      <el-table-column :label="$t('sys.sites.backupSize')" width="90">
-        <template #default="{ row }">{{ formatSize(row.size) }}</template>
-      </el-table-column>
-      <el-table-column prop="created_at" :label="$t('sys.sites.backupTime')" width="160" />
-      <el-table-column prop="remark" :label="$t('sys.sites.remark')" width="100" show-overflow-tooltip>
-        <template #default="{ row }">{{ row.remark || '-' }}</template>
-      </el-table-column>
-      <el-table-column :label="$t('common.action')" width="120" fixed="right">
-        <template #default="{ row }">
-          <el-button type="primary" link @click="downloadBackup(row.filename)">{{ $t('common.download') }}</el-button>
-          <el-button type="danger" link @click="deleteBackup(row.filename)">{{ $t('common.delete') }}</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <div style="margin-top: 12px; display: flex; justify-content: flex-end">
-      <el-pagination
-        v-model:current-page="page"
-        v-model:page-size="pageSize"
-        :total="total"
-        :page-sizes="[10, 20, 50]"
-        layout="total, sizes, prev, pager, next"
-        small
-        @current-change="fetchList"
-        @size-change="fetchList"
-      />
-    </div>
+      <template #path="{ row }">
+        <el-button type="primary" link @click="openFileManager(row.path)">{{ row.path }}</el-button>
+      </template>
+      <template #size="{ row }">{{ formatSize(row.size) }}</template>
+      <template #remark="{ row }">{{ row.remark || '-' }}</template>
+    </OnTable>
   </OnDialog>
 </template>
 
@@ -59,6 +35,8 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import OnDialog from '@/components/OnDialog/index.vue'
+import OnTable from '@/components/OnTable/index.vue'
+import type { TableColumn } from '@/components/OnTable/types'
 import { useTabStore } from '@/stores/tabs'
 import { useFilesStore } from '@/stores/files'
 import type { Site } from '@/api/sites/type'
@@ -107,6 +85,35 @@ const selected = ref<BackupFile[]>([])
 const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
+
+const tableColumns: TableColumn[] = [
+  { type: 'selection', width: 45 },
+  { prop: 'filename', label: 'sys.sites.backupFilename', minWidth: 180, showOverflowTooltip: true },
+  { prop: 'path', label: 'sys.sites.backupPath', minWidth: 160, showOverflowTooltip: true, slot: 'path' },
+  { prop: 'size', label: 'sys.sites.backupSize', width: 90, slot: 'size' },
+  { prop: 'created_at', label: 'sys.sites.backupTime', width: 160 },
+  { prop: 'remark', label: 'sys.sites.remark', width: 100, showOverflowTooltip: true, slot: 'remark' },
+  {
+    label: 'common.action',
+    width: 120,
+    fixed: 'right',
+    buttons: [
+      { name: 'common.download', command: 'download', size: 'small' },
+      { name: 'common.delete', command: 'delete', type: 'danger', size: 'small' },
+    ],
+  },
+]
+
+function onPageChange(p: number, size: number) {
+  page.value = p
+  pageSize.value = size
+  fetchList()
+}
+
+function handleCommand(command: string | number, row: BackupFile) {
+  if (command === 'download') downloadBackup(row.filename)
+  else if (command === 'delete') deleteBackup(row.filename)
+}
 
 watch(
   () => props.visible,

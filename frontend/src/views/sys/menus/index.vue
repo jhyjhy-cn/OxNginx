@@ -1,98 +1,57 @@
 <template>
-  <div class="rbac-page">
-    <el-card>
+  <div class="menus-page h-full">
+    <el-card class="h-full">
+      <!-- 搜索栏 -->
       <div class="search-bar">
-        <el-input
-          v-model="keyword"
-          :placeholder="$t('common.search')"
-          clearable
-          style="width: 240px"
-          @input="onInput"
-          @keyup.enter="doSearch"
-        />
-        <el-button type="primary" @click="doSearch">{{ $t('common.search') }}</el-button>
-        <el-button @click="doReset">{{ $t('common.reset') }}</el-button>
+        <OnFormGrid :model="searchForm" :fields="searchFields" style="flex: 1" />
+        <el-button type="primary" @click="search">{{ $t('common.search') }}</el-button>
+        <el-button @click="reset">{{ $t('common.reset') }}</el-button>
       </div>
 
-      <div class="toolbar">
-        <el-button type="primary" @click="openCreate(null)">
-          <el-icon><Plus /></el-icon>
-          {{ $t('common.add') }}
-        </el-button>
-        <el-button type="danger" :disabled="!selectedIds.length" @click="batchDelete">
-          <el-icon><Delete /></el-icon>
-          {{ $t('sys.rbac.batchDelete') }} ({{ selectedIds.length }})
-        </el-button>
-        <el-button @click="load">{{ $t('common.refresh') }}</el-button>
-        <span class="hint" style="margin-left: auto">{{ $t('sys.rbac.hintMenuRefresh') }}</span>
-      </div>
-
-      <el-table
-        :data="menus"
-        v-loading="loading"
+      <OnTable
+        ref="tableRef"
+        :data="treeData"
+        :columns="tableColumns"
+        :loading="loading"
+        :pagination="false"
+        :options="{ height: 'auto' }"
         row-key="id"
         :tree-props="{ children: 'children' }"
-        @selection-change="onSelect"
-        ref="tableRef"
-        max-height="calc(100vh - 380px)"
+        @selectionChange="onSelect"
+        @command="handleCommand"
+        @reload="load"
       >
-        <el-table-column type="selection" width="48" />
-        <el-table-column prop="name" :label="$t('sys.rbac.colName')" min-width="160">
-          <template #default="{ row }">
-            <el-icon v-if="row.icon" style="margin-right: 4px; vertical-align: middle"><component :is="row.icon" /></el-icon>
-            <span>{{ row.name }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="title" :label="$t('sys.rbac.colTitle')" min-width="160">
-          <template #default="{ row }">
-            <span>{{ $t(row.title) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="path" :label="$t('sys.rbac.colPath')" min-width="180" />
-        <el-table-column prop="component" :label="$t('sys.rbac.colComponent')" min-width="140" />
-        <el-table-column prop="type" :label="$t('sys.rbac.colType')" width="80">
-          <template #default="{ row }">
-            <el-tag size="small" :type="typeColor(row.type)">
-              {{ $t(row.type === 'M' ? 'sys.rbac.typeM' : row.type === 'C' ? 'sys.rbac.typeC' : 'sys.rbac.typeF') }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="permission" :label="$t('sys.rbac.colPermission')" min-width="180" />
-        <el-table-column prop="sort" :label="$t('sys.rbac.colSort')" width="80" />
-        <el-table-column :label="$t('common.action')" width="200" fixed="right">
-          <template #default="{ row }">
-            <el-button v-if="row.type !== 'F'" type="primary" text size="small" @click="openCreate(row)">
-              +{{ $t('sys.rbac.subItem') }}
-            </el-button>
-            <el-button type="primary" text size="small" @click="openEdit(row)">
-              {{ $t('common.edit') }}
-            </el-button>
-            <el-button type="danger" text size="small" @click="del(row)">
-              {{ $t('common.delete') }}
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <OnPagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :total="total"
-        :page-sizes="[50, 100, 200]"
-        @change="load"
-      />
+        <template #toolbar-left>
+          <el-button type="primary" @click="openCreate(null)">{{ $t('common.add') }}</el-button>
+          <el-button type="danger" :disabled="!selectedIds.length" @click="batchDelete">
+            {{ $t('sys.rbac.batchDelete') }} ({{ selectedIds.length }})
+          </el-button>
+          <span class="hint" style="margin-left: 8px">{{ $t('sys.rbac.hintMenuRefresh') }}</span>
+        </template>
+        <template #name="{ row }">
+          <el-icon v-if="row.icon" style="margin-right: 4px; vertical-align: middle"><component :is="row.icon" /></el-icon>
+          <span>{{ row.name }}</span>
+        </template>
+        <template #title="{ row }">{{ $t(row.title) }}</template>
+        <template #type="{ row }">
+          <el-tag size="small" :type="typeColor(row.type)">
+            {{ $t(row.type === 'M' ? 'sys.rbac.typeM' : row.type === 'C' ? 'sys.rbac.typeC' : 'sys.rbac.typeF') }}
+          </el-tag>
+        </template>
+      </OnTable>
     </el-card>
 
-    <OnDialog v-model="dialogVisible" :title="form.id ? $t('common.edit') : $t('common.add')" width="600px">
-      <el-form :model="form" label-width="120px" :rules="rules" ref="formRef">
-        <el-form-item :label="$t('sys.rbac.colType')" prop="type">
+    <OnDialog v-model="showForm" :title="form.id ? $t('common.edit') : $t('common.add')" width="600px">
+      <OnForm ref="formRef" :model="form">
+        <el-form-item :label="$t('sys.rbac.colType')" prop="type" label-width="120px">
           <el-radio-group v-model="form.type">
             <el-radio-button value="M">{{ $t('sys.rbac.typeM') }}</el-radio-button>
             <el-radio-button value="C">{{ $t('sys.rbac.typeC') }}</el-radio-button>
             <el-radio-button value="F">{{ $t('sys.rbac.typeF') }}</el-radio-button>
           </el-radio-group>
         </el-form-item>
-        <el-form-item :label="$t('sys.rbac.colParent')" prop="parent_id">
+        <!-- ponytail: 父级用 el-tree-select，OnFormItem 无此类型，走默认插槽 -->
+        <el-form-item :label="$t('sys.rbac.colParent')" prop="parent_id" label-width="120px">
           <el-tree-select
             v-model="form.parent_id"
             :data="parentOptions"
@@ -103,77 +62,37 @@
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item :label="$t('sys.rbac.colName')" prop="name">
-          <el-input v-model="form.name" />
-        </el-form-item>
-        <el-form-item :label="$t('sys.rbac.colTitle') + ' (i18n)'" prop="title">
-          <el-input v-model="form.title" placeholder="sys.menu.sites" />
-        </el-form-item>
-        <el-form-item :label="$t('sys.rbac.colPath')" v-if="form.type !== 'F'">
-          <el-input v-model="form.path" placeholder="/sites" />
-        </el-form-item>
-        <el-form-item :label="$t('sys.rbac.colComponent')" v-if="form.type === 'C'">
-          <el-input v-model="form.component" placeholder="sites/index" />
-        </el-form-item>
-        <el-form-item :label="$t('sys.rbac.colPermission')">
-          <el-input v-model="form.permission" placeholder="sys:site:view" />
-        </el-form-item>
-        <el-form-item :label="$t('sys.rbac.colIcon')" v-if="form.type !== 'F'">
-          <el-input v-model="form.icon" placeholder="House / Connection / Lock..." />
-        </el-form-item>
-        <el-form-item :label="$t('sys.rbac.colSort')">
-          <el-input-number v-model="form.sort" :min="0" :max="9999" />
-        </el-form-item>
-      </el-form>
+        <OnFormGrid :fields="formFields" :model="form" :label-width="120" />
+      </OnForm>
       <template #footer>
-        <el-button @click="dialogVisible = false">{{ $t('common.cancel') }}</el-button>
-        <el-button type="primary" @click="submit" :loading="submitting">{{ $t('common.confirm') }}</el-button>
+        <el-button @click="showForm = false">{{ $t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="submit">{{ $t('common.confirm') }}</el-button>
       </template>
     </OnDialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, nextTick } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Plus, Delete } from '@element-plus/icons-vue'
-import { useI18n } from 'vue-i18n'
-import OnPagination from '@/components/OnPagination/index.vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import OnForm from '@/components/OnForm/OnForm/index.vue'
+import OnFormGrid from '@/components/OnForm/OnFormGrid/index.vue'
 import OnDialog from '@/components/OnDialog/index.vue'
-import {
-  listMenus,
-  createMenu,
-  updateMenu,
-  deleteMenu,
-  batchDeleteMenus,
-} from '@/api/sys/menus'
+import OnTable from '@/components/OnTable/index.vue'
+import type { FormField } from '@/components/OnForm/types'
+import type { TableColumn } from '@/components/OnTable/types'
+import { listMenus, createMenu, updateMenu, deleteMenu, batchDeleteMenus } from '@/api/sys/menus'
 import type { MenuItem } from '@/api/sys/menus/type'
-import { useMessage } from '@/hooks'
+import { useCrud, useMessage } from '@/hooks'
 
-const { t } = useI18n()
 const { success, error, confirm } = useMessage()
 
 type Menu = MenuItem
 
-const allMenus = ref<Menu[]>([])
-const menus = ref<Menu[]>([])
-const loading = ref(false)
-const tableRef = ref()
+const tableRef = ref<InstanceType<typeof OnTable>>()
 const selectedIds = ref<number[]>([])
-const keyword = ref('')
-const currentPage = ref(1)
-const pageSize = ref(100)
-const total = ref(0)
+const showForm = ref(false)
+const formRef = ref<InstanceType<typeof OnForm>>()
 
-const parentOptions = computed(() => {
-  const filter = (nodes: Menu[]): Menu[] =>
-    nodes.filter((n) => n.type !== 'F').map((n) => ({ ...n, children: n.children ? filter(n.children) : [] }))
-  return filter(allMenus.value)
-})
-
-const dialogVisible = ref(false)
-const submitting = ref(false)
-const formRef = ref()
 const form = reactive({
   id: null as number | null,
   type: 'C' as 'M' | 'C' | 'F',
@@ -187,58 +106,77 @@ const form = reactive({
   sort: 0,
 })
 
-const rules = {
-  name: [{ required: true, message: t('sys.rbac.required'), trigger: 'blur' }],
-  title: [{ required: true, message: t('sys.rbac.required'), trigger: 'blur' }],
-  type: [{ required: true, message: t('sys.rbac.required'), trigger: 'change' }],
-}
+// ponytail: 菜单接口返回整树扁平数组，无分页
+const { loading, dataList, searchForm, load, search, reset } = useCrud({
+  getListApi: listMenus,
+  isPage: false,
+})
+
+const searchFields: FormField[] = [
+  { prop: 'keyword', label: 'common.search', type: 'input', span: 8 },
+]
+
+// flat → tree；搜索时展示扁平结果
+const treeData = computed<Menu[]>(() => {
+  const list = dataList.value as Menu[]
+  if (searchForm.keyword) return list
+  const map = new Map<number, Menu>()
+  list.forEach((m) => map.set(m.id, { ...m, children: [] }))
+  const roots: Menu[] = []
+  for (const m of map.values()) {
+    if (m.parent_id && map.has(m.parent_id)) map.get(m.parent_id)!.children!.push(m)
+    else roots.push(m)
+  }
+  return roots
+})
+
+const parentOptions = computed(() => {
+  const filter = (nodes: Menu[]): Menu[] =>
+    nodes.filter((n) => n.type !== 'F').map((n) => ({ ...n, children: n.children ? filter(n.children) : [] }))
+  return filter(treeData.value)
+})
 
 function typeColor(t: string) {
   return t === 'M' ? 'success' : t === 'C' ? undefined : 'info'
 }
 
-function doSearch() {
-  currentPage.value = 1
-  load()
-}
-function doReset() {
-  keyword.value = ''
-  currentPage.value = 1
-  load()
-}
+const isFolder = (row: Menu) => row.type === 'F'
 
-let timer: ReturnType<typeof setTimeout> | null = null
-function onInput() {
-  if (timer) clearTimeout(timer)
-  timer = setTimeout(doSearch, 300)
-}
+const tableColumns: TableColumn[] = [
+  { type: 'selection', width: 48 },
+  { prop: 'name', label: 'sys.rbac.colName', minWidth: 160, slot: 'name' },
+  { prop: 'title', label: 'sys.rbac.colTitle', minWidth: 160, slot: 'title' },
+  { prop: 'path', label: 'sys.rbac.colPath', minWidth: 180 },
+  { prop: 'component', label: 'sys.rbac.colComponent', minWidth: 140 },
+  { prop: 'type', label: 'sys.rbac.colType', width: 80, slot: 'type' },
+  { prop: 'permission', label: 'sys.rbac.colPermission', minWidth: 180 },
+  { prop: 'sort', label: 'sys.rbac.colSort', width: 80 },
+  {
+    label: 'common.action',
+    width: 200,
+    fixed: 'right',
+    buttons: [
+      { name: 'sys.rbac.subItem', command: 'sub', size: 'small', disabled: isFolder },
+      { name: 'common.edit', command: 'edit', size: 'small' },
+      { name: 'common.delete', command: 'delete', type: 'danger', size: 'small' },
+    ],
+  },
+]
 
-onMounted(load)
+const formFields = computed<FormField[]>(() => [
+  { prop: 'name', label: 'sys.rbac.colName', type: 'input', required: true },
+  { prop: 'title', label: 'sys.rbac.colTitle', type: 'input', required: true, placeholder: 'sys.menu.sites' },
+  { prop: 'path', label: 'sys.rbac.colPath', type: 'input', visible: form.type !== 'F', placeholder: '/sites' },
+  { prop: 'component', label: 'sys.rbac.colComponent', type: 'input', visible: form.type === 'C', placeholder: 'sites/index' },
+  { prop: 'permission', label: 'sys.rbac.colPermission', type: 'input', placeholder: 'sys:site:view' },
+  { prop: 'icon', label: 'sys.rbac.colIcon', type: 'input', visible: form.type !== 'F', placeholder: 'House / Connection / Lock...' },
+  { prop: 'sort', label: 'sys.rbac.colSort', type: 'number', min: 0, max: 9999 },
+])
 
-async function load() {
-  loading.value = true
-  try {
-    const params: Record<string, unknown> = { page: currentPage.value, page_size: pageSize.value }
-    if (keyword.value) params.keyword = keyword.value
-    const list: Menu[] = (await listMenus(params)) || []
-    total.value = list.length
-    const map = new Map<number, Menu>()
-    list.forEach((m) => map.set(m.id, { ...m, children: [] }))
-    const roots: Menu[] = []
-    for (const m of map.values()) {
-      if (m.parent_id && map.has(m.parent_id)) {
-        map.get(m.parent_id)!.children!.push(m)
-      } else {
-        roots.push(m)
-      }
-    }
-    allMenus.value = list
-    menus.value = keyword.value ? list : roots
-  } catch (e: any) {
-    error(e?.message || "common.fail")
-  } finally {
-    loading.value = false
-  }
+function handleCommand(command: string | number, row: Menu) {
+  if (command === 'sub') openCreate(row)
+  else if (command === 'edit') openEdit(row)
+  else if (command === 'delete') del(row)
 }
 
 function onSelect(rows: Menu[]) {
@@ -258,105 +196,106 @@ function collectIds(rows: Menu[]): number[] {
 }
 
 function openCreate(parent: Menu | null) {
-  form.id = null
-  form.type = 'C'
-  form.parent_id = parent?.id ?? null
-  form.name = ''
-  form.title = ''
-  form.path = ''
-  form.component = ''
-  form.permission = ''
-  form.icon = ''
-  form.sort = 0
-  dialogVisible.value = true
-  nextTick(() => formRef.value?.clearValidate())
+  Object.assign(form, {
+    id: null,
+    type: 'C',
+    parent_id: parent?.id ?? null,
+    name: '',
+    title: '',
+    path: '',
+    component: '',
+    permission: '',
+    icon: '',
+    sort: 0,
+  })
+  showForm.value = true
 }
 
 function openEdit(row: Menu) {
-  form.id = row.id
-  form.type = row.type
-  form.parent_id = row.parent_id
-  form.name = row.name
-  form.title = row.title
-  form.path = row.path ?? ''
-  form.component = row.component ?? ''
-  form.permission = row.permission ?? ''
-  form.icon = row.icon ?? ''
-  form.sort = row.sort
-  dialogVisible.value = true
-  nextTick(() => formRef.value?.clearValidate())
+  Object.assign(form, {
+    id: row.id,
+    type: row.type,
+    parent_id: row.parent_id,
+    name: row.name,
+    title: row.title,
+    path: row.path ?? '',
+    component: row.component ?? '',
+    permission: row.permission ?? '',
+    icon: row.icon ?? '',
+    sort: row.sort,
+  })
+  showForm.value = true
 }
 
 async function submit() {
-  const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
-  submitting.value = true
+  if (!formRef.value) return
   try {
-    const payload = {
-      name: form.name,
-      title: form.title,
-      parent_id: form.parent_id,
-      icon: form.icon || null,
-      path: form.path || null,
-      component: form.component || null,
-      type: form.type,
-      permission: form.permission || null,
-      sort: form.sort,
-    }
+    await formRef.value.validate()
+  } catch {
+    return
+  }
+  const payload = {
+    name: form.name,
+    title: form.title,
+    parent_id: form.parent_id,
+    icon: form.icon || null,
+    path: form.path || null,
+    component: form.component || null,
+    type: form.type,
+    permission: form.permission || null,
+    sort: form.sort,
+  }
+  try {
     if (form.id) await updateMenu(form.id, payload)
     else await createMenu(payload)
-    ElMessage.success('ok')
-    dialogVisible.value = false
+    success('common.success')
+    showForm.value = false
     load()
   } catch (e: any) {
-    error(e?.message || "common.fail")
-  } finally {
-    submitting.value = false
+    error(e?.message || 'common.fail')
   }
 }
 
 async function del(row: Menu) {
-  const ok = await confirm({ message: "sys.rbac.confirmDeleteChildren" })
+  const ok = await confirm({ message: 'sys.rbac.confirmDeleteChildren' })
   if (!ok) return
   try {
     await deleteMenu(row.id)
-    success("common.success")
+    success('common.success')
     load()
   } catch (e: any) {
-    error(e?.message || "common.fail")
+    error(e?.message || 'common.fail')
   }
 }
 
 async function batchDelete() {
   if (!selectedIds.value.length) return
   const ok = await confirm({
-    message: "sys.rbac.batchDeleteConfirm",
+    message: 'sys.rbac.batchDeleteConfirm',
     params: { n: selectedIds.value.length },
   })
   if (!ok) return
   try {
     const msg = await batchDeleteMenus(selectedIds.value)
-    success(typeof msg === "string" ? msg : "common.success")
+    success(typeof msg === 'string' ? msg : 'common.success')
     selectedIds.value = []
-    tableRef.value?.clearSelection()
+    tableRef.value?.tableRef?.clearSelection()
     load()
   } catch (e: any) {
-    error(e?.message || "common.fail")
+    error(e?.message || 'common.fail')
   }
 }
+
+onMounted(() => {
+  load()
+})
 </script>
 
 <style scoped>
 .search-bar {
   display: flex;
   gap: 12px;
-  align-items: center;
-  margin-bottom: 12px;
-}
-.toolbar {
-  display: flex;
-  gap: 12px;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 12px;
 }
 .hint {

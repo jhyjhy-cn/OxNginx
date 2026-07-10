@@ -44,17 +44,12 @@
             </div>
           </template>
 
-          <el-table :data="backups" style="width: 100%">
-            <el-table-column prop="version" :label="$t('common.version')" width="100" />
-            <el-table-column prop="created_at" :label="$t('common.createdAt')" width="180" />
-            <el-table-column :label="$t('common.action')" width="250">
-              <template #default="{ row }">
-                <el-button size="small" @click="restoreBackupAction(row)">{{ $t('sys.siteDetail.restore') }}</el-button>
-                <el-button size="small" @click="viewBackup(row)">{{ $t('sys.siteDetail.view') }}</el-button>
-                <el-button size="small" type="danger" @click="deleteBackupAction(row)">{{ $t('common.delete') }}</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
+          <OnTable
+            :data="backups"
+            :columns="backupColumns"
+            :pagination="false"
+            @command="handleBackupCommand"
+          />
         </el-card>
       </template>
     </el-card>
@@ -66,6 +61,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import type { TableColumn } from '@/components/OnTable/types'
+import OnTable from '@/components/OnTable/index.vue'
 import {
   getSite,
   listBackups,
@@ -83,6 +80,26 @@ interface Backup {
   version?: number | string
   created_at?: string
   [key: string]: unknown
+}
+
+const backupColumns: TableColumn[] = [
+  { prop: 'version', label: 'common.version', width: 100 },
+  { prop: 'created_at', label: 'common.createdAt', width: 180 },
+  {
+    label: 'common.action',
+    width: 250,
+    buttons: [
+      { name: 'sys.siteDetail.restore', command: 'restore', size: 'small' },
+      { name: 'sys.siteDetail.view', command: 'view', size: 'small' },
+      { name: 'common.delete', command: 'delete', type: 'danger', size: 'small' },
+    ],
+  },
+]
+
+function handleBackupCommand(command: string | number, row: Backup) {
+  if (command === 'restore') restoreBackupAction(row)
+  else if (command === 'view') viewBackup(row)
+  else if (command === 'delete') deleteBackupAction(row)
 }
 
 const route = useRoute()

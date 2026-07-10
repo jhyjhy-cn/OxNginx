@@ -1,4 +1,5 @@
 <template>
+  <!-- ponytail: 自定义 sort-method + 列头下拉(流量指标)非 OnTable 能力，硬套反而更长且丢功能，保留原生 el-table -->
   <el-table :data="sites" style="width: 100%" v-loading="loading" @selection-change="(val: Site[]) => emit('selection-change', val)">
     <el-table-column type="selection" width="55" />
     <!-- 网站名 -->

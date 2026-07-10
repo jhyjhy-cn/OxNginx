@@ -7,6 +7,7 @@
       删除 ({{ redirectSelected.length }})
     </el-button>
   </div>
+  <!-- ponytail: 依赖 $index 做 splice/编辑定位，OnTable command 只回传 row 无 index，保留 el-table -->
   <el-table :data="redirectRules" style="width: 100%" @selection-change="(val: RedirectRule[]) => (redirectSelected = val)">
     <el-table-column type="selection" width="45" />
     <el-table-column label="被重定向" min-width="150" show-overflow-tooltip>

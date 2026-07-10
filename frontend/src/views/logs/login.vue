@@ -1,10 +1,11 @@
 <template>
-  <div class="log-page">
-    <el-card>
+  <div class="log-page h-full">
+    <el-card class="h-full">
+      <!-- ponytail: daterange 无 OnFormGrid 字段类型，搜索栏保留手写，绑定 useCrud.searchForm -->
       <div class="search-bar">
-        <el-input v-model="params.username" :placeholder="$t('login.username')" clearable style="width: 160px" @keyup.enter="doSearch" />
-        <el-input v-model="params.ip" placeholder="IP" clearable style="width: 140px" @keyup.enter="doSearch" />
-        <el-select v-model="params.status" :placeholder="$t('common.status')" clearable style="width: 120px">
+        <el-input v-model="searchForm.username" :placeholder="$t('login.username')" clearable style="width: 160px" @keyup.enter="doSearch" />
+        <el-input v-model="searchForm.ip" placeholder="IP" clearable style="width: 140px" @keyup.enter="doSearch" />
+        <el-select v-model="searchForm.status" :placeholder="$t('common.status')" clearable style="width: 120px">
           <el-option :label="$t('common.success')" value="success" />
           <el-option :label="$t('common.failed')" value="failed" />
         </el-select>
@@ -21,36 +22,27 @@
         <el-button type="success" @click="doExport">{{ $t('common.download') }}</el-button>
       </div>
 
-      <el-table :data="logs" v-loading="loading" max-height="calc(100vh - 340px)">
-        <el-table-column prop="username" :label="$t('login.username')" />
-        <el-table-column prop="ip" :label="$t('sys.log.ip')" />
-        <el-table-column prop="os" :label="$t('sys.log.os')" />
-        <el-table-column prop="browser" :label="$t('sys.log.browser')" />
-        <el-table-column :label="$t('sys.log.type')">
-          <template #default="{ row }">
-            <el-tag :type="row.type === 'login' ? 'primary' : 'info'" size="small">
-              {{ row.type === 'login' ? $t('sys.log.login') : $t('sys.log.logout') }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column :label="$t('common.status')">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 'success' ? 'success' : 'danger'" size="small">
-              {{ row.status === 'success' ? $t('sys.log.loginSuccess') : $t('sys.log.loginFailed') }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column :label="$t('common.createdAt')">
-          <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
-        </el-table-column>
-      </el-table>
-
-      <OnPagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :total="total"
-        @change="load"
-      />
+      <OnTable
+        :data="dataList"
+        :columns="tableColumns"
+        :loading="loading"
+        :pagination="{ total, currentPage: page, pageSize }"
+        :options="{ height: 'auto' }"
+        @page-change="onPageChange"
+        @reload="load"
+      >
+        <template #type="{ row }">
+          <el-tag :type="row.type === 'login' ? 'primary' : 'info'" size="small">
+            {{ row.type === 'login' ? $t('sys.log.login') : $t('sys.log.logout') }}
+          </el-tag>
+        </template>
+        <template #status="{ row }">
+          <el-tag :type="row.status === 'success' ? 'success' : 'danger'" size="small">
+            {{ row.status === 'success' ? $t('sys.log.loginSuccess') : $t('sys.log.loginFailed') }}
+          </el-tag>
+        </template>
+        <template #created="{ row }">{{ formatTime(row.created_at) }}</template>
+      </OnTable>
     </el-card>
   </div>
 </template>
@@ -59,87 +51,72 @@
 import { ref, onMounted } from 'vue'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
+import type { TableColumn } from '@/components/OnTable/types'
+import OnTable from '@/components/OnTable/index.vue'
+import { useCrud } from '@/hooks'
+import { listLoginLogs } from '@/api/logs'
 
 dayjs.extend(utc)
-import { listLoginLogs } from '@/api/logs'
-import OnPagination from '@/components/OnPagination/index.vue'
 
-interface LoginLog {
-  id: number
-  username?: string
-  ip?: string | null
-  os?: string | null
-  browser?: string | null
-  type?: string
-  status?: string
-  created_at?: string | null
-  [key: string]: unknown
-}
-
-const logs = ref<LoginLog[]>([])
-const loading = ref(false)
-const total = ref(0)
-const currentPage = ref(1)
-const pageSize = ref(20)
 const dateRange = ref<[string, string] | null>(null)
 
-const params = ref({ username: '', ip: '', status: '' })
+const {
+  loading,
+  dataList,
+  total,
+  page,
+  pageSize,
+  searchForm,
+  load,
+  search,
+  reset,
+} = useCrud({
+  getListApi: listLoginLogs,
+  isPage: true,
+  pageSize: 20,
+  searchForm: { username: '', ip: '', status: '', start_time: '', end_time: '' },
+})
+
+const tableColumns: TableColumn[] = [
+  { prop: 'username', label: 'login.username' },
+  { prop: 'ip', label: 'sys.log.ip' },
+  { prop: 'os', label: 'sys.log.os' },
+  { prop: 'browser', label: 'sys.log.browser' },
+  { prop: 'type', label: 'sys.log.type', slot: 'type' },
+  { prop: 'status', label: 'common.status', slot: 'status' },
+  { prop: 'created_at', label: 'common.createdAt', slot: 'created' },
+]
 
 function formatTime(t: string | null): string {
   if (!t) return ''
   return dayjs.utc(t).local().format('YYYY-MM-DD HH:mm:ss')
 }
 
-function buildParams() {
-  const p: Record<string, string | number> = {
-    page: currentPage.value,
-    page_size: pageSize.value,
-  }
-  if (params.value.username) p.username = params.value.username
-  if (params.value.ip) p.ip = params.value.ip
-  if (params.value.status) p.status = params.value.status
+function syncDates() {
   if (dateRange.value) {
-    p.start_time = dateRange.value[0] + ' 00:00:00'
-    p.end_time = dateRange.value[1] + ' 23:59:59'
+    searchForm.start_time = dateRange.value[0] + ' 00:00:00'
+    searchForm.end_time = dateRange.value[1] + ' 23:59:59'
+  } else {
+    searchForm.start_time = ''
+    searchForm.end_time = ''
   }
-  return p
 }
 
-function doSearch() {
-  currentPage.value = 1
-  load()
-}
+function doSearch() { syncDates(); search() }
+function doReset() { dateRange.value = null; reset() }
 
-function doReset() {
-  params.value = { username: '', ip: '', status: '' }
-  dateRange.value = null
-  currentPage.value = 1
-  load()
-}
+function onPageChange(p: number) { page.value = p; load() }
 
 function doExport() {
-  const p = buildParams()
-  const query = Object.entries(p)
-    .filter(([, v]) => v !== '' && v !== undefined)
-    .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+  syncDates()
+  const query = Object.entries({ ...searchForm })
+    .filter(([, v]) => v !== '' && v !== undefined && v !== null)
+    .map(([k, v]) => `${k}=${encodeURIComponent(v as string)}`)
     .join('&')
   window.open(`/api/log/login/export?${query}`, '_blank')
 }
 
 onMounted(load)
-
-async function load() {
-  loading.value = true
-  try {
-    const data = await listLoginLogs(buildParams())
-    logs.value = data.list
-    total.value = data.total
-  } catch {
-    // 后端接口未实现时静默处理
-  } finally {
-    loading.value = false
-  }
-}
 </script>
 
 <style scoped>

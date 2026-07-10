@@ -3,36 +3,29 @@
     <el-button type="primary" size="small" @click="openProxyForm()">添加</el-button>
     <el-button size="small" @click="fetchProxies">刷新</el-button>
   </div>
-  <el-table :data="proxyList" style="width: 100%" v-loading="proxyLoading">
-    <el-table-column prop="name" label="名称" width="120" />
-    <el-table-column prop="proxy_dir" label="代理目录" width="120" />
-    <el-table-column prop="target_url" label="目标URL" min-width="180" show-overflow-tooltip />
-    <el-table-column label="缓存" width="100">
-      <template #default="{ row }">
-        <el-tag :type="row.cache === 1 ? 'success' : 'info'" size="small">
-          {{ row.cache === 1 ? '已开启' : '已关闭' }}
-        </el-tag>
-      </template>
-    </el-table-column>
-    <el-table-column label="状态" width="100">
-      <template #default="{ row }">
-        <el-switch
-          :model-value="row.status === 'enabled'"
-          inline-prompt
-          active-text="启"
-          inactive-text="停"
-          size="small"
-          @change="(val: boolean) => toggleProxy(row, val)"
-        />
-      </template>
-    </el-table-column>
-    <el-table-column label="操作" width="180" fixed="right">
-      <template #default="{ row }">
-        <el-button type="primary" link size="small" @click="openProxyForm(row)">编辑</el-button>
-        <el-button type="danger" link size="small" @click="delProxy(row)">删除</el-button>
-      </template>
-    </el-table-column>
-  </el-table>
+  <OnTable
+    :data="proxyList"
+    :columns="tableColumns"
+    :loading="proxyLoading"
+    :pagination="false"
+    @command="handleCommand"
+  >
+    <template #cache="{ row }">
+      <el-tag :type="row.cache === 1 ? 'success' : 'info'" size="small">
+        {{ row.cache === 1 ? '已开启' : '已关闭' }}
+      </el-tag>
+    </template>
+    <template #status="{ row }">
+      <el-switch
+        :model-value="row.status === 'enabled'"
+        inline-prompt
+        active-text="启"
+        inactive-text="停"
+        size="small"
+        @change="(val: boolean) => toggleProxy(row, val)"
+      />
+    </template>
+  </OnTable>
 
   <ProxyFormDialog v-model:visible="proxyFormVisible" :site-id="siteId" :proxy="proxyFormTarget" @saved="fetchProxies" />
 </template>
@@ -40,6 +33,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import OnTable from '@/components/OnTable/index.vue'
+import type { TableColumn } from '@/components/OnTable/types'
 import ProxyFormDialog from '../ProxyFormDialog.vue'
 import { listProxies, updateProxy, deleteProxy } from '@/api/sites'
 import type { Proxy } from '@/api/sites/type'
@@ -55,6 +50,28 @@ const proxyList = ref<Proxy[]>([])
 const proxyLoading = ref(false)
 const proxyFormVisible = ref(false)
 const proxyFormTarget = ref<Proxy | null>(null)
+
+const tableColumns: TableColumn[] = [
+  { prop: 'name', label: '名称', width: 120 },
+  { prop: 'proxy_dir', label: '代理目录', width: 120 },
+  { prop: 'target_url', label: '目标URL', minWidth: 180, showOverflowTooltip: true },
+  { prop: 'cache', label: '缓存', width: 100, slot: 'cache' },
+  { prop: 'status', label: '状态', width: 100, slot: 'status' },
+  {
+    label: '操作',
+    width: 180,
+    fixed: 'right',
+    buttons: [
+      { name: { zh: '编辑', en: 'Edit' }, command: 'edit', size: 'small' },
+      { name: { zh: '删除', en: 'Delete' }, command: 'delete', type: 'danger', size: 'small' },
+    ],
+  },
+]
+
+function handleCommand(command: string | number, row: Proxy) {
+  if (command === 'edit') openProxyForm(row)
+  else if (command === 'delete') delProxy(row)
+}
 
 async function fetchProxies() {
   proxyLoading.value = true

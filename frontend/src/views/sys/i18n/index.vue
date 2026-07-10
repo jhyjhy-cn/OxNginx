@@ -1,53 +1,42 @@
 <template>
-  <div class="rbac-page">
-    <el-card>
+  <div class="i18n-page h-full">
+    <el-card class="h-full">
+      <!-- ponytail: 带 total 提示的自定义搜索栏，绑定 useCrud.searchForm.key -->
       <div class="search-bar">
         <el-input
-          v-model="search"
+          v-model="searchForm.key"
           :placeholder="$t('common.search') + ' Key...'"
           clearable
           style="width: 260px"
-          @input="onInput"
-          @keyup.enter="doSearch"
+          @keyup.enter="search"
         >
-          <template #prefix>
-            <el-icon><Search /></el-icon>
-          </template>
+          <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
-        <el-button type="primary" @click="doSearch">{{ $t('common.search') }}</el-button>
-        <el-button @click="doReset">{{ $t('common.reset') }}</el-button>
+        <el-button type="primary" @click="search">{{ $t('common.search') }}</el-button>
+        <el-button @click="reset">{{ $t('common.reset') }}</el-button>
         <span class="total-hint" style="margin-left: auto">{{ $t('sys.files.totalItems', { n: total }) }}</span>
       </div>
 
-      <div class="toolbar">
-        <el-button type="primary" @click="openAddKey">{{ $t('common.add') }}</el-button>
-        <el-button type="primary" @click="openAddLocale">{{ $t('sys.rbac.addLocale') }}</el-button>
-        <el-button type="success" @click="batchSave" :loading="saving">{{ $t('common.save') }}</el-button>
-        <el-button @click="load">{{ $t('common.refresh') }}</el-button>
-      </div>
-
-      <el-table :data="rows" v-loading="loading" @selection-change="onSelect" max-height="calc(100vh - 380px)">
-        <el-table-column type="selection" width="48" />
-        <el-table-column prop="key" label="Key" min-width="220" fixed sortable />
-        <el-table-column v-for="loc in locales" :key="loc" :label="loc" min-width="200">
-          <template #default="{ row }">
-            <el-input v-model="row.values[loc]" size="small" @input="row._dirty = true" />
-          </template>
-        </el-table-column>
-        <el-table-column :label="$t('common.action')" width="80" fixed="right">
-          <template #default="{ row }">
-            <el-button type="danger" text size="small" @click="del(row)">{{ $t('common.delete') }}</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <OnPagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :total="total"
-        :page-sizes="[50, 100, 200]"
-        @change="load"
-      />
+      <OnTable
+        :data="rows"
+        :columns="tableColumns"
+        :loading="loading"
+        :pagination="{ total, currentPage: page, pageSize }"
+        :options="{ height: 'auto' }"
+        @page-change="onPageChange"
+        @command="handleCommand"
+        @reload="load"
+      >
+        <template #toolbar-left>
+          <el-button type="primary" @click="openAddKey">{{ $t('common.add') }}</el-button>
+          <el-button type="primary" @click="openAddLocale">{{ $t('sys.rbac.addLocale') }}</el-button>
+          <el-button type="success" @click="batchSave" :loading="saving">{{ $t('common.save') }}</el-button>
+        </template>
+        <!-- 每个 locale 一列可编辑输入 -->
+        <template v-for="loc in locales" :key="loc" #[localeSlot(loc)]="{ row }">
+          <el-input v-model="row.values[loc]" size="small" @input="row._dirty = true" />
+        </template>
+      </OnTable>
     </el-card>
 
     <OnDialog v-model="showAddLocale" :title="$t('sys.rbac.addLocale')" width="400px">
@@ -80,45 +69,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
-import OnPagination from '@/components/OnPagination/index.vue'
 import OnDialog from '@/components/OnDialog/index.vue'
-import {
-  listI18nLocales,
-  listI18n,
-  upsertI18n,
-  deleteI18n,
-} from '@/api/sys/i18n'
-import { useMessage } from '@/hooks'
+import OnTable from '@/components/OnTable/index.vue'
+import type { TableColumn } from '@/components/OnTable/types'
+import { listI18nLocales, listI18n, upsertI18n, deleteI18n } from '@/api/sys/i18n'
+import { useCrud, useMessage } from '@/hooks'
 
 const { t } = useI18n()
 const { success, error, confirm } = useMessage()
 
-interface I18nRaw {
-  id: number
-  locale: string
-  key: string
-  value: string
-}
-interface Row {
-  key: string
-  values: Record<string, string>
-  _dirty: boolean
-  _ids: Record<string, number>
-}
+interface I18nRaw { id: number; locale: string; key: string; value: string }
+interface Row { key: string; values: Record<string, string>; _dirty: boolean; _ids: Record<string, number> }
 
 const locales = ref<string[]>([])
 const rows = ref<Row[]>([])
-const total = ref(0)
-const loading = ref(false)
 const saving = ref(false)
-const selectedKeys = ref<string[]>([])
-const search = ref('')
-const currentPage = ref(1)
-const pageSize = ref(100)
 
 const showAddLocale = ref(false)
 const newLocale = ref('')
@@ -126,66 +95,51 @@ const showAddKey = ref(false)
 const newKey = ref('')
 const newValues = reactive<Record<string, string>>({})
 
-function doSearch() {
-  currentPage.value = 1
-  load()
-}
-function doReset() {
-  search.value = ''
-  currentPage.value = 1
-  load()
-}
+// ponytail: listI18n 返回扁平 {id,locale,key,value}，前端聚合成每 key 一行；useCrud 负责分页/加载
+const { loading, dataList, total, page, pageSize, searchForm, load, search, reset } = useCrud({
+  getListApi: async (params?: any) => {
+    if (!locales.value.length) locales.value = (await listI18nLocales()) || []
+    return listI18n(params)
+  },
+  isPage: true,
+  pageSize: 100,
+  searchForm: { key: '' },
+})
 
-let timer: ReturnType<typeof setTimeout> | null = null
-function onInput() {
-  if (timer) clearTimeout(timer)
-  timer = setTimeout(doSearch, 300)
-}
+const localeSlot = (loc: string) => `loc_${loc}`
 
-onMounted(load)
+const tableColumns = computed<TableColumn[]>(() => [
+  { prop: 'key', label: 'Key', minWidth: 220, fixed: 'left', sortable: true },
+  ...locales.value.map((loc) => ({ prop: `loc_${loc}`, label: loc, minWidth: 200, slot: localeSlot(loc) })),
+  {
+    label: 'common.action',
+    width: 80,
+    fixed: 'right',
+    buttons: [{ name: 'common.delete', command: 'delete', type: 'danger', size: 'small' }],
+  },
+])
 
-async function load() {
-  loading.value = true
-  try {
-    if (!locales.value.length) {
-      locales.value = (await listI18nLocales()) || []
-    }
-
-    const params: Record<string, unknown> = {
-      page: currentPage.value,
-      page_size: pageSize.value,
-    }
-    if (search.value) params.key = search.value
-    const data = await listI18n(params)
-
-    const list: I18nRaw[] = data.list || []
-    total.value = data.total || 0
-
-    const map = new Map<string, Row>()
-    for (const e of list) {
-      if (!map.has(e.key)) {
-        map.set(e.key, { key: e.key, values: {}, _dirty: false, _ids: {} })
-      }
-      const row = map.get(e.key)!
-      row.values[e.locale] = e.value
-      row._ids[e.locale] = e.id
-    }
-    rows.value = Array.from(map.values()).sort((a, b) => a.key.localeCompare(b.key))
-  } catch (e: any) {
-    error(e?.message || "common.fail")
-  } finally {
-    loading.value = false
+// dataList → 聚合行；watch 覆盖 search/reset/load 所有加载路径
+function rebuildRows() {
+  const list = dataList.value as unknown as I18nRaw[]
+  const map = new Map<string, Row>()
+  for (const e of list) {
+    if (!map.has(e.key)) map.set(e.key, { key: e.key, values: {}, _dirty: false, _ids: {} })
+    const row = map.get(e.key)!
+    row.values[e.locale] = e.value
+    row._ids[e.locale] = e.id
   }
+  rows.value = Array.from(map.values()).sort((a, b) => a.key.localeCompare(b.key))
+}
+watch(dataList, rebuildRows)
+
+function onPageChange(p: number) { page.value = p; load() }
+
+function handleCommand(command: string | number, row: Row) {
+  if (command === 'delete') del(row)
 }
 
-function onSelect(selected: Row[]) {
-  selectedKeys.value = selected.map((r) => r.key)
-}
-
-function openAddLocale() {
-  newLocale.value = ''
-  showAddLocale.value = true
-}
+function openAddLocale() { newLocale.value = ''; showAddLocale.value = true }
 
 async function addLocale() {
   const loc = newLocale.value.trim()
@@ -208,16 +162,13 @@ async function addKey() {
     for (const loc of locales.value) {
       const val = newValues[loc] || ''
       if (!val) continue
-      await upsertI18n({
-        locale: loc,
-        entries: [{ key: newKey.value.trim(), value: val }],
-      })
+      await upsertI18n({ locale: loc, entries: [{ key: newKey.value.trim(), value: val }] })
     }
     ElMessage.success('ok')
     showAddKey.value = false
     await load()
   } catch (e: any) {
-    error(e?.message || "common.fail")
+    error(e?.message || 'common.fail')
   } finally {
     saving.value = false
   }
@@ -225,10 +176,7 @@ async function addKey() {
 
 async function batchSave() {
   const dirty = rows.value.filter((r) => r._dirty)
-  if (!dirty.length) {
-    ElMessage.info(t('sys.rbac.noChange'))
-    return
-  }
+  if (!dirty.length) { ElMessage.info(t('sys.rbac.noChange')); return }
   saving.value = true
   try {
     for (const loc of locales.value) {
@@ -241,42 +189,28 @@ async function batchSave() {
     ElMessage.success(t('sys.rbac.savedN', { n: dirty.length }))
     dirty.forEach((r) => (r._dirty = false))
   } catch (e: any) {
-    error(e?.message || "common.fail")
+    error(e?.message || 'common.fail')
   } finally {
     saving.value = false
   }
 }
 
 async function del(row: Row) {
-  const ok = await confirm({ message: "common.confirmDelete" })
+  const ok = await confirm({ message: 'common.confirmDelete' })
   if (!ok) return
   try {
-    for (const id of Object.values(row._ids)) {
-      await deleteI18n(id)
-    }
-    success("common.success")
+    for (const id of Object.values(row._ids)) await deleteI18n(id)
+    success('common.success')
     await load()
   } catch (e: any) {
-    error(e?.message || "common.fail")
+    error(e?.message || 'common.fail')
   }
 }
+
+onMounted(load)
 </script>
 
 <style scoped>
-.search-bar {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 12px;
-}
-.toolbar {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 12px;
-}
-.total-hint {
-  font-size: 13px;
-  color: var(--el-text-color-secondary);
-}
+.search-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+.total-hint { font-size: 13px; color: var(--el-text-color-secondary); }
 </style>

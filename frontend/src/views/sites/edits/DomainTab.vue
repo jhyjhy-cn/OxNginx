@@ -22,6 +22,7 @@
     <span v-else />
     <span style="font-size: 12px; color: #909399">{{ $t('sys.sites.domainCount', { n: domains.length }) }}</span>
   </div>
+  <!-- ponytail: 数据源是 props.domains 字符串数组(无网络列表)，textarea 批量添加，OnTable 无收益，保留 el-table -->
   <el-table :data="domainsDisplay" style="width: 100%" max-height="380" @selection-change="(val: DomainItem[]) => (domainSelected = val)">
     <el-table-column type="selection" width="45" />
     <el-table-column :label="$t('sys.sites.domain')">
