@@ -2,6 +2,12 @@
 backend/target/
 backend/*.db
 backend/static/
+backend/backup/
+backend/datas/
+backend/ssl/
+backend/wwwlogs/
+backend/wwwroot/
+backend/configs/config.toml
 backend-gui/target/
 backend-gui/gen/
 backend-gui/bundle/

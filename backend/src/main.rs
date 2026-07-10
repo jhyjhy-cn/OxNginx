@@ -55,23 +55,22 @@ fn main() -> anyhow::Result<()> {
 
     println!("{}", BANNER);
 
+    // 获取运行目录：debug 构建用项目目录，release 用 exe 所在目录
+    let run_dir = crate::modules::common::config::get_run_dir();
+
     // 首次运行自动初始化（cargo-packager 安装后）
-    let exe_dir = std::env::current_exe()?
-        .parent()
-        .map(|p| p.to_path_buf())
-        .unwrap_or_else(|| std::path::PathBuf::from("."));
-    startup::setup::first_run_setup(&exe_dir)?;
+    startup::setup::first_run_setup(&run_dir)?;
 
     // 先加载配置（首次运行若无配置则自动生成默认配置）
     let config_path = std::env::var("CONFIG_PATH").unwrap_or_else(|_| {
-        exe_dir
+        run_dir
             .join("configs")
             .join("config.toml")
             .to_string_lossy()
             .to_string()
     });
     if !std::path::Path::new(&config_path).exists() {
-        startup::setup::generate_default_config(&config_path, &exe_dir)?;
+        startup::setup::generate_default_config(&config_path, &run_dir)?;
     }
     unsafe {
         std::env::set_var("CONFIG_PATH", &config_path);
@@ -79,10 +78,10 @@ fn main() -> anyhow::Result<()> {
     let config = AppConfig::load()?;
 
     // 初始化日志（控制台 + 文件双输出，大小轮转写入 wwwlogs/panel/）
-    let log_dir = exe_dir
+    let log_dir = run_dir
         .parent()
         .and_then(|p| p.parent())
-        .unwrap_or(&exe_dir)
+        .unwrap_or(&run_dir)
         .join("wwwlogs")
         .join("panel");
     startup::logging::init(

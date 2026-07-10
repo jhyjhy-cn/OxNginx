@@ -137,3 +137,20 @@ impl AppConfig {
         Ok(config)
     }
 }
+
+/// 获取运行目录：debug 构建用项目目录（CARGO_MANIFEST_DIR），release 用 exe 所在目录
+pub fn get_run_dir() -> std::path::PathBuf {
+    if cfg!(debug_assertions) {
+        std::env::var("CARGO_MANIFEST_DIR")
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|_| {
+                std::env::current_exe()
+                    .map(|p| p.parent().unwrap_or(&p).to_path_buf())
+                    .unwrap_or_default()
+            })
+    } else {
+        std::env::current_exe()
+            .map(|p| p.parent().unwrap_or(&p).to_path_buf())
+            .unwrap_or_else(|_| std::path::PathBuf::from("."))
+    }
+}

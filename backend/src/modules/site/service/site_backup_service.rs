@@ -25,15 +25,7 @@ pub struct BackupPage {
 
 /// 获取站点备份目录
 pub fn get_backup_dir(site_name: &str) -> anyhow::Result<std::path::PathBuf> {
-    let exe_dir = std::env::current_exe()?
-        .parent()
-        .ok_or_else(|| anyhow::anyhow!("无法获取安装目录"))?
-        .to_path_buf();
-    let base = if exe_dir.join("configs").exists() {
-        exe_dir.clone()
-    } else {
-        exe_dir.join("server").join("panel")
-    };
+    let base = crate::modules::common::config::get_run_dir();
     Ok(base.join("backup").join("sites").join(site_name))
 }
 
