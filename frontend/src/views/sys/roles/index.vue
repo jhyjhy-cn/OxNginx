@@ -20,13 +20,13 @@
 
       <el-table :data="roles" v-loading="loading" max-height="calc(100vh - 340px)">
         <el-table-column prop="id" label="ID" width="60" />
-        <el-table-column prop="code" :label="$t('rbac.colCode')" width="160" />
-        <el-table-column prop="name" :label="$t('rbac.colName')" />
-        <el-table-column prop="remark" :label="$t('rbac.colRemark')" />
+        <el-table-column prop="code" :label="$t('sys.rbac.colCode')" width="160" />
+        <el-table-column prop="name" :label="$t('sys.rbac.colName')" />
+        <el-table-column prop="remark" :label="$t('sys.rbac.colRemark')" />
         <el-table-column :label="$t('common.action')" width="200">
           <template #default="{ row }">
             <el-button size="small" :disabled="row.code === 'super_admin'" @click="openMenuPerm(row)">
-              {{ $t('rbac.menuPermission') }}
+              {{ $t('sys.rbac.menuPermission') }}
             </el-button>
             <el-button size="small" type="danger" :disabled="row.code === 'super_admin'" @click="del(row)">
               {{ $t('common.delete') }}
@@ -38,11 +38,11 @@
       <OnPagination v-model:current-page="currentPage" v-model:page-size="pageSize" :total="total" @change="load" />
     </el-card>
 
-    <el-dialog v-model="showCreate" :title="$t('rbac.createRole')" width="400px">
+    <el-dialog v-model="showCreate" :title="$t('sys.rbac.createRole')" width="400px">
       <el-form :model="form" label-width="80px">
-        <el-form-item :label="$t('rbac.colCode')"><el-input v-model="form.code" /></el-form-item>
-        <el-form-item :label="$t('rbac.colName')"><el-input v-model="form.name" /></el-form-item>
-        <el-form-item :label="$t('rbac.colRemark')"><el-input v-model="form.remark" /></el-form-item>
+        <el-form-item :label="$t('sys.rbac.colCode')"><el-input v-model="form.code" /></el-form-item>
+        <el-form-item :label="$t('sys.rbac.colName')"><el-input v-model="form.name" /></el-form-item>
+        <el-form-item :label="$t('sys.rbac.colRemark')"><el-input v-model="form.remark" /></el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showCreate = false">{{ $t('common.cancel') }}</el-button>
@@ -53,7 +53,7 @@
     <!-- 菜单权限弹窗 -->
     <OnDialog
       v-model="showMenuPerm"
-      :title="`${$t('rbac.menuPermission')} - ${menuPermRole?.name || ''}`"
+      :title="`${$t('sys.rbac.menuPermission')} - ${menuPermRole?.name || ''}`"
       width="520px"
       height="60vh"
       destroy-on-close

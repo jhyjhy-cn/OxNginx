@@ -17,47 +17,47 @@
       >
         <el-menu-item index="/dashboard">
           <el-icon><Odometer /></el-icon>
-          <span>{{ $t('menu.dashboard') }}</span>
+          <span>{{ $t('sys.menu.dashboard') }}</span>
         </el-menu-item>
 
         <el-menu-item index="/sites">
           <el-icon><Grid /></el-icon>
-          <span>{{ $t('menu.sites') }}</span>
+          <span>{{ $t('sys.menu.sites') }}</span>
         </el-menu-item>
 
         <el-menu-item index="/ssl">
           <el-icon><Lock /></el-icon>
-          <span>{{ $t('menu.ssl') }}</span>
+          <span>{{ $t('sys.menu.ssl') }}</span>
         </el-menu-item>
 
         <el-menu-item index="/upstreams">
           <el-icon><Connection /></el-icon>
-          <span>{{ $t('menu.upstreams') }}</span>
+          <span>{{ $t('sys.menu.upstreams') }}</span>
         </el-menu-item>
 
         <el-menu-item index="/access">
           <el-icon><Key /></el-icon>
-          <span>{{ $t('menu.access') }}</span>
+          <span>{{ $t('sys.menu.access') }}</span>
         </el-menu-item>
 
         <el-menu-item index="/templates">
           <el-icon><Files /></el-icon>
-          <span>{{ $t('menu.templates') }}</span>
+          <span>{{ $t('sys.menu.templates') }}</span>
         </el-menu-item>
 
         <el-menu-item index="/logs">
           <el-icon><Document /></el-icon>
-          <span>{{ $t('menu.logs') }}</span>
+          <span>{{ $t('sys.menu.logs') }}</span>
         </el-menu-item>
 
         <el-menu-item index="/config">
           <el-icon><Edit /></el-icon>
-          <span>{{ $t('menu.config') }}</span>
+          <span>{{ $t('sys.menu.config') }}</span>
         </el-menu-item>
 
         <el-menu-item index="/settings">
           <el-icon><Setting /></el-icon>
-          <span>{{ $t('menu.settings') }}</span>
+          <span>{{ $t('sys.menu.settings') }}</span>
         </el-menu-item>
       </el-menu>
     </el-aside>

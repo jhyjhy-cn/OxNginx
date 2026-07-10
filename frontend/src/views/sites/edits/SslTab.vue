@@ -1,13 +1,13 @@
 <template>
   <el-form label-width="80px">
-    <el-form-item :label="$t('sites.enableSsl')">
+    <el-form-item :label="$t('sys.sites.enableSsl')">
       <el-switch v-model="editForm.ssl" @change="$emit('save')" />
     </el-form-item>
     <template v-if="editForm.ssl">
-      <el-form-item :label="$t('sites.certPath')">
+      <el-form-item :label="$t('sys.sites.certPath')">
         <el-input v-model="editForm.certificate_path" placeholder="/opt/oxnginx/ssl/fullchain.cer" @change="$emit('save')" />
       </el-form-item>
-      <el-form-item :label="$t('sites.keyPath')">
+      <el-form-item :label="$t('sys.sites.keyPath')">
         <el-input v-model="editForm.key_path" placeholder="/opt/oxnginx/ssl/private.key" @change="$emit('save')" />
       </el-form-item>
     </template>

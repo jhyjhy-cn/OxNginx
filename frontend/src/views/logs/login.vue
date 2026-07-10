@@ -23,20 +23,20 @@
 
       <el-table :data="logs" v-loading="loading" max-height="calc(100vh - 340px)">
         <el-table-column prop="username" :label="$t('login.username')" />
-        <el-table-column prop="ip" :label="$t('log.ip')" />
-        <el-table-column prop="os" :label="$t('log.os')" />
-        <el-table-column prop="browser" :label="$t('log.browser')" />
-        <el-table-column :label="$t('log.type')">
+        <el-table-column prop="ip" :label="$t('sys.log.ip')" />
+        <el-table-column prop="os" :label="$t('sys.log.os')" />
+        <el-table-column prop="browser" :label="$t('sys.log.browser')" />
+        <el-table-column :label="$t('sys.log.type')">
           <template #default="{ row }">
             <el-tag :type="row.type === 'login' ? 'primary' : 'info'" size="small">
-              {{ row.type === 'login' ? $t('log.login') : $t('log.logout') }}
+              {{ row.type === 'login' ? $t('sys.log.login') : $t('sys.log.logout') }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column :label="$t('common.status')">
           <template #default="{ row }">
             <el-tag :type="row.status === 'success' ? 'success' : 'danger'" size="small">
-              {{ row.status === 'success' ? $t('log.loginSuccess') : $t('log.loginFailed') }}
+              {{ row.status === 'success' ? $t('sys.log.loginSuccess') : $t('sys.log.loginFailed') }}
             </el-tag>
           </template>
         </el-table-column>

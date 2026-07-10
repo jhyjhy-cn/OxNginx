@@ -4,11 +4,11 @@
     <div
       class="tab-item tab-home"
       :class="{ active: tabStore.activePath === '/dashboard' }"
-      @click="navigateTo({ path: '/dashboard', title: 'menu.dashboard', closable: false })"
-      @contextmenu.prevent="onContextMenu($event, { path: '/dashboard', title: 'menu.dashboard', closable: false }, 0)"
+      @click="navigateTo({ path: '/dashboard', title: 'sys.menu.dashboard', closable: false })"
+      @contextmenu.prevent="onContextMenu($event, { path: '/dashboard', title: 'sys.menu.dashboard', closable: false }, 0)"
     >
       <el-icon v-if="settingsStore.showTabIcons" :size="12"><Odometer /></el-icon>
-      <span class="tab-title">{{ t('menu.dashboard') }}</span>
+      <span class="tab-title">{{ t('sys.menu.dashboard') }}</span>
     </div>
 
     <!-- 可拖拽排序的标签页 -->
@@ -44,25 +44,25 @@
       <div v-if="contextMenu.visible" class="tab-context-menu" :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }">
         <div class="menu-item" @click="handleRefresh">
           <el-icon :size="14"><Refresh /></el-icon>
-          <span>{{ t('tabs.refresh') }}</span>
+          <span>{{ t('sys.tabs.refresh') }}</span>
         </div>
         <div class="menu-divider" />
         <div class="menu-item" :class="{ disabled: !contextMenu.tab?.closable }" @click="handleClose">
           <el-icon :size="14"><Close /></el-icon>
-          <span>{{ t('tabs.close') }}</span>
+          <span>{{ t('sys.tabs.close') }}</span>
         </div>
         <div class="menu-item" @click="handleCloseLeft">
           <el-icon :size="14"><Back /></el-icon>
-          <span>{{ t('tabs.closeLeft') }}</span>
+          <span>{{ t('sys.tabs.closeLeft') }}</span>
         </div>
         <div class="menu-item" @click="handleCloseRight">
           <el-icon :size="14"><Right /></el-icon>
-          <span>{{ t('tabs.closeRight') }}</span>
+          <span>{{ t('sys.tabs.closeRight') }}</span>
         </div>
         <div class="menu-divider" />
         <div class="menu-item" @click="handleCloseOther">
           <el-icon :size="14"><CircleClose /></el-icon>
-          <span>{{ t('tabs.closeOther') }}</span>
+          <span>{{ t('sys.tabs.closeOther') }}</span>
         </div>
       </div>
     </Teleport>

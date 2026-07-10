@@ -1,19 +1,19 @@
 <template>
   <el-form label-width="100px">
-    <el-form-item :label="$t('sites.logAccessPath')">
-      <el-input v-model="editForm.log_access_path" :placeholder="$t('sites.logAccessPathHint')" @change="$emit('save')" />
+    <el-form-item :label="$t('sys.sites.logAccessPath')">
+      <el-input v-model="editForm.log_access_path" :placeholder="$t('sys.sites.logAccessPathHint')" @change="$emit('save')" />
     </el-form-item>
-    <el-form-item :label="$t('sites.logErrorPath')">
-      <el-input v-model="editForm.log_error_path" :placeholder="$t('sites.logErrorPathHint')" @change="$emit('save')" />
+    <el-form-item :label="$t('sys.sites.logErrorPath')">
+      <el-input v-model="editForm.log_error_path" :placeholder="$t('sys.sites.logErrorPathHint')" @change="$emit('save')" />
     </el-form-item>
   </el-form>
   <el-divider />
   <div style="display: flex; gap: 8px; margin-bottom: 8px">
-    <el-button size="small" :loading="logLoading" @click="loadSiteLog('access')">{{ $t('sites.accessLog') }}</el-button>
-    <el-button size="small" :loading="logLoading" @click="loadSiteLog('error')">{{ $t('sites.errorLog') }}</el-button>
+    <el-button size="small" :loading="logLoading" @click="loadSiteLog('access')">{{ $t('sys.sites.accessLog') }}</el-button>
+    <el-button size="small" :loading="logLoading" @click="loadSiteLog('error')">{{ $t('sys.sites.errorLog') }}</el-button>
   </div>
   <pre v-if="siteLog" class="log-output">{{ siteLog }}</pre>
-  <el-empty v-else :description="$t('sites.clickToLoadLog')" />
+  <el-empty v-else :description="$t('sys.sites.clickToLoadLog')" />
 </template>
 
 <script setup lang="ts">
@@ -46,7 +46,7 @@ async function loadSiteLog(type: 'access' | 'error') {
       siteLog.value = (res.data.data?.lines || []).join('\n')
     }
   } catch {
-    siteLog.value = t('sites.logLoadFailed')
+    siteLog.value = t('sys.sites.logLoadFailed')
   } finally {
     logLoading.value = false
   }

@@ -3,11 +3,11 @@ import { ref } from 'vue'
 
 export interface TabItem {
   path: string
-  title: string // i18n key，如 'menu.dashboard'
+  title: string // i18n key，如 'sys.menu.dashboard'
   closable: boolean
 }
 
-const DEFAULT_TAB: TabItem = { path: '/dashboard', title: 'menu.dashboard', closable: false }
+const DEFAULT_TAB: TabItem = { path: '/dashboard', title: 'sys.menu.dashboard', closable: false }
 
 export const useTabStore = defineStore(
   'tabs',

@@ -2,7 +2,7 @@
   <el-table :data="sites" style="width: 100%" v-loading="loading" @selection-change="(val: Site[]) => emit('selection-change', val)">
     <el-table-column type="selection" width="55" />
     <!-- 网站名 -->
-    <el-table-column prop="name" :label="$t('sites.siteName')" width="150">
+    <el-table-column prop="name" :label="$t('sys.sites.siteName')" width="150">
       <template #default="{ row }">
         <el-button type="primary" link @click="emit('edit', row)">{{ row.name }}</el-button>
       </template>
@@ -25,18 +25,18 @@
       </template>
     </el-table-column>
     <!-- 备份 -->
-    <el-table-column :label="$t('sites.backup')" width="100">
+    <el-table-column :label="$t('sys.sites.backup')" width="100">
       <template #default="{ row }">
         <el-button v-if="row.backup_count > 0" type="primary" link @click="emit('open-backup', row)">
-          {{ $t('sites.hasBackup', { n: row.backup_count }) }}
+          {{ $t('sys.sites.hasBackup', { n: row.backup_count }) }}
         </el-button>
         <el-button v-else type="info" link @click="emit('open-backup', row)">
-          {{ $t('sites.noBackup') }}
+          {{ $t('sys.sites.noBackup') }}
         </el-button>
       </template>
     </el-table-column>
     <!-- 根目录 -->
-    <el-table-column :label="$t('sites.rootPath')" min-width="180" show-overflow-tooltip>
+    <el-table-column :label="$t('sys.sites.rootPath')" min-width="180" show-overflow-tooltip>
       <template #default="{ row }">
         <el-button v-if="row.root_path" type="primary" link @click="emit('open-file-manager', row.root_path)">
           {{ row.root_path }}
@@ -54,12 +54,12 @@
           </span>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item command="ip" :class="{ active: trafficMetric === 'ip' }">{{ $t('sites.traffic.ip') }}</el-dropdown-item>
-              <el-dropdown-item command="pv" :class="{ active: trafficMetric === 'pv' }">{{ $t('sites.traffic.pv') }}</el-dropdown-item>
+              <el-dropdown-item command="ip" :class="{ active: trafficMetric === 'ip' }">{{ $t('sys.sites.traffic.ip') }}</el-dropdown-item>
+              <el-dropdown-item command="pv" :class="{ active: trafficMetric === 'pv' }">{{ $t('sys.sites.traffic.pv') }}</el-dropdown-item>
               <el-dropdown-item command="request" :class="{ active: trafficMetric === 'request' }">
-                {{ $t('sites.traffic.request') }}
+                {{ $t('sys.sites.traffic.request') }}
               </el-dropdown-item>
-              <el-dropdown-item command="uv" :class="{ active: trafficMetric === 'uv' }">{{ $t('sites.traffic.uv') }}</el-dropdown-item>
+              <el-dropdown-item command="uv" :class="{ active: trafficMetric === 'uv' }">{{ $t('sys.sites.traffic.uv') }}</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -71,31 +71,31 @@
     <!-- 到期时间 -->
     <el-table-column width="150" sortable :sort-method="sortExpireTime">
       <template #header>
-        <span>{{ $t('sites.expireTime') }}</span>
+        <span>{{ $t('sys.sites.expireTime') }}</span>
       </template>
       <template #default="{ row }">
-        <el-tag v-if="!row.expire_time" size="small">{{ $t('sites.permanent') }}</el-tag>
+        <el-tag v-if="!row.expire_time" size="small">{{ $t('sys.sites.permanent') }}</el-tag>
         <span v-else>{{ row.expire_time }}</span>
       </template>
     </el-table-column>
     <!-- 备注 -->
-    <el-table-column prop="remark" :label="$t('sites.remark')" width="120" show-overflow-tooltip>
+    <el-table-column prop="remark" :label="$t('sys.sites.remark')" width="120" show-overflow-tooltip>
       <template #default="{ row }">
         {{ row.remark || '-' }}
       </template>
     </el-table-column>
     <!-- SSL证书 -->
-    <el-table-column :label="$t('sites.sslCert')" width="140" sortable :sort-method="sortCert">
+    <el-table-column :label="$t('sys.sites.sslCert')" width="140" sortable :sort-method="sortCert">
       <template #default="{ row }">
         <el-tag
           v-if="row.ssl === 1 && row.cert_expire_days != null"
           :type="row.cert_expire_days > 30 ? 'success' : row.cert_expire_days > 7 ? 'warning' : 'danger'"
           size="small"
         >
-          {{ $t('sites.daysRemaining', { n: row.cert_expire_days }) }}
+          {{ $t('sys.sites.daysRemaining', { n: row.cert_expire_days }) }}
         </el-tag>
-        <el-tag v-else-if="row.ssl === 1" type="success" size="small">{{ $t('sites.deployed') }}</el-tag>
-        <el-tag v-else type="info" size="small">{{ $t('sites.notDeployed') }}</el-tag>
+        <el-tag v-else-if="row.ssl === 1" type="success" size="small">{{ $t('sys.sites.deployed') }}</el-tag>
+        <el-tag v-else type="info" size="small">{{ $t('sys.sites.notDeployed') }}</el-tag>
       </template>
     </el-table-column>
     <!-- 操作 -->
@@ -103,7 +103,7 @@
       <template #default="{ row }">
         <el-button type="primary" link @click="emit('edit', row)">{{ $t('common.edit') }}</el-button>
         <el-button type="primary" link @click="emit('deploy-ssl', row)" :loading="row._sslLoading">
-          {{ $t('sites.sslDeploy') }}
+          {{ $t('sys.sites.sslDeploy') }}
         </el-button>
         <el-button type="danger" link @click="emit('delete', row)">{{ $t('common.delete') }}</el-button>
       </template>

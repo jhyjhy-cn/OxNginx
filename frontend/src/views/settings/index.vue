@@ -3,29 +3,29 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>{{ $t('settings.title') }}</span>
+          <span>{{ $t('sys.settings.title') }}</span>
           <el-button type="primary" @click="saveSettings" :loading="saving">
-            {{ $t('settings.saveSettings') }}
+            {{ $t('sys.settings.saveSettings') }}
           </el-button>
         </div>
       </template>
 
       <el-form label-width="140px">
-        <el-divider>{{ $t('settings.nginxConfig') }}</el-divider>
+        <el-divider>{{ $t('sys.settings.nginxConfig') }}</el-divider>
 
-        <el-form-item :label="$t('settings.nginxPath')">
+        <el-form-item :label="$t('sys.settings.nginxPath')">
           <el-input v-model="settings.nginx.bin" placeholder="/usr/sbin/nginx" />
         </el-form-item>
-        <el-form-item :label="$t('settings.mainConfig')">
+        <el-form-item :label="$t('sys.settings.mainConfig')">
           <el-input v-model="settings.nginx.config" placeholder="/etc/nginx/nginx.conf" />
         </el-form-item>
-        <el-form-item :label="$t('settings.sitesDir')">
+        <el-form-item :label="$t('sys.settings.sitesDir')">
           <el-input v-model="settings.nginx.sites_enabled" placeholder="/etc/nginx/sites-enabled" />
         </el-form-item>
 
-        <el-divider>{{ $t('settings.acmeConfig') }}</el-divider>
+        <el-divider>{{ $t('sys.settings.acmeConfig') }}</el-divider>
 
-        <el-form-item :label="$t('settings.acmePath')">
+        <el-form-item :label="$t('sys.settings.acmePath')">
           <el-input v-model="settings.acme.bin" placeholder="/root/.acme.sh/acme.sh" />
         </el-form-item>
       </el-form>
@@ -33,20 +33,20 @@
 
     <el-card style="margin-top: 20px">
       <template #header>
-        <span>{{ $t('settings.systemInfo') }}</span>
+        <span>{{ $t('sys.settings.systemInfo') }}</span>
       </template>
 
       <el-descriptions :column="2" border>
-        <el-descriptions-item :label="$t('settings.osVersion')">{{ settings.system.os }}</el-descriptions-item>
-        <el-descriptions-item :label="$t('settings.arch')">{{ settings.system.arch }}</el-descriptions-item>
-        <el-descriptions-item :label="$t('settings.hostname')">{{ settings.system.hostname }}</el-descriptions-item>
-        <el-descriptions-item :label="$t('settings.cpuCores')">{{ settings.system.cpu_cores }}</el-descriptions-item>
-        <el-descriptions-item :label="$t('settings.nginxVersion')">{{ settings.system.nginx_version || '-' }}</el-descriptions-item>
-        <el-descriptions-item :label="$t('settings.rustVersion')">{{ settings.system.rust_version }}</el-descriptions-item>
-        <el-descriptions-item :label="$t('settings.serverAddress')">
+        <el-descriptions-item :label="$t('sys.settings.osVersion')">{{ settings.system.os }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('sys.settings.arch')">{{ settings.system.arch }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('sys.settings.hostname')">{{ settings.system.hostname }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('sys.settings.cpuCores')">{{ settings.system.cpu_cores }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('sys.settings.nginxVersion')">{{ settings.system.nginx_version || '-' }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('sys.settings.rustVersion')">{{ settings.system.rust_version }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('sys.settings.serverAddress')">
           {{ settings.server.host }}:{{ settings.server.port }}
         </el-descriptions-item>
-        <el-descriptions-item :label="$t('settings.oxnginxVersion')">1.0.0</el-descriptions-item>
+        <el-descriptions-item :label="$t('sys.settings.oxnginxVersion')">1.0.0</el-descriptions-item>
       </el-descriptions>
     </el-card>
   </div>
@@ -117,10 +117,10 @@ async function saveSettings() {
     if (response.data.code === 0) {
       ElMessage.success(response.data.data)
     } else {
-      ElMessage.error(response.data.message || t('settings.saveFailed'))
+      ElMessage.error(response.data.message || t('sys.settings.saveFailed'))
     }
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('settings.saveFailed'))
+    ElMessage.error(error.response?.data?.message || t('sys.settings.saveFailed'))
   } finally {
     saving.value = false
   }

@@ -157,7 +157,7 @@ function openRedirectConfigFile(_rule: RedirectRule) {
     const path = `/opt/oxnginx/nginx/conf/sites-enabled/${props.siteName}.conf`
     const tabStore = useTabStore()
     const filesStore = useFilesStore()
-    tabStore.addTab({ path: '/files', title: 'menu.files', closable: true })
+    tabStore.addTab({ path: '/files', title: 'sys.menu.files', closable: true })
     const normalized = path.replace(/\\/g, '/').replace(/\/+$/, '')
     const existing = filesStore.tabs.find((t) => t.path.replace(/\\/g, '/').replace(/\/+$/, '') === normalized)
     if (existing) {

@@ -86,7 +86,7 @@ async function save() {
     ElMessage.success(t('common.success'))
     emit('saved')
   } catch (e: any) {
-    ElMessage.error(e.response?.data?.message || t('sites.operationFailed'))
+    ElMessage.error(e.response?.data?.message || t('sys.sites.operationFailed'))
   } finally {
     saving.value = false
   }

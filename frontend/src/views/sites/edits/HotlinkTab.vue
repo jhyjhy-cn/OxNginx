@@ -1,19 +1,19 @@
 <template>
   <el-form label-width="100px">
-    <el-form-item :label="$t('sites.hotlinkEnable')">
+    <el-form-item :label="$t('sys.sites.hotlinkEnable')">
       <el-switch v-model="hotlink.enabled" @change="$emit('save')" />
     </el-form-item>
     <template v-if="hotlink.enabled">
-      <el-form-item :label="$t('sites.hotlinkDomains')">
+      <el-form-item :label="$t('sys.sites.hotlinkDomains')">
         <el-input
           v-model="hotlink.domainsStr"
           type="textarea"
           :autosize="{ minRows: 3, maxRows: 6 }"
-          :placeholder="$t('sites.hotlinkDomainsHint')"
+          :placeholder="$t('sys.sites.hotlinkDomainsHint')"
           @change="$emit('save')"
         />
       </el-form-item>
-      <el-form-item :label="$t('sites.hotlinkCode')">
+      <el-form-item :label="$t('sys.sites.hotlinkCode')">
         <el-select v-model="hotlink.return_code" @change="$emit('save')">
           <el-option label="403 Forbidden" :value="403" />
           <el-option label="404 Not Found" :value="404" />

@@ -1,11 +1,11 @@
 <template>
   <!-- 新建文件/文件夹 -->
-  <OnDialog v-model="createDialog.visible" :title="createDialog.isDir ? t('files.createFolder') : t('files.createFile')" width="420px">
+  <OnDialog v-model="createDialog.visible" :title="createDialog.isDir ? t('sys.files.createFolder') : t('sys.files.createFile')" width="420px">
     <el-form label-width="80px">
-      <el-form-item :label="createDialog.isDir ? t('files.folderName') : t('files.fileName')">
+      <el-form-item :label="createDialog.isDir ? t('sys.files.folderName') : t('sys.files.fileName')">
         <el-input
           v-model="createDialog.name"
-          :placeholder="createDialog.isDir ? t('files.enterFolderName') : t('files.enterFileName')"
+          :placeholder="createDialog.isDir ? t('sys.files.enterFolderName') : t('sys.files.enterFileName')"
           @keyup.enter="$emit('submit-create')"
         />
       </el-form-item>
@@ -17,10 +17,10 @@
   </OnDialog>
 
   <!-- 重命名 -->
-  <OnDialog v-model="renameDialog.visible" :title="t('files.rename')" width="420px">
+  <OnDialog v-model="renameDialog.visible" :title="t('sys.files.rename')" width="420px">
     <el-form label-width="80px">
-      <el-form-item :label="t('files.name')">
-        <el-input v-model="renameDialog.newName" :placeholder="t('files.enterNewName')" @keyup.enter="$emit('submit-rename')" />
+      <el-form-item :label="t('sys.files.name')">
+        <el-input v-model="renameDialog.newName" :placeholder="t('sys.files.enterNewName')" @keyup.enter="$emit('submit-rename')" />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -30,10 +30,10 @@
   </OnDialog>
 
   <!-- 复制/移动 -->
-  <OnDialog v-model="moveDialog.visible" :title="moveDialog.isCopy ? t('files.copyTo') : t('files.moveTo')" width="500px">
+  <OnDialog v-model="moveDialog.visible" :title="moveDialog.isCopy ? t('sys.files.copyTo') : t('sys.files.moveTo')" width="500px">
     <el-form label-width="80px">
-      <el-form-item :label="t('files.destination')">
-        <el-input v-model="moveDialog.destination" :placeholder="t('files.enterDestination')" />
+      <el-form-item :label="t('sys.files.destination')">
+        <el-input v-model="moveDialog.destination" :placeholder="t('sys.files.enterDestination')" />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -43,12 +43,12 @@
   </OnDialog>
 
   <!-- 压缩 -->
-  <OnDialog v-model="compressDialog.visible" :title="t('files.compress')" width="460px">
+  <OnDialog v-model="compressDialog.visible" :title="t('sys.files.compress')" width="460px">
     <el-form label-width="80px">
-      <el-form-item :label="t('files.compressName')">
-        <el-input v-model="compressDialog.name" :placeholder="t('files.enterCompressName')" />
+      <el-form-item :label="t('sys.files.compressName')">
+        <el-input v-model="compressDialog.name" :placeholder="t('sys.files.enterCompressName')" />
       </el-form-item>
-      <el-form-item :label="t('files.compressFormat')">
+      <el-form-item :label="t('sys.files.compressFormat')">
         <el-radio-group v-model="compressDialog.format">
           <el-radio value="zip">.zip</el-radio>
           <el-radio value="tar.gz">.tar.gz</el-radio>
@@ -62,10 +62,10 @@
   </OnDialog>
 
   <!-- 权限 -->
-  <OnDialog v-model="chmodDialog.visible" :title="t('files.changePermission')" width="400px">
+  <OnDialog v-model="chmodDialog.visible" :title="t('sys.files.changePermission')" width="400px">
     <el-form label-width="80px">
-      <el-form-item :label="t('files.permissionMode')">
-        <el-input v-model="chmodDialog.mode" :placeholder="t('files.enterPermission')" />
+      <el-form-item :label="t('sys.files.permissionMode')">
+        <el-input v-model="chmodDialog.mode" :placeholder="t('sys.files.enterPermission')" />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -75,13 +75,13 @@
   </OnDialog>
 
   <!-- 编辑文件 -->
-  <OnDialog v-model="editDialog.visible" :title="t('files.editFile')" width="80%" maximizable>
+  <OnDialog v-model="editDialog.visible" :title="t('sys.files.editFile')" width="80%" maximizable>
     <div class="editor-wrapper">
       <textarea v-model="editDialog.content" class="file-editor" spellcheck="false" />
     </div>
     <template #footer>
       <el-button @click="editDialog.visible = false">{{ t('common.cancel') }}</el-button>
-      <el-button type="primary" @click="$emit('submit-edit')">{{ t('files.saveFile') }}</el-button>
+      <el-button type="primary" @click="$emit('submit-edit')">{{ t('sys.files.saveFile') }}</el-button>
     </template>
   </OnDialog>
 

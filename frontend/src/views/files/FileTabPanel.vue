@@ -69,12 +69,12 @@
         <el-dropdown @command="fm.handleCreate" trigger="click">
           <el-button size="small" type="primary">
             <el-icon><Plus /></el-icon>
-            {{ t('files.createFile') }}
+            {{ t('sys.files.createFile') }}
           </el-button>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item command="file">{{ t('files.createFile') }}</el-dropdown-item>
-              <el-dropdown-item command="folder">{{ t('files.createFolder') }}</el-dropdown-item>
+              <el-dropdown-item command="file">{{ t('sys.files.createFile') }}</el-dropdown-item>
+              <el-dropdown-item command="folder">{{ t('sys.files.createFolder') }}</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -153,7 +153,7 @@
         :files="fm.filteredPagedFiles.value"
         :get-file-icon="fm.getFileIcon"
         :format-size="fm.formatSize"
-        :empty-text="t('files.emptyDir')"
+        :empty-text="t('sys.files.emptyDir')"
         @dblclick="fm.handleDblClick"
         @contextmenu="(row, e) => fm.handleContextMenu(row, e)"
         @calc-size="fm.calcFileSize"
@@ -163,7 +163,7 @@
     <!-- 分页栏 -->
     <div class="fm-pagination">
       <div class="pagination-left">
-        <span>{{ t('files.totalItems', { n: fm.total.value }) }}</span>
+        <span>{{ t('sys.files.totalItems', { n: fm.total.value }) }}</span>
         <span class="stat-sep">|</span>
         <span>{{ fm.dirCount.value }} 个目录</span>
         <span class="stat-sep">|</span>

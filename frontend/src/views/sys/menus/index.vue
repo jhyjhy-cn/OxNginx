@@ -21,10 +21,10 @@
         </el-button>
         <el-button type="danger" :disabled="!selectedIds.length" @click="batchDelete">
           <el-icon><Delete /></el-icon>
-          {{ $t('rbac.batchDelete') }} ({{ selectedIds.length }})
+          {{ $t('sys.rbac.batchDelete') }} ({{ selectedIds.length }})
         </el-button>
         <el-button @click="load">{{ $t('common.refresh') }}</el-button>
-        <span class="hint" style="margin-left: auto">{{ $t('rbac.hintMenuRefresh') }}</span>
+        <span class="hint" style="margin-left: auto">{{ $t('sys.rbac.hintMenuRefresh') }}</span>
       </div>
 
       <el-table
@@ -37,32 +37,32 @@
         max-height="calc(100vh - 380px)"
       >
         <el-table-column type="selection" width="48" />
-        <el-table-column prop="name" :label="$t('rbac.colName')" min-width="160">
+        <el-table-column prop="name" :label="$t('sys.rbac.colName')" min-width="160">
           <template #default="{ row }">
             <el-icon v-if="row.icon" style="margin-right: 4px; vertical-align: middle"><component :is="row.icon" /></el-icon>
             <span>{{ row.name }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="title" :label="$t('rbac.colTitle')" min-width="160">
+        <el-table-column prop="title" :label="$t('sys.rbac.colTitle')" min-width="160">
           <template #default="{ row }">
             <span>{{ $t(row.title) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="path" :label="$t('rbac.colPath')" min-width="180" />
-        <el-table-column prop="component" :label="$t('rbac.colComponent')" min-width="140" />
-        <el-table-column prop="type" :label="$t('rbac.colType')" width="80">
+        <el-table-column prop="path" :label="$t('sys.rbac.colPath')" min-width="180" />
+        <el-table-column prop="component" :label="$t('sys.rbac.colComponent')" min-width="140" />
+        <el-table-column prop="type" :label="$t('sys.rbac.colType')" width="80">
           <template #default="{ row }">
             <el-tag size="small" :type="typeColor(row.type)">
-              {{ $t(row.type === 'M' ? 'rbac.typeM' : row.type === 'C' ? 'rbac.typeC' : 'rbac.typeF') }}
+              {{ $t(row.type === 'M' ? 'sys.rbac.typeM' : row.type === 'C' ? 'sys.rbac.typeC' : 'sys.rbac.typeF') }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="permission" :label="$t('rbac.colPermission')" min-width="180" />
-        <el-table-column prop="sort" :label="$t('rbac.colSort')" width="80" />
+        <el-table-column prop="permission" :label="$t('sys.rbac.colPermission')" min-width="180" />
+        <el-table-column prop="sort" :label="$t('sys.rbac.colSort')" width="80" />
         <el-table-column :label="$t('common.action')" width="200" fixed="right">
           <template #default="{ row }">
             <el-button v-if="row.type !== 'F'" type="primary" text size="small" @click="openCreate(row)">
-              +{{ $t('rbac.subItem') }}
+              +{{ $t('sys.rbac.subItem') }}
             </el-button>
             <el-button type="primary" text size="small" @click="openEdit(row)">
               {{ $t('common.edit') }}
@@ -85,14 +85,14 @@
 
     <OnDialog v-model="dialogVisible" :title="form.id ? $t('common.edit') : $t('common.add')" width="600px">
       <el-form :model="form" label-width="120px" :rules="rules" ref="formRef">
-        <el-form-item :label="$t('rbac.colType')" prop="type">
+        <el-form-item :label="$t('sys.rbac.colType')" prop="type">
           <el-radio-group v-model="form.type">
-            <el-radio-button value="M">{{ $t('rbac.typeM') }}</el-radio-button>
-            <el-radio-button value="C">{{ $t('rbac.typeC') }}</el-radio-button>
-            <el-radio-button value="F">{{ $t('rbac.typeF') }}</el-radio-button>
+            <el-radio-button value="M">{{ $t('sys.rbac.typeM') }}</el-radio-button>
+            <el-radio-button value="C">{{ $t('sys.rbac.typeC') }}</el-radio-button>
+            <el-radio-button value="F">{{ $t('sys.rbac.typeF') }}</el-radio-button>
           </el-radio-group>
         </el-form-item>
-        <el-form-item :label="$t('rbac.colParent')" prop="parent_id">
+        <el-form-item :label="$t('sys.rbac.colParent')" prop="parent_id">
           <el-tree-select
             v-model="form.parent_id"
             :data="parentOptions"
@@ -103,25 +103,25 @@
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item :label="$t('rbac.colName')" prop="name">
+        <el-form-item :label="$t('sys.rbac.colName')" prop="name">
           <el-input v-model="form.name" />
         </el-form-item>
-        <el-form-item :label="$t('rbac.colTitle') + ' (i18n)'" prop="title">
-          <el-input v-model="form.title" placeholder="menu.sites" />
+        <el-form-item :label="$t('sys.rbac.colTitle') + ' (i18n)'" prop="title">
+          <el-input v-model="form.title" placeholder="sys.menu.sites" />
         </el-form-item>
-        <el-form-item :label="$t('rbac.colPath')" v-if="form.type !== 'F'">
+        <el-form-item :label="$t('sys.rbac.colPath')" v-if="form.type !== 'F'">
           <el-input v-model="form.path" placeholder="/sites" />
         </el-form-item>
-        <el-form-item :label="$t('rbac.colComponent')" v-if="form.type === 'C'">
+        <el-form-item :label="$t('sys.rbac.colComponent')" v-if="form.type === 'C'">
           <el-input v-model="form.component" placeholder="sites/index" />
         </el-form-item>
-        <el-form-item :label="$t('rbac.colPermission')">
+        <el-form-item :label="$t('sys.rbac.colPermission')">
           <el-input v-model="form.permission" placeholder="sys:site:view" />
         </el-form-item>
-        <el-form-item :label="$t('rbac.colIcon')" v-if="form.type !== 'F'">
+        <el-form-item :label="$t('sys.rbac.colIcon')" v-if="form.type !== 'F'">
           <el-input v-model="form.icon" placeholder="House / Connection / Lock..." />
         </el-form-item>
-        <el-form-item :label="$t('rbac.colSort')">
+        <el-form-item :label="$t('sys.rbac.colSort')">
           <el-input-number v-model="form.sort" :min="0" :max="9999" />
         </el-form-item>
       </el-form>
@@ -191,9 +191,9 @@ const form = reactive({
 })
 
 const rules = {
-  name: [{ required: true, message: t('rbac.required'), trigger: 'blur' }],
-  title: [{ required: true, message: t('rbac.required'), trigger: 'blur' }],
-  type: [{ required: true, message: t('rbac.required'), trigger: 'change' }],
+  name: [{ required: true, message: t('sys.rbac.required'), trigger: 'blur' }],
+  title: [{ required: true, message: t('sys.rbac.required'), trigger: 'blur' }],
+  type: [{ required: true, message: t('sys.rbac.required'), trigger: 'change' }],
 }
 
 function typeColor(t: string) {
@@ -321,7 +321,7 @@ async function submit() {
 
 async function del(row: Menu) {
   try {
-    await ElMessageBox.confirm(`${t('common.confirmDelete')} ${t('rbac.deleteChildrenHint')}`, t('common.tip'), { type: 'warning' })
+    await ElMessageBox.confirm(`${t('common.confirmDelete')} ${t('sys.rbac.deleteChildrenHint')}`, t('common.tip'), { type: 'warning' })
     const { data } = await api.delete(`/api/rbac/menus/${row.id}`)
     if (data.code === 0) {
       ElMessage.success('ok')
@@ -335,7 +335,7 @@ async function del(row: Menu) {
 async function batchDelete() {
   if (!selectedIds.value.length) return
   try {
-    await ElMessageBox.confirm(t('rbac.batchDeleteConfirm', { n: selectedIds.value.length }), t('common.tip'), { type: 'warning' })
+    await ElMessageBox.confirm(t('sys.rbac.batchDeleteConfirm', { n: selectedIds.value.length }), t('common.tip'), { type: 'warning' })
     const { data } = await api.post('/api/rbac/menus/batch-delete', selectedIds.value)
     if (data.code === 0) {
       ElMessage.success(data.data || 'ok')

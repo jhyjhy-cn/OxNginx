@@ -40,59 +40,59 @@ export function useSites() {
       ElMessage.success(newStatus === 'enabled' ? t('common.enabled') : t('common.disabled'))
       fetchSites()
     } catch (error: any) {
-      ElMessage.error(error.response?.data?.message || t('sites.operationFailed'))
+      ElMessage.error(error.response?.data?.message || t('sys.sites.operationFailed'))
     }
   }
 
   async function batchEnable() {
     try {
-      await ElMessageBox.confirm(t('sites.batchEnableConfirm', { count: selectedSites.value.length }), t('common.tip'))
+      await ElMessageBox.confirm(t('sys.sites.batchEnableConfirm', { count: selectedSites.value.length }), t('common.tip'))
       const response = await api.post('/api/sites/batch/enable', {
         ids: selectedSites.value.map((s) => s.id),
       })
       if (response.data.code === 0) {
-        ElMessage.success(t('sites.batchEnableSuccess', { count: response.data.data.success }))
+        ElMessage.success(t('sys.sites.batchEnableSuccess', { count: response.data.data.success }))
         fetchSites()
       }
     } catch (error: any) {
       if (error !== 'cancel') {
-        ElMessage.error(error.response?.data?.message || t('sites.operationFailed'))
+        ElMessage.error(error.response?.data?.message || t('sys.sites.operationFailed'))
       }
     }
   }
 
   async function batchDisable() {
     try {
-      await ElMessageBox.confirm(t('sites.batchDisableConfirm', { count: selectedSites.value.length }), t('common.tip'))
+      await ElMessageBox.confirm(t('sys.sites.batchDisableConfirm', { count: selectedSites.value.length }), t('common.tip'))
       const response = await api.post('/api/sites/batch/disable', {
         ids: selectedSites.value.map((s) => s.id),
       })
       if (response.data.code === 0) {
-        ElMessage.success(t('sites.batchDisableSuccess', { count: response.data.data.success }))
+        ElMessage.success(t('sys.sites.batchDisableSuccess', { count: response.data.data.success }))
         fetchSites()
       }
     } catch (error: any) {
       if (error !== 'cancel') {
-        ElMessage.error(error.response?.data?.message || t('sites.operationFailed'))
+        ElMessage.error(error.response?.data?.message || t('sys.sites.operationFailed'))
       }
     }
   }
 
   async function batchDelete() {
     try {
-      await ElMessageBox.confirm(t('sites.batchDeleteConfirm', { count: selectedSites.value.length }), t('common.warning'), {
+      await ElMessageBox.confirm(t('sys.sites.batchDeleteConfirm', { count: selectedSites.value.length }), t('common.warning'), {
         type: 'warning',
       })
       const response = await api.post('/api/sites/batch/delete', {
         ids: selectedSites.value.map((s) => s.id),
       })
       if (response.data.code === 0) {
-        ElMessage.success(t('sites.batchDeleteSuccess', { count: response.data.data.success }))
+        ElMessage.success(t('sys.sites.batchDeleteSuccess', { count: response.data.data.success }))
         fetchSites()
       }
     } catch (error: any) {
       if (error !== 'cancel') {
-        ElMessage.error(error.response?.data?.message || t('sites.operationFailed'))
+        ElMessage.error(error.response?.data?.message || t('sys.sites.operationFailed'))
       }
     }
   }

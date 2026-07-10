@@ -18,49 +18,49 @@ export interface MenuGroup {
 
 // ========== 扁平菜单（左侧双栏、标签页） ==========
 export const flatMenuItems: MenuItem[] = [
-  { path: '/dashboard', title: 'menu.dashboard', icon: 'Odometer' },
-  { path: '/sites', title: 'menu.sites', icon: 'Grid' },
-  { path: '/ssl', title: 'menu.ssl', icon: 'Lock' },
-  { path: '/upstreams', title: 'menu.upstreams', icon: 'Connection' },
-  { path: '/access', title: 'menu.access', icon: 'Key' },
-  { path: '/templates', title: 'menu.templates', icon: 'Files' },
-  { path: '/logs', title: 'menu.logs', icon: 'Document' },
-  { path: '/config', title: 'menu.config', icon: 'Edit' },
-  { path: '/files', title: 'menu.files', icon: 'FolderOpened' },
-  { path: '/terminal', title: 'menu.terminal', icon: 'Monitor' },
-  { path: '/settings', title: 'menu.settings', icon: 'Setting' },
+  { path: '/dashboard', title: 'sys.menu.dashboard', icon: 'Odometer' },
+  { path: '/sites', title: 'sys.menu.sites', icon: 'Grid' },
+  { path: '/ssl', title: 'sys.menu.ssl', icon: 'Lock' },
+  { path: '/upstreams', title: 'sys.menu.upstreams', icon: 'Connection' },
+  { path: '/access', title: 'sys.menu.access', icon: 'Key' },
+  { path: '/templates', title: 'sys.menu.templates', icon: 'Files' },
+  { path: '/logs', title: 'sys.menu.logs', icon: 'Document' },
+  { path: '/config', title: 'sys.menu.config', icon: 'Edit' },
+  { path: '/files', title: 'sys.menu.files', icon: 'FolderOpened' },
+  { path: '/terminal', title: 'sys.menu.terminal', icon: 'Monitor' },
+  { path: '/settings', title: 'sys.menu.settings', icon: 'Setting' },
 ]
 
 // ========== 分组菜单（左侧树形、顶部树形） ==========
 export const groupedMenuItems: MenuGroup[] = [
   {
     index: 'site-group',
-    title: 'menu.sites',
+    title: 'sys.menu.sites',
     icon: 'Grid',
     children: [
-      { path: '/sites', title: 'menu.sites', icon: 'Grid' },
-      { path: '/upstreams', title: 'menu.upstreams', icon: 'Connection' },
-      { path: '/templates', title: 'menu.templates', icon: 'Files' },
+      { path: '/sites', title: 'sys.menu.sites', icon: 'Grid' },
+      { path: '/upstreams', title: 'sys.menu.upstreams', icon: 'Connection' },
+      { path: '/templates', title: 'sys.menu.templates', icon: 'Files' },
     ],
   },
   {
     index: 'security-group',
-    title: 'menu.ssl',
+    title: 'sys.menu.ssl',
     icon: 'Lock',
     children: [
-      { path: '/ssl', title: 'menu.ssl', icon: 'Lock' },
-      { path: '/access', title: 'menu.access', icon: 'Key' },
+      { path: '/ssl', title: 'sys.menu.ssl', icon: 'Lock' },
+      { path: '/access', title: 'sys.menu.access', icon: 'Key' },
     ],
   },
   {
     index: 'config-group',
-    title: 'menu.config',
+    title: 'sys.menu.config',
     icon: 'Edit',
     children: [
-      { path: '/config', title: 'menu.config', icon: 'Edit' },
-      { path: '/logs', title: 'menu.logs', icon: 'Document' },
-      { path: '/files', title: 'menu.files', icon: 'FolderOpened' },
-      { path: '/terminal', title: 'menu.terminal', icon: 'Monitor' },
+      { path: '/config', title: 'sys.menu.config', icon: 'Edit' },
+      { path: '/logs', title: 'sys.menu.logs', icon: 'Document' },
+      { path: '/files', title: 'sys.menu.files', icon: 'FolderOpened' },
+      { path: '/terminal', title: 'sys.menu.terminal', icon: 'Monitor' },
     ],
   },
 ]

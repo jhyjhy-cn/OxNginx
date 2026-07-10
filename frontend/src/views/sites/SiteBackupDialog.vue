@@ -1,5 +1,5 @@
 <template>
-  <OnDialog v-model="dialogVisible" :title="$t('sites.backupDialogTitle', { name: site?.name || '' })" width="800px">
+  <OnDialog v-model="dialogVisible" :title="$t('sys.sites.backupDialogTitle', { name: site?.name || '' })" width="800px">
     <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center">
       <el-button v-if="selected.length > 0" type="danger" size="small" @click="batchDeleteBackups">
         {{ $t('common.delete') }} ({{ selected.length }})
@@ -7,7 +7,7 @@
       <span v-else />
       <el-button type="primary" size="small" :loading="creating" @click="createBackup">
         <el-icon><Plus /></el-icon>
-        {{ $t('sites.backupSite') }}
+        {{ $t('sys.sites.backupSite') }}
       </el-button>
     </div>
     <el-table
@@ -18,17 +18,17 @@
       @selection-change="(val: BackupFile[]) => (selected = val)"
     >
       <el-table-column type="selection" width="45" />
-      <el-table-column prop="filename" :label="$t('sites.backupFilename')" min-width="180" show-overflow-tooltip />
-      <el-table-column :label="$t('sites.backupPath')" min-width="160" show-overflow-tooltip>
+      <el-table-column prop="filename" :label="$t('sys.sites.backupFilename')" min-width="180" show-overflow-tooltip />
+      <el-table-column :label="$t('sys.sites.backupPath')" min-width="160" show-overflow-tooltip>
         <template #default="{ row }">
           <el-button type="primary" link @click="openFileManager(row.path)">{{ row.path }}</el-button>
         </template>
       </el-table-column>
-      <el-table-column :label="$t('sites.backupSize')" width="90">
+      <el-table-column :label="$t('sys.sites.backupSize')" width="90">
         <template #default="{ row }">{{ formatSize(row.size) }}</template>
       </el-table-column>
-      <el-table-column prop="created_at" :label="$t('sites.backupTime')" width="160" />
-      <el-table-column prop="remark" :label="$t('sites.remark')" width="100" show-overflow-tooltip>
+      <el-table-column prop="created_at" :label="$t('sys.sites.backupTime')" width="160" />
+      <el-table-column prop="remark" :label="$t('sys.sites.remark')" width="100" show-overflow-tooltip>
         <template #default="{ row }">{{ row.remark || '-' }}</template>
       </el-table-column>
       <el-table-column :label="$t('common.action')" width="120" fixed="right">
@@ -124,14 +124,14 @@ async function createBackup() {
   try {
     const res = await api.post(`/api/sites/${props.site.id}/backups`)
     if (res.data.code === 0) {
-      ElMessage.success(t('sites.backupCreated'))
+      ElMessage.success(t('sys.sites.backupCreated'))
       fetchList()
       emit('refresh')
     } else {
       ElMessage.error(res.data.message)
     }
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('sites.backupCreateFailed'))
+    ElMessage.error(error.response?.data?.message || t('sys.sites.backupCreateFailed'))
   } finally {
     creating.value = false
   }
@@ -150,10 +150,10 @@ function downloadBackup(filename: string) {
 async function deleteBackup(filename: string) {
   if (!props.site) return
   try {
-    await ElMessageBox.confirm(t('sites.confirmDeleteBackup', { name: filename }), t('common.tip'), { type: 'warning' })
+    await ElMessageBox.confirm(t('sys.sites.confirmDeleteBackup', { name: filename }), t('common.tip'), { type: 'warning' })
     const res = await api.delete(`/api/sites/${props.site.id}/backups/${encodeURIComponent(filename)}`)
     if (res.data.code === 0) {
-      ElMessage.success(t('sites.backupDeleted'))
+      ElMessage.success(t('sys.sites.backupDeleted'))
       fetchList()
       emit('refresh')
     } else {
@@ -161,7 +161,7 @@ async function deleteBackup(filename: string) {
     }
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || t('sites.backupDeleteFailed'))
+      ElMessage.error(error.response?.data?.message || t('sys.sites.backupDeleteFailed'))
     }
   }
 }
@@ -169,14 +169,14 @@ async function deleteBackup(filename: string) {
 async function batchDeleteBackups() {
   if (!props.site || selected.value.length === 0) return
   try {
-    await ElMessageBox.confirm(t('sites.confirmBatchDeleteBackup', { count: selected.value.length }), t('common.warning'), {
+    await ElMessageBox.confirm(t('sys.sites.confirmBatchDeleteBackup', { count: selected.value.length }), t('common.warning'), {
       type: 'warning',
     })
     const res = await api.post(`/api/sites/${props.site.id}/backups/batch-delete`, {
       filenames: selected.value.map((b) => b.filename),
     })
     if (res.data.code === 0) {
-      ElMessage.success(t('sites.backupDeleted'))
+      ElMessage.success(t('sys.sites.backupDeleted'))
       selected.value = []
       fetchList()
       emit('refresh')
@@ -185,7 +185,7 @@ async function batchDeleteBackups() {
     }
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || t('sites.backupDeleteFailed'))
+      ElMessage.error(error.response?.data?.message || t('sys.sites.backupDeleteFailed'))
     }
   }
 }
@@ -193,7 +193,7 @@ async function batchDeleteBackups() {
 function openFileManager(path: string) {
   const tabStore = useTabStore()
   const filesStore = useFilesStore()
-  tabStore.addTab({ path: '/files', title: 'menu.files', closable: true })
+  tabStore.addTab({ path: '/files', title: 'sys.menu.files', closable: true })
   const normalized = path.replace(/\\/g, '/').replace(/\/+$/, '')
   const existing = filesStore.tabs.find((t) => t.path.replace(/\\/g, '/').replace(/\/+$/, '') === normalized)
   if (existing) {

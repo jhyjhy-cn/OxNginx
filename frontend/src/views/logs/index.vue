@@ -5,8 +5,8 @@
       <el-form inline class="search-bar">
         <el-form-item>
           <el-radio-group v-model="logType" @change="fetchLogs">
-            <el-radio-button value="access">{{ $t('logs.accessLog') }}</el-radio-button>
-            <el-radio-button value="error">{{ $t('logs.errorLog') }}</el-radio-button>
+            <el-radio-button value="access">{{ $t('sys.logs.accessLog') }}</el-radio-button>
+            <el-radio-button value="error">{{ $t('sys.logs.errorLog') }}</el-radio-button>
           </el-radio-group>
         </el-form-item>
         <el-form-item>
@@ -26,7 +26,7 @@
       <!-- 列表 -->
       <el-table :data="tableData" v-loading="loading" :row-style="{ height: '50px' }" max-height="calc(100vh - 300px)">
         <el-table-column prop="line" label="#" width="60" />
-        <el-table-column prop="content" :label="$t('logs.title')" min-width="800" show-overflow-tooltip />
+        <el-table-column prop="content" :label="$t('sys.logs.title')" min-width="800" show-overflow-tooltip />
       </el-table>
     </el-card>
   </div>

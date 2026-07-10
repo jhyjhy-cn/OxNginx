@@ -3,23 +3,23 @@
     <el-card v-loading="loading">
       <template #header>
         <div class="card-header">
-          <span>{{ $t('siteDetail.title') }}</span>
+          <span>{{ $t('sys.siteDetail.title') }}</span>
           <el-button @click="$router.back()">{{ $t('common.back') }}</el-button>
         </div>
       </template>
 
       <template v-if="site">
         <el-descriptions :column="2" border>
-          <el-descriptions-item :label="$t('siteDetail.name')">{{ site.name }}</el-descriptions-item>
-          <el-descriptions-item :label="$t('siteDetail.domain')">{{ site.server_name }}</el-descriptions-item>
-          <el-descriptions-item :label="$t('siteDetail.port')">{{ site.listen }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('sys.siteDetail.name')">{{ site.name }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('sys.siteDetail.domain')">{{ site.server_name }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('sys.siteDetail.port')">{{ site.listen }}</el-descriptions-item>
           <el-descriptions-item label="SSL">
             <el-tag :type="site.ssl ? 'success' : 'info'" size="small">
               {{ site.ssl ? $t('common.yes') : $t('common.no') }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item :label="$t('siteDetail.proxyPass')">{{ site.proxy_pass || '-' }}</el-descriptions-item>
-          <el-descriptions-item :label="$t('siteDetail.rootPath')">{{ site.root_path || '-' }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('sys.siteDetail.proxyPass')">{{ site.proxy_pass || '-' }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('sys.siteDetail.rootPath')">{{ site.root_path || '-' }}</el-descriptions-item>
           <el-descriptions-item :label="$t('common.status')">
             <el-tag :type="site.status === 'enabled' ? 'success' : 'danger'" size="small">
               {{ site.status === 'enabled' ? $t('common.enabled') : $t('common.disabled') }}
@@ -29,7 +29,7 @@
         </el-descriptions>
 
         <div style="margin-top: 20px">
-          <h3>{{ $t('siteDetail.generatedConfig') }}</h3>
+          <h3>{{ $t('sys.siteDetail.generatedConfig') }}</h3>
           <el-input v-model="configContent" type="textarea" :rows="15" readonly style="margin-top: 10px" />
         </div>
 
@@ -37,9 +37,9 @@
         <el-card style="margin-top: 20px">
           <template #header>
             <div class="card-header">
-              <span>{{ $t('siteDetail.backupManagement') }}</span>
+              <span>{{ $t('sys.siteDetail.backupManagement') }}</span>
               <el-button type="primary" size="small" @click="createBackup">
-                {{ $t('siteDetail.createBackup') }}
+                {{ $t('sys.siteDetail.createBackup') }}
               </el-button>
             </div>
           </template>
@@ -49,8 +49,8 @@
             <el-table-column prop="created_at" :label="$t('common.createdAt')" width="180" />
             <el-table-column :label="$t('common.action')" width="250">
               <template #default="{ row }">
-                <el-button size="small" @click="restoreBackup(row)">{{ $t('siteDetail.restore') }}</el-button>
-                <el-button size="small" @click="viewBackup(row)">{{ $t('siteDetail.view') }}</el-button>
+                <el-button size="small" @click="restoreBackup(row)">{{ $t('sys.siteDetail.restore') }}</el-button>
+                <el-button size="small" @click="viewBackup(row)">{{ $t('sys.siteDetail.view') }}</el-button>
                 <el-button size="small" type="danger" @click="deleteBackup(row)">{{ $t('common.delete') }}</el-button>
               </template>
             </el-table-column>
@@ -117,53 +117,53 @@ async function createBackup() {
   try {
     const response = await api.post(`/api/backups/${route.params.id}`)
     if (response.data.code === 0) {
-      ElMessage.success(t('siteDetail.backupCreateSuccess'))
+      ElMessage.success(t('sys.siteDetail.backupCreateSuccess'))
       fetchBackups()
     } else {
-      ElMessage.error(response.data.message || t('siteDetail.createFailed'))
+      ElMessage.error(response.data.message || t('sys.siteDetail.createFailed'))
     }
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('siteDetail.createFailed'))
+    ElMessage.error(error.response?.data?.message || t('sys.siteDetail.createFailed'))
   }
 }
 
 async function restoreBackup(backup: Backup) {
   try {
-    await ElMessageBox.confirm(t('siteDetail.restoreConfirm', { version: backup.version }), t('common.tip'))
+    await ElMessageBox.confirm(t('sys.siteDetail.restoreConfirm', { version: backup.version }), t('common.tip'))
     const response = await api.post(`/api/backups/restore/${backup.id}`)
     if (response.data.code === 0) {
-      ElMessage.success(t('siteDetail.restoreSuccess'))
+      ElMessage.success(t('sys.siteDetail.restoreSuccess'))
       fetchSite()
     } else {
-      ElMessage.error(response.data.message || t('siteDetail.restoreFailed'))
+      ElMessage.error(response.data.message || t('sys.siteDetail.restoreFailed'))
     }
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || t('siteDetail.restoreFailed'))
+      ElMessage.error(error.response?.data?.message || t('sys.siteDetail.restoreFailed'))
     }
   }
 }
 
 function viewBackup(_backup: Backup) {
   // TODO: 实现查看备份内容
-  ElMessage.info(t('siteDetail.viewDeveloping'))
+  ElMessage.info(t('sys.siteDetail.viewDeveloping'))
 }
 
 async function deleteBackup(backup: Backup) {
   try {
-    await ElMessageBox.confirm(t('siteDetail.deleteConfirm', { version: backup.version }), t('common.warning'), {
+    await ElMessageBox.confirm(t('sys.siteDetail.deleteConfirm', { version: backup.version }), t('common.warning'), {
       type: 'warning',
     })
     const response = await api.delete(`/api/backups/${backup.id}`)
     if (response.data.code === 0) {
-      ElMessage.success(t('siteDetail.deleteSuccess'))
+      ElMessage.success(t('sys.siteDetail.deleteSuccess'))
       fetchBackups()
     } else {
-      ElMessage.error(response.data.message || t('siteDetail.deleteFailed'))
+      ElMessage.error(response.data.message || t('sys.siteDetail.deleteFailed'))
     }
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || t('siteDetail.deleteFailed'))
+      ElMessage.error(error.response?.data?.message || t('sys.siteDetail.deleteFailed'))
     }
   }
 }

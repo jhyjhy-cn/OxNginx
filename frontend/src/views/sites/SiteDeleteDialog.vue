@@ -1,19 +1,19 @@
 <template>
-  <OnDialog v-model="dialogVisible" :title="$t('sites.deleteSite')" width="420px" :maximizable="false">
+  <OnDialog v-model="dialogVisible" :title="$t('sys.sites.deleteSite')" width="420px" :maximizable="false">
     <div style="margin-bottom: 16px">
       <p>
-        {{ $t('sites.confirmDeleteSite') }}
+        {{ $t('sys.sites.confirmDeleteSite') }}
         <strong>{{ site?.name }}</strong>
         ?
       </p>
     </div>
-    <el-checkbox v-model="options.deleteRecord">{{ $t('sites.deleteSiteRecord') }}</el-checkbox>
+    <el-checkbox v-model="options.deleteRecord">{{ $t('sys.sites.deleteSiteRecord') }}</el-checkbox>
     <el-checkbox v-model="options.deleteFiles" style="margin-top: 12px">
-      {{ $t('sites.deleteSiteFiles', { path: site?.root_path || $t('common.none') }) }}
+      {{ $t('sys.sites.deleteSiteFiles', { path: site?.root_path || $t('common.none') }) }}
     </el-checkbox>
     <template #footer>
       <el-button @click="dialogVisible = false">{{ $t('common.cancel') }}</el-button>
-      <el-button type="danger" @click="confirm">{{ $t('sites.confirmDelete') }}</el-button>
+      <el-button type="danger" @click="confirm">{{ $t('sys.sites.confirmDelete') }}</el-button>
     </template>
   </OnDialog>
 </template>
@@ -67,11 +67,11 @@ async function confirm() {
         delete_files: options.deleteFiles,
       },
     })
-    ElMessage.success(t('sites.deleteSuccess'))
+    ElMessage.success(t('sys.sites.deleteSuccess'))
     dialogVisible.value = false
     emit('deleted')
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('sites.deleteFailed'))
+    ElMessage.error(error.response?.data?.message || t('sys.sites.deleteFailed'))
   }
 }
 </script>

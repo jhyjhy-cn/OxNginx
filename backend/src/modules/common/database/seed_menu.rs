@@ -8,7 +8,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     (
         "",
         "仪表盘",
-        "menu.dashboard",
+        "sys.menu.dashboard",
         "House",
         "/dashboard",
         "C",
@@ -18,7 +18,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     (
         "",
         "站点管理",
-        "menu.sites",
+        "sys.menu.sites",
         "Connection",
         "/sites",
         "C",
@@ -28,7 +28,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     (
         "",
         "文件管理",
-        "menu.files",
+        "sys.menu.files",
         "Folder",
         "/files",
         "C",
@@ -38,7 +38,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     (
         "",
         "终端",
-        "menu.terminal",
+        "sys.menu.terminal",
         "Monitor",
         "/terminal",
         "C",
@@ -48,7 +48,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     (
         "",
         "设置",
-        "menu.settings",
+        "sys.menu.settings",
         "Setting",
         "/settings",
         "C",
@@ -59,7 +59,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     (
         "",
         "日志管理",
-        "menu.logManagement",
+        "sys.menu.logManagement",
         "DocumentCopy",
         "",
         "M",
@@ -69,7 +69,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     (
         "日志管理",
         "Nginx日志",
-        "menu.nginxLogs",
+        "sys.menu.nginxLogs",
         "DocumentCopy",
         "/logs/nginx",
         "C",
@@ -79,7 +79,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     (
         "日志管理",
         "操作日志",
-        "menu.operationLogs",
+        "sys.menu.operationLogs",
         "Tickets",
         "/logs/operation",
         "C",
@@ -89,7 +89,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     (
         "日志管理",
         "登录日志",
-        "menu.loginLogs",
+        "sys.menu.loginLogs",
         "Promotion",
         "/logs/login",
         "C",
@@ -100,7 +100,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     (
         "站点管理",
         "新增站点",
-        "menu.siteAdd",
+        "sys.menu.siteAdd",
         "",
         "",
         "F",
@@ -110,7 +110,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     (
         "站点管理",
         "编辑站点",
-        "menu.siteEdit",
+        "sys.menu.siteEdit",
         "",
         "",
         "F",
@@ -120,7 +120,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     (
         "站点管理",
         "删除站点",
-        "menu.siteDelete",
+        "sys.menu.siteDelete",
         "",
         "",
         "F",
@@ -131,7 +131,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     (
         "",
         "权限管理",
-        "menu.rbacManagement",
+        "sys.menu.rbacManagement",
         "UserFilled",
         "",
         "M",
@@ -141,7 +141,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     (
         "权限管理",
         "用户管理",
-        "menu.rbacUsers",
+        "sys.menu.rbacUsers",
         "UserFilled",
         "/settings/rbac/users",
         "C",
@@ -151,7 +151,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     (
         "权限管理",
         "角色管理",
-        "menu.rbacRoles",
+        "sys.menu.rbacRoles",
         "UserFilled",
         "/settings/rbac/roles",
         "C",
@@ -161,7 +161,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     (
         "权限管理",
         "部门管理",
-        "menu.rbacDepts",
+        "sys.menu.rbacDepts",
         "OfficeBuilding",
         "/settings/rbac/depts",
         "C",
@@ -171,7 +171,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     (
         "权限管理",
         "岗位管理",
-        "menu.rbacPosts",
+        "sys.menu.rbacPosts",
         "Postcard",
         "/settings/rbac/posts",
         "C",
@@ -181,7 +181,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     (
         "权限管理",
         "菜单管理",
-        "menu.rbacMenus",
+        "sys.menu.rbacMenus",
         "Menu",
         "/settings/rbac/menus",
         "C",
@@ -191,7 +191,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     (
         "权限管理",
         "字典管理",
-        "menu.rbacDicts",
+        "sys.menu.rbacDicts",
         "Grid",
         "/settings/rbac/dicts",
         "C",
@@ -201,7 +201,7 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     (
         "权限管理",
         "国际化管理",
-        "menu.rbacI18n",
+        "sys.menu.rbacI18n",
         "MapLocation",
         "/settings/rbac/i18n",
         "C",

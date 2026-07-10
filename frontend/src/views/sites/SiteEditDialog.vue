@@ -1,28 +1,28 @@
 <template>
-  <OnDialog v-model="dialogVisible" :title="`${$t('sites.editSite')}[${siteName}]`" width="60%" height="70%">
+  <OnDialog v-model="dialogVisible" :title="`${$t('sys.sites.editSite')}[${siteName}]`" width="60%" height="70%">
     <el-tabs v-model="activeTab" tab-position="left" class="edit-tabs">
       <!-- 1. 域名管理 -->
-      <el-tab-pane :label="$t('sites.tabDomain')" name="domain">
+      <el-tab-pane :label="$t('sys.sites.tabDomain')" name="domain">
         <DomainTab :site-id="props.siteId" v-model:domains="domains" @saved="emit('saved')" />
       </el-tab-pane>
 
       <!-- 2. 伪静态 -->
-      <el-tab-pane :label="$t('sites.tabRewrite')" name="rewrite">
+      <el-tab-pane :label="$t('sys.sites.tabRewrite')" name="rewrite">
         <RewriteTab v-if="props.siteId" :site-id="props.siteId" v-model:rewrite-rules="editForm.rewrite_rules" @saved="emit('saved')" />
       </el-tab-pane>
 
       <!-- 3. 配置文件 -->
-      <el-tab-pane :label="$t('sites.tabConfig')" name="config">
+      <el-tab-pane :label="$t('sys.sites.tabConfig')" name="config">
         <ConfigEditorTab v-if="props.siteId" :site-id="props.siteId" :site-name="props.siteName" @saved="emit('saved')" />
       </el-tab-pane>
 
       <!-- 4. 反向代理 -->
-      <el-tab-pane :label="$t('sites.tabProxy')" name="proxy">
+      <el-tab-pane :label="$t('sys.sites.tabProxy')" name="proxy">
         <ProxyTab v-if="props.siteId" ref="proxyTabRef" :site-id="props.siteId" />
       </el-tab-pane>
 
       <!-- 5. 重定向 -->
-      <el-tab-pane :label="$t('sites.tabRedirect')" name="redirect">
+      <el-tab-pane :label="$t('sys.sites.tabRedirect')" name="redirect">
         <RedirectTab
           v-if="props.siteId"
           ref="redirectTabRef"
@@ -35,17 +35,17 @@
       </el-tab-pane>
 
       <!-- 6. 防盗链 -->
-      <el-tab-pane :label="$t('sites.tabHotlink')" name="hotlink">
+      <el-tab-pane :label="$t('sys.sites.tabHotlink')" name="hotlink">
         <HotlinkTab :hotlink="hotlink" @save="debouncedSave" />
       </el-tab-pane>
 
       <!-- 7. SSL证书 -->
-      <el-tab-pane :label="$t('sites.tabSsl')" name="ssl">
+      <el-tab-pane :label="$t('sys.sites.tabSsl')" name="ssl">
         <SslTab :edit-form="editForm" @save="debouncedSave" />
       </el-tab-pane>
 
       <!-- 8. 网站日志 -->
-      <el-tab-pane :label="$t('sites.tabLog')" name="log">
+      <el-tab-pane :label="$t('sys.sites.tabLog')" name="log">
         <LogTab :edit-form="editForm" @save="debouncedSave" />
       </el-tab-pane>
     </el-tabs>
@@ -211,7 +211,7 @@ async function saveAllSettings() {
     ElMessage.success(t('common.success'))
     emit('saved')
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('sites.operationFailed'))
+    ElMessage.error(error.response?.data?.message || t('sys.sites.operationFailed'))
   }
 }
 </script>

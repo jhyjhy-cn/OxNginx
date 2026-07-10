@@ -3,17 +3,17 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>{{ $t('upstreams.title') }}</span>
+          <span>{{ $t('sys.upstreams.title') }}</span>
           <el-button type="primary" @click="showAddDialog">
             <el-icon><Plus /></el-icon>
-            {{ $t('upstreams.addUpstream') }}
+            {{ $t('sys.upstreams.addUpstream') }}
           </el-button>
         </div>
       </template>
 
       <el-table :data="upstreams" style="width: 100%" v-loading="loading">
-        <el-table-column prop="name" :label="$t('upstreams.name')" width="200" />
-        <el-table-column prop="method" :label="$t('upstreams.method')" width="150">
+        <el-table-column prop="name" :label="$t('sys.upstreams.name')" width="200" />
+        <el-table-column prop="method" :label="$t('sys.upstreams.method')" width="150">
           <template #default="{ row }">
             <el-tag size="small">{{ getMethodLabel(row.method) }}</el-tag>
           </template>
@@ -36,16 +36,16 @@
     </el-card>
 
     <!-- 添加/编辑对话框 -->
-    <OnDialog v-model="dialogVisible" :title="isEdit ? $t('upstreams.editUpstream') : $t('upstreams.addUpstream')" width="700px">
+    <OnDialog v-model="dialogVisible" :title="isEdit ? $t('sys.upstreams.editUpstream') : $t('sys.upstreams.addUpstream')" width="700px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
-        <el-form-item :label="$t('upstreams.name')" prop="name">
-          <el-input v-model="form.name" :placeholder="$t('upstreams.namePlaceholder')" :disabled="isEdit" />
+        <el-form-item :label="$t('sys.upstreams.name')" prop="name">
+          <el-input v-model="form.name" :placeholder="$t('sys.upstreams.namePlaceholder')" :disabled="isEdit" />
         </el-form-item>
-        <el-form-item :label="$t('upstreams.method')" prop="method">
+        <el-form-item :label="$t('sys.upstreams.method')" prop="method">
           <el-select v-model="form.method" style="width: 100%">
-            <el-option :label="$t('upstreams.roundRobin')" value="round_robin" />
+            <el-option :label="$t('sys.upstreams.roundRobin')" value="round_robin" />
             <el-option label="IP Hash" value="ip_hash" />
-            <el-option :label="$t('upstreams.leastConn')" value="least_conn" />
+            <el-option :label="$t('sys.upstreams.leastConn')" value="least_conn" />
             <el-option label="URL Hash" value="hash" />
           </el-select>
         </el-form-item>
@@ -53,36 +53,36 @@
           <el-input-number v-model="form.keepalive" :min="0" :max="1024" />
         </el-form-item>
 
-        <el-divider>{{ $t('upstreams.serverNodes') }}</el-divider>
+        <el-divider>{{ $t('sys.upstreams.serverNodes') }}</el-divider>
 
         <div v-for="(server, index) in form.servers" :key="index" class="server-item">
           <el-row :gutter="12">
             <el-col :span="8">
               <el-form-item
-                :label="$t('upstreams.address') + ' ' + (index + 1)"
+                :label="$t('sys.upstreams.address') + ' ' + (index + 1)"
                 :prop="'servers.' + index + '.address'"
-                :rules="{ required: true, message: () => t('upstreams.enterAddress'), trigger: 'blur' }"
+                :rules="{ required: true, message: () => t('sys.upstreams.enterAddress'), trigger: 'blur' }"
               >
                 <el-input v-model="server.address" placeholder="127.0.0.1:8080" />
               </el-form-item>
             </el-col>
             <el-col :span="4">
-              <el-form-item :label="$t('upstreams.weight')">
+              <el-form-item :label="$t('sys.upstreams.weight')">
                 <el-input-number v-model="server.weight" :min="1" :max="100" size="small" />
               </el-form-item>
             </el-col>
             <el-col :span="4">
-              <el-form-item :label="$t('upstreams.maxFails')">
+              <el-form-item :label="$t('sys.upstreams.maxFails')">
                 <el-input-number v-model="server.max_fails" :min="1" :max="10" size="small" />
               </el-form-item>
             </el-col>
             <el-col :span="4">
-              <el-form-item :label="$t('upstreams.failTimeout')">
+              <el-form-item :label="$t('sys.upstreams.failTimeout')">
                 <el-input v-model="server.fail_timeout" size="small" />
               </el-form-item>
             </el-col>
             <el-col :span="2">
-              <el-form-item :label="$t('upstreams.backup')">
+              <el-form-item :label="$t('sys.upstreams.backup')">
                 <el-switch v-model="server.backup" size="small" />
               </el-form-item>
             </el-col>
@@ -97,7 +97,7 @@
         <el-form-item>
           <el-button type="primary" plain @click="addServer">
             <el-icon><Plus /></el-icon>
-            {{ $t('upstreams.addServer') }}
+            {{ $t('sys.upstreams.addServer') }}
           </el-button>
         </el-form-item>
       </el-form>
@@ -138,9 +138,9 @@ interface UpstreamServer {
 
 function getMethodLabel(method: string): string {
   const labels: Record<string, string> = {
-    round_robin: t('upstreams.roundRobin'),
+    round_robin: t('sys.upstreams.roundRobin'),
     ip_hash: 'IP Hash',
-    least_conn: t('upstreams.leastConn'),
+    least_conn: t('sys.upstreams.leastConn'),
     hash: 'URL Hash',
   }
   return labels[method] || method
@@ -170,8 +170,8 @@ const form = reactive({
 })
 
 const rules = {
-  name: [{ required: true, message: () => t('upstreams.enterName'), trigger: 'blur' }],
-  method: [{ required: true, message: () => t('upstreams.selectMethod'), trigger: 'change' }],
+  name: [{ required: true, message: () => t('sys.upstreams.enterName'), trigger: 'blur' }],
+  method: [{ required: true, message: () => t('sys.upstreams.selectMethod'), trigger: 'change' }],
 }
 
 onMounted(() => {
@@ -271,16 +271,16 @@ async function submitForm() {
 
     if (isEdit.value && editId.value) {
       await api.put(`/api/upstreams/${editId.value}`, data)
-      ElMessage.success(t('upstreams.updateSuccess'))
+      ElMessage.success(t('sys.upstreams.updateSuccess'))
     } else {
       await api.post('/api/upstreams', data)
-      ElMessage.success(t('upstreams.createSuccess'))
+      ElMessage.success(t('sys.upstreams.createSuccess'))
     }
 
     dialogVisible.value = false
     fetchUpstreams()
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('upstreams.operationFailed'))
+    ElMessage.error(error.response?.data?.message || t('sys.upstreams.operationFailed'))
   } finally {
     submitting.value = false
   }
@@ -288,15 +288,15 @@ async function submitForm() {
 
 async function deleteUpstream(upstream: Upstream) {
   try {
-    await ElMessageBox.confirm(t('upstreams.deleteConfirm', { name: upstream.name }), t('common.tip'), {
+    await ElMessageBox.confirm(t('sys.upstreams.deleteConfirm', { name: upstream.name }), t('common.tip'), {
       type: 'warning',
     })
     await api.delete(`/api/upstreams/${upstream.id}`)
-    ElMessage.success(t('upstreams.deleteSuccess'))
+    ElMessage.success(t('sys.upstreams.deleteSuccess'))
     fetchUpstreams()
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || t('upstreams.deleteFailed'))
+      ElMessage.error(error.response?.data?.message || t('sys.upstreams.deleteFailed'))
     }
   }
 }

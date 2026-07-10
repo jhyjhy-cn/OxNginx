@@ -7,9 +7,9 @@
       </div>
 
       <el-table :data="dicts" v-loading="loading" max-height="calc(100vh - 260px)" style="margin-top: 12px">
-        <el-table-column prop="name" :label="$t('dict.colName')" min-width="160" />
-        <el-table-column prop="code" :label="$t('dict.colCode')" min-width="160" />
-        <el-table-column prop="description" :label="$t('dict.colDesc')" min-width="200" />
+        <el-table-column prop="name" :label="$t('sys.dict.colName')" min-width="160" />
+        <el-table-column prop="code" :label="$t('sys.dict.colCode')" min-width="160" />
+        <el-table-column prop="description" :label="$t('sys.dict.colDesc')" min-width="200" />
         <el-table-column prop="status" :label="$t('common.status')" width="100">
           <template #default="{ row }">
             <el-tag :type="row.status === 'enabled' ? 'success' : 'danger'" size="small">
@@ -20,7 +20,7 @@
         <el-table-column :label="$t('common.action')" width="220" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" text size="small" @click="openEdit(row)">{{ $t('common.edit') }}</el-button>
-            <el-button type="primary" text size="small" @click="openItems(row)">{{ $t('dict.manageItems') }}</el-button>
+            <el-button type="primary" text size="small" @click="openItems(row)">{{ $t('sys.dict.manageItems') }}</el-button>
             <el-button type="danger" text size="small" @click="del(row)">{{ $t('common.delete') }}</el-button>
           </template>
         </el-table-column>
@@ -30,13 +30,13 @@
     <!-- 新增/编辑字典 -->
     <OnDialog v-model="showForm" :title="form.id ? $t('common.edit') : $t('common.add')" width="480px">
       <el-form :model="form" label-width="100px">
-        <el-form-item :label="$t('dict.colName')" required>
+        <el-form-item :label="$t('sys.dict.colName')" required>
           <el-input v-model="form.name" />
         </el-form-item>
-        <el-form-item :label="$t('dict.colCode')" required>
+        <el-form-item :label="$t('sys.dict.colCode')" required>
           <el-input v-model="form.code" :disabled="!!form.id" />
         </el-form-item>
-        <el-form-item :label="$t('dict.colDesc')">
+        <el-form-item :label="$t('sys.dict.colDesc')">
           <el-input v-model="form.description" type="textarea" :rows="2" />
         </el-form-item>
       </el-form>
@@ -47,15 +47,15 @@
     </OnDialog>
 
     <!-- 字典项管理 -->
-    <OnDialog v-model="showItems" :title="$t('dict.manageItems') + ' - ' + currentDict?.name" width="800px">
+    <OnDialog v-model="showItems" :title="$t('sys.dict.manageItems') + ' - ' + currentDict?.name" width="800px">
       <div v-if="currentDict" class="dict-items">
         <div class="toolbar">
           <el-button type="primary" size="small" @click="openAddItem">{{ $t('common.add') }}</el-button>
         </div>
         <el-table :data="items" v-loading="loadingItems" max-height="400">
-          <el-table-column prop="label" :label="$t('dict.colLabel')" min-width="160" />
-          <el-table-column prop="value" :label="$t('dict.colValue')" min-width="160" />
-          <el-table-column prop="sort" :label="$t('dict.colSort')" width="80" />
+          <el-table-column prop="label" :label="$t('sys.dict.colLabel')" min-width="160" />
+          <el-table-column prop="value" :label="$t('sys.dict.colValue')" min-width="160" />
+          <el-table-column prop="sort" :label="$t('sys.dict.colSort')" width="80" />
           <el-table-column prop="status" :label="$t('common.status')" width="100">
             <template #default="{ row }">
               <el-tag :type="row.status === 'enabled' ? 'success' : 'danger'" size="small">
@@ -79,13 +79,13 @@
     <!-- 新增/编辑字典项 -->
     <OnDialog v-model="showItemForm" :title="itemForm.id ? $t('common.edit') : $t('common.add')" width="400px">
       <el-form :model="itemForm" label-width="100px">
-        <el-form-item :label="$t('dict.colLabel')" required>
+        <el-form-item :label="$t('sys.dict.colLabel')" required>
           <el-input v-model="itemForm.label" />
         </el-form-item>
-        <el-form-item :label="$t('dict.colValue')" required>
+        <el-form-item :label="$t('sys.dict.colValue')" required>
           <el-input v-model="itemForm.value" />
         </el-form-item>
-        <el-form-item :label="$t('dict.colSort')">
+        <el-form-item :label="$t('sys.dict.colSort')">
           <el-input-number v-model="itemForm.sort" :min="0" />
         </el-form-item>
         <el-form-item :label="$t('common.status')">
@@ -156,7 +156,7 @@ function openEdit(row: Dict) {
 
 async function save() {
   if (!form.name || !form.code) {
-    ElMessage.warning(t('common.tip') + ': ' + t('dict.colName') + ' / ' + t('dict.colCode'))
+    ElMessage.warning(t('common.tip') + ': ' + t('sys.dict.colName') + ' / ' + t('sys.dict.colCode'))
     return
   }
   saving.value = true
@@ -219,7 +219,7 @@ function openEditItem(row: DictItem) {
 
 async function saveItem() {
   if (!itemForm.label || !itemForm.value) {
-    ElMessage.warning(t('common.tip') + ': ' + t('dict.colLabel') + ' / ' + t('dict.colValue'))
+    ElMessage.warning(t('common.tip') + ': ' + t('sys.dict.colLabel') + ' / ' + t('sys.dict.colValue'))
     return
   }
   saving.value = true

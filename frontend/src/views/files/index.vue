@@ -29,19 +29,19 @@
       <div v-if="ctxMenu.visible" class="fm-ctx-menu" :style="{ left: ctxMenu.x + 'px', top: ctxMenu.y + 'px' }">
         <div class="fm-ctx-item" @click="closeTab">
           <el-icon :size="14"><Close /></el-icon>
-          <span>{{ $t('tabs.close') }}</span>
+          <span>{{ $t('sys.tabs.close') }}</span>
         </div>
         <div class="fm-ctx-item" :class="{ disabled: !canCloseLeft }" @click="closeLeft">
           <el-icon :size="14"><Back /></el-icon>
-          <span>{{ $t('tabs.closeLeft') }}</span>
+          <span>{{ $t('sys.tabs.closeLeft') }}</span>
         </div>
         <div class="fm-ctx-item" :class="{ disabled: !canCloseRight }" @click="closeRight">
           <el-icon :size="14"><Right /></el-icon>
-          <span>{{ $t('tabs.closeRight') }}</span>
+          <span>{{ $t('sys.tabs.closeRight') }}</span>
         </div>
         <div class="fm-ctx-item" :class="{ disabled: !canCloseOther }" @click="closeOther">
           <el-icon :size="14"><CircleClose /></el-icon>
-          <span>{{ $t('tabs.closeOther') }}</span>
+          <span>{{ $t('sys.tabs.closeOther') }}</span>
         </div>
       </div>
     </Teleport>

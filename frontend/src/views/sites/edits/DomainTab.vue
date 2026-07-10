@@ -10,7 +10,7 @@
           style="flex: 1"
         />
         <el-button type="primary" style="align-self: flex-end" @click="addDomains">
-          {{ $t('sites.addDomain') }}
+          {{ $t('sys.sites.addDomain') }}
         </el-button>
       </div>
     </el-form-item>
@@ -20,11 +20,11 @@
       {{ $t('common.delete') }} ({{ domainSelected.length }})
     </el-button>
     <span v-else />
-    <span style="font-size: 12px; color: #909399">{{ $t('sites.domainCount', { n: domains.length }) }}</span>
+    <span style="font-size: 12px; color: #909399">{{ $t('sys.sites.domainCount', { n: domains.length }) }}</span>
   </div>
   <el-table :data="domainsDisplay" style="width: 100%" max-height="380" @selection-change="(val: DomainItem[]) => (domainSelected = val)">
     <el-table-column type="selection" width="45" />
-    <el-table-column :label="$t('sites.domain')">
+    <el-table-column :label="$t('sys.sites.domain')">
       <template #default="{ row }">
         <el-button type="primary" link @click="openDomain(row.domain)">{{ row.domain }}</el-button>
       </template>
@@ -61,7 +61,7 @@ const domainSelected = ref<DomainItem[]>([])
 const domainsDisplay = computed(() => props.domains.map((d) => ({ domain: d })))
 
 const domainPlaceholder = computed(
-  () => `${t('sites.domainHint')}\n${t('sites.domainFormatIp')}\n${t('sites.domainFormatPort')}\n${t('sites.domainFormatIpv6')}`
+  () => `${t('sys.sites.domainHint')}\n${t('sys.sites.domainFormatIp')}\n${t('sys.sites.domainFormatPort')}\n${t('sys.sites.domainFormatIpv6')}`
 )
 
 function openDomain(domain: string) {
@@ -122,7 +122,7 @@ async function saveDomains(domainsList: string[]) {
     ElMessage.success(t('common.success'))
     emit('saved')
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('sites.operationFailed'))
+    ElMessage.error(error.response?.data?.message || t('sys.sites.operationFailed'))
   }
 }
 </script>

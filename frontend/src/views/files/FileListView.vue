@@ -9,7 +9,7 @@
     height="100%"
   >
     <el-table-column type="selection" width="45" />
-    <el-table-column :label="t('files.name')" min-width="300">
+    <el-table-column :label="t('sys.files.name')" min-width="300">
       <template #default="{ row }">
         <div class="file-name-cell">
           <OnIcon :svgName="getFileIcon(row)" :size="18" class="file-icon" />
@@ -18,7 +18,7 @@
         </div>
       </template>
     </el-table-column>
-    <el-table-column :label="t('files.permissions') + ' / ' + t('files.owner')" width="200">
+    <el-table-column :label="t('sys.files.permissions') + ' / ' + t('sys.files.owner')" width="200">
       <template #default="{ row }">
         <span v-if="row.permissions || row.owner">
           {{ row.permissions }}
@@ -28,15 +28,15 @@
         <span v-else>-</span>
       </template>
     </el-table-column>
-    <el-table-column :label="t('files.size')" width="120">
+    <el-table-column :label="t('sys.files.size')" width="120">
       <template #default="{ row }">
         <span v-if="!row.is_dir">{{ formatSize(row.size) }}</span>
         <span v-else-if="row._size !== undefined">{{ formatSize(row._size) }}</span>
         <el-button v-else link type="primary" size="small" :loading="row._calcLoading" @click="$emit('calc-size', row)">计算</el-button>
       </template>
     </el-table-column>
-    <el-table-column prop="modified" :label="t('files.modified')" width="180" />
-    <el-table-column :label="t('files.note')" min-width="180">
+    <el-table-column prop="modified" :label="t('sys.files.modified')" width="180" />
+    <el-table-column :label="t('sys.files.note')" min-width="180">
       <template #default="{ row }">
         <div class="note-cell" @mouseenter="$emit('note-enter', row)" @mouseleave="$emit('note-leave', row)">
           <template v-if="hoverNotePath === row.path">
@@ -44,7 +44,7 @@
               :model-value="editingNote"
               @update:model-value="$emit('note-update', $event)"
               size="small"
-              :placeholder="t('files.notePlaceholder')"
+              :placeholder="t('sys.files.notePlaceholder')"
               @keyup.enter="$emit('note-save', row)"
               @blur="$emit('note-save', row)"
               autofocus
@@ -58,8 +58,8 @@
     </el-table-column>
     <el-table-column :label="t('common.action')" width="150" fixed="right">
       <template #default="{ row }">
-        <el-button link type="primary" size="small" @click="$emit('rename', row)">{{ t('files.rename') }}</el-button>
-        <el-button link type="danger" size="small" @click="$emit('delete', row)">{{ t('files.delete') }}</el-button>
+        <el-button link type="primary" size="small" @click="$emit('rename', row)">{{ t('sys.files.rename') }}</el-button>
+        <el-button link type="danger" size="small" @click="$emit('delete', row)">{{ t('sys.files.delete') }}</el-button>
       </template>
     </el-table-column>
   </el-table>

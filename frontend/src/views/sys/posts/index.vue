@@ -20,9 +20,9 @@
       </div>
 
       <el-table :data="posts" v-loading="loading" max-height="calc(100vh - 340px)">
-        <el-table-column prop="code" :label="$t('rbac.colCode')" width="160" />
-        <el-table-column prop="name" :label="$t('rbac.colName')" />
-        <el-table-column prop="sort" :label="$t('rbac.colSort')" width="100" />
+        <el-table-column prop="code" :label="$t('sys.rbac.colCode')" width="160" />
+        <el-table-column prop="name" :label="$t('sys.rbac.colName')" />
+        <el-table-column prop="sort" :label="$t('sys.rbac.colSort')" width="100" />
         <el-table-column prop="status" :label="$t('common.status')" width="100">
           <template #default="{ row }">
             <el-tag size="small" :type="row.status === 'enabled' ? 'success' : 'info'">
@@ -43,13 +43,13 @@
 
     <OnDialog v-model="dialogVisible" :title="form.id ? $t('common.edit') : $t('common.add')" width="450px">
       <el-form :model="form" label-width="80px" :rules="rules" ref="formRef">
-        <el-form-item :label="$t('rbac.colCode')" prop="code">
+        <el-form-item :label="$t('sys.rbac.colCode')" prop="code">
           <el-input v-model="form.code" :disabled="!!form.id" />
         </el-form-item>
-        <el-form-item :label="$t('rbac.colName')" prop="name">
+        <el-form-item :label="$t('sys.rbac.colName')" prop="name">
           <el-input v-model="form.name" />
         </el-form-item>
-        <el-form-item :label="$t('rbac.colSort')">
+        <el-form-item :label="$t('sys.rbac.colSort')">
           <el-input-number v-model="form.sort" :min="0" :max="9999" />
         </el-form-item>
       </el-form>
@@ -86,8 +86,8 @@ const submitting = ref(false)
 const formRef = ref()
 const form = reactive({ id: null as number | null, code: '', name: '', sort: 0 })
 const rules = {
-  code: [{ required: true, message: t('rbac.required'), trigger: 'blur' }],
-  name: [{ required: true, message: t('rbac.required'), trigger: 'blur' }],
+  code: [{ required: true, message: t('sys.rbac.required'), trigger: 'blur' }],
+  name: [{ required: true, message: t('sys.rbac.required'), trigger: 'blur' }],
 }
 const keyword = ref('')
 const currentPage = ref(1)

@@ -5,7 +5,7 @@
         <!-- 左侧：部门树 -->
         <div class="dept-tree">
           <div class="dept-tree__header">
-            <span>{{ $t("rbac.department") }}</span>
+            <span>{{ $t("sys.rbac.department") }}</span>
           </div>
           <el-tree
             :data="deptTree"
@@ -60,7 +60,7 @@
                 :disabled="!selectedRows.length"
                 @click="batchResetPwd"
               >
-                {{ $t("rbac.resetPassword") }} ({{ selectedRows.length }})
+                {{ $t("sys.rbac.resetPassword") }} ({{ selectedRows.length }})
               </el-button>
               <el-dropdown
                 :disabled="!selectedRows.length"
@@ -231,7 +231,7 @@ async function loadRoles() {
 // 搜索栏字段
 const searchFields: FormField[] = [
   { prop: "username", label: "login.username", type: "input", span: 6 },
-  { prop: "phone", label: "user.phone", type: "input", span: 6 },
+  { prop: "phone", label: "sys.user.phone", type: "input", span: 6 },
   {
     prop: "status",
     label: "common.status",
@@ -248,12 +248,12 @@ const searchFields: FormField[] = [
 // 表格列
 const tableColumns: TableColumn[] = [
   { type: "selection", width: 48 },
-  { prop: "id", label: "user.id", width: 70 },
+  { prop: "id", label: "sys.user.id", width: 70 },
   { prop: "username", label: "login.username" },
-  { prop: "nickname", label: "user.nickname" },
-  { prop: "dept_name", label: "rbac.department" },
-  { prop: "phone", label: "user.phone" },
-  { prop: "gender", label: "user.gender", width: 80, slot: "gender" },
+  { prop: "nickname", label: "sys.user.nickname" },
+  { prop: "dept_name", label: "sys.rbac.department" },
+  { prop: "phone", label: "sys.user.phone" },
+  { prop: "gender", label: "sys.user.gender", width: 80, slot: "gender" },
   { prop: "disabled", label: "common.status", width: 80, slot: "status" },
   { prop: "created_at", label: "common.createdAt", width: 170 },
   {
@@ -261,7 +261,7 @@ const tableColumns: TableColumn[] = [
     width: 200,
     buttons: [
       { name: "common.edit", command: "edit", size: "small" },
-      { name: "rbac.resetPassword", command: "resetPwd", size: "small" },
+      { name: "sys.rbac.resetPassword", command: "resetPwd", size: "small" },
       {
         name: "common.delete",
         command: "delete",
@@ -316,32 +316,32 @@ const formFields = computed<FormField[]>(() => {
     });
   }
   fields.push(
-    { prop: "nickname", label: "user.nickname", type: "input" },
+    { prop: "nickname", label: "sys.user.nickname", type: "input" },
     {
       prop: "dept_id",
-      label: "rbac.department",
+      label: "sys.rbac.department",
       type: "select",
       required: true,
       options: deptOptions.value,
     },
-    { prop: "phone", label: "user.phone", type: "input" },
-    { prop: "email", label: "user.email", type: "input" },
+    { prop: "phone", label: "sys.user.phone", type: "input" },
+    { prop: "email", label: "sys.user.email", type: "input" },
     {
       prop: "gender",
-      label: "user.gender",
+      label: "sys.user.gender",
       type: "radio",
       options: genderOptions,
     },
     { prop: "disabled", label: "common.status", type: "switch" },
     {
       prop: "post_id",
-      label: "rbac.post",
+      label: "sys.rbac.post",
       type: "select",
       options: postOptions.value,
     },
     {
       prop: "role_ids",
-      label: "rbac.roles",
+      label: "sys.rbac.roles",
       type: "select",
       multiple: true,
       required: true,
@@ -358,7 +358,7 @@ const formFields = computed<FormField[]>(() => {
 });
 
 const formTitle = computed(() =>
-  isEdit.value ? "common.edit" : "rbac.createUser",
+  isEdit.value ? "common.edit" : "sys.rbac.createUser",
 );
 
 // 翻页
@@ -443,7 +443,7 @@ async function submit() {
       ? await api.put(`/api/rbac/users/${editingId.value}`, payload)
       : await api.post("/api/rbac/users", payload);
     if (data.code === 0) {
-      success(isEdit.value ? "rbac.userUpdateSuccess" : "rbac.userCreateSuccess");
+      success(isEdit.value ? "sys.rbac.userUpdateSuccess" : "sys.rbac.userCreateSuccess");
       showForm.value = false;
       load();
     } else {
@@ -484,10 +484,10 @@ async function batchResetPwd() {
   if (!selectedRows.value.length) return;
   const adminCount = selectedRows.value.filter((r) => r.username === "admin").length;
   if (adminCount > 0) {
-    error("rbac.adminCannotReset");
+    error("sys.rbac.adminCannotReset");
     return;
   }
-  const ok = await confirm({ message: "rbac.confirmBatchResetPwd" });
+  const ok = await confirm({ message: "sys.rbac.confirmBatchResetPwd" });
   if (!ok) return;
   try {
     const ids = selectedRows.value.map((r) => r.id);
@@ -505,11 +505,11 @@ async function batchSetDisabled(disabled: number) {
   if (!selectedRows.value.length) return;
   const adminCount = selectedRows.value.filter((r) => r.username === "admin").length;
   if (adminCount > 0 && disabled === 1) {
-    error("rbac.adminCannotDisable");
+    error("sys.rbac.adminCannotDisable");
     return;
   }
   const ok = await confirm({
-    message: disabled === 1 ? "rbac.confirmBatchDisable" : "rbac.confirmBatchEnable",
+    message: disabled === 1 ? "sys.rbac.confirmBatchDisable" : "sys.rbac.confirmBatchEnable",
   });
   if (!ok) return;
   try {

@@ -25,7 +25,7 @@ export function restoreLocale() {
 
 /**
  * 将 DB 下发的扁平 key-value 合并到 vue-i18n
- * 支持 'menu.dashboard' -> { menu: { dashboard: '...' } } 嵌套结构
+ * 支持 'sys.menu.dashboard' -> { menu: { dashboard: '...' } } 嵌套结构
  * DB 翻译优先，静态文件作 fallback
  */
 export function mergeI18nMessages(locale: string, flat: Record<string, string>) {

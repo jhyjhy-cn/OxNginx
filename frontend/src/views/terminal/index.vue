@@ -14,16 +14,16 @@
     <!-- 右键菜单 -->
     <Teleport to="body">
       <div v-if="ctxMenu.show" class="term-ctx-menu" :style="{ left: ctxMenu.x + 'px', top: ctxMenu.y + 'px' }">
-        <div v-if="ctxMenu.hasSelection" class="term-ctx-item" @click="ctxCopy">{{ t('terminal.ctxCopy') }}</div>
-        <div class="term-ctx-item" @click="ctxPaste">{{ t('terminal.ctxPaste') }}</div>
-        <div class="term-ctx-item" @click="ctxSelectAll">{{ t('terminal.ctxSelectAll') }}</div>
+        <div v-if="ctxMenu.hasSelection" class="term-ctx-item" @click="ctxCopy">{{ t('sys.terminal.ctxCopy') }}</div>
+        <div class="term-ctx-item" @click="ctxPaste">{{ t('sys.terminal.ctxPaste') }}</div>
+        <div class="term-ctx-item" @click="ctxSelectAll">{{ t('sys.terminal.ctxSelectAll') }}</div>
       </div>
     </Teleport>
 
     <!-- 常用命令侧栏 -->
     <div class="cmd-sidebar">
       <div class="cmd-header">
-        <span>{{ t('terminal.quickCmd') }}</span>
+        <span>{{ t('sys.terminal.quickCmd') }}</span>
         <el-button link size="small" @click="showAdd = true">
           <el-icon><Plus /></el-icon>
         </el-button>
@@ -36,18 +36,18 @@
             <el-icon><Close /></el-icon>
           </el-button>
         </div>
-        <el-empty v-if="!commands.length" :description="t('terminal.noCmd')" :image-size="40" />
+        <el-empty v-if="!commands.length" :description="t('sys.terminal.noCmd')" :image-size="40" />
       </div>
     </div>
 
     <!-- 添加命令弹窗 -->
-    <el-dialog v-model="showAdd" :title="t('terminal.addCmd')" width="400px" append-to-body>
+    <el-dialog v-model="showAdd" :title="t('sys.terminal.addCmd')" width="400px" append-to-body>
       <el-form :model="newCmd" label-width="80px">
-        <el-form-item :label="t('terminal.cmdName')">
-          <el-input v-model="newCmd.name" :placeholder="t('terminal.cmdNamePh')" />
+        <el-form-item :label="t('sys.terminal.cmdName')">
+          <el-input v-model="newCmd.name" :placeholder="t('sys.terminal.cmdNamePh')" />
         </el-form-item>
-        <el-form-item :label="t('terminal.cmdContent')">
-          <el-input v-model="newCmd.cmd" :placeholder="t('terminal.cmdContentPh')" />
+        <el-form-item :label="t('sys.terminal.cmdContent')">
+          <el-input v-model="newCmd.cmd" :placeholder="t('sys.terminal.cmdContentPh')" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -171,10 +171,10 @@ function connect() {
     }
   }
   ws.onclose = () => {
-    terminal?.writeln('\r\n\x1b[31m' + t('terminal.disconnected') + '\x1b[0m')
+    terminal?.writeln('\r\n\x1b[31m' + t('sys.terminal.disconnected') + '\x1b[0m')
   }
   ws.onerror = () => {
-    terminal?.writeln('\r\n\x1b[31m' + t('terminal.error') + '\x1b[0m')
+    terminal?.writeln('\r\n\x1b[31m' + t('sys.terminal.error') + '\x1b[0m')
   }
 }
 

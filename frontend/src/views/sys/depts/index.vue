@@ -20,8 +20,8 @@
       </div>
 
       <el-table :data="depts" v-loading="loading" row-key="id" :tree-props="{ children: 'children' }" max-height="calc(100vh - 380px)">
-        <el-table-column prop="name" :label="$t('rbac.colName')" min-width="200" />
-        <el-table-column prop="sort" :label="$t('rbac.colSort')" width="100" />
+        <el-table-column prop="name" :label="$t('sys.rbac.colName')" min-width="200" />
+        <el-table-column prop="sort" :label="$t('sys.rbac.colSort')" width="100" />
         <el-table-column prop="status" :label="$t('common.status')" width="100">
           <template #default="{ row }">
             <el-tag size="small" :type="row.status === 'enabled' ? 'success' : 'info'">
@@ -31,7 +31,7 @@
         </el-table-column>
         <el-table-column :label="$t('common.action')" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" text size="small" @click="openCreate(row)">+{{ $t('rbac.subItem') }}</el-button>
+            <el-button type="primary" text size="small" @click="openCreate(row)">+{{ $t('sys.rbac.subItem') }}</el-button>
             <el-button type="primary" text size="small" @click="openEdit(row)">{{ $t('common.edit') }}</el-button>
             <el-button type="danger" text size="small" @click="del(row)">{{ $t('common.delete') }}</el-button>
           </template>
@@ -49,7 +49,7 @@
 
     <OnDialog v-model="dialogVisible" :title="form.id ? $t('common.edit') : $t('common.add')" width="450px">
       <el-form :model="form" label-width="80px" :rules="rules" ref="formRef">
-        <el-form-item :label="$t('rbac.colParent')">
+        <el-form-item :label="$t('sys.rbac.colParent')">
           <el-tree-select
             v-model="form.parent_id"
             :data="parentOptions"
@@ -60,10 +60,10 @@
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item :label="$t('rbac.colName')" prop="name">
+        <el-form-item :label="$t('sys.rbac.colName')" prop="name">
           <el-input v-model="form.name" />
         </el-form-item>
-        <el-form-item :label="$t('rbac.colSort')">
+        <el-form-item :label="$t('sys.rbac.colSort')">
           <el-input-number v-model="form.sort" :min="0" :max="9999" />
         </el-form-item>
       </el-form>
@@ -101,7 +101,7 @@ const dialogVisible = ref(false)
 const submitting = ref(false)
 const formRef = ref()
 const form = reactive({ id: null as number | null, parent_id: null as number | null, name: '', sort: 0 })
-const rules = { name: [{ required: true, message: t('rbac.required'), trigger: 'blur' }] }
+const rules = { name: [{ required: true, message: t('sys.rbac.required'), trigger: 'blur' }] }
 const keyword = ref('')
 const currentPage = ref(1)
 const pageSize = ref(100)

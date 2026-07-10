@@ -1,12 +1,12 @@
 <template>
   <el-drawer :model-value="visible" direction="rtl" :size="340" @close="$emit('close')">
     <template #header>
-      <span class="drawer-title">{{ t('theme.settings') }}</span>
+      <span class="drawer-title">{{ t('sys.theme.settings') }}</span>
     </template>
 
     <!-- 布局切换 -->
     <div class="section">
-      <div class="section-title">{{ t('theme.layout') }}</div>
+      <div class="section-title">{{ t('sys.theme.layout') }}</div>
       <div class="layout-options">
         <div
           v-for="opt in layoutOptions"
@@ -35,7 +35,7 @@
 
     <!-- 主题色 -->
     <div class="section">
-      <div class="section-title">{{ t('theme.themeColor') }}</div>
+      <div class="section-title">{{ t('sys.theme.themeColor') }}</div>
       <div class="color-row">
         <div class="preset-colors">
           <span
@@ -56,7 +56,7 @@
     <!-- 暗黑模式 -->
     <div class="section">
       <div class="section-row">
-        <span class="section-title no-margin">{{ t('theme.darkMode') }}</span>
+        <span class="section-title no-margin">{{ t('sys.theme.darkMode') }}</span>
         <el-switch :model-value="settingsStore.darkMode" @click="settingsStore.toggleDarkMode($event)">
           <template #active-action><Moon :size="12" /></template>
           <template #inactive-action><Sunny :size="12" /></template>
@@ -67,18 +67,18 @@
     <!-- 标签页 -->
     <div class="section">
       <div class="section-row">
-        <span class="section-title no-margin">{{ t('theme.showTabs') }}</span>
+        <span class="section-title no-margin">{{ t('sys.theme.showTabs') }}</span>
         <el-switch v-model="settingsStore.showTabs" />
       </div>
       <div v-if="settingsStore.showTabs" class="section-row" style="margin-top: 10px">
-        <span class="section-title no-margin">{{ t('theme.showTabIcons') }}</span>
+        <span class="section-title no-margin">{{ t('sys.theme.showTabIcons') }}</span>
         <el-switch v-model="settingsStore.showTabIcons" />
       </div>
     </div>
 
     <!-- 多语言 -->
     <div class="section">
-      <div class="section-title">{{ t('theme.language') }}</div>
+      <div class="section-title">{{ t('sys.theme.language') }}</div>
       <el-radio-group v-model="currentLang" @change="handleLanguageChange" size="default">
         <el-radio-button value="zh-CN">中文</el-radio-button>
         <el-radio-button value="en-US">English</el-radio-button>
@@ -104,8 +104,8 @@ const { t, locale } = useI18n()
 const settingsStore = useSettingsStore()
 
 const layoutOptions: { value: LayoutMode; label: string }[] = [
-  { value: 'sidebar-tree', label: 'theme.sidebarTree' },
-  { value: 'top-tree', label: 'theme.topTree' },
+  { value: 'sidebar-tree', label: 'sys.theme.sidebarTree' },
+  { value: 'top-tree', label: 'sys.theme.topTree' },
 ]
 
 const presetColors = ['#409EFF', '#536dfe', '#9c27b0', '#00bfa5', '#ff5722', '#e91e63']

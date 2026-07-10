@@ -16,12 +16,12 @@
         </el-input>
         <el-button type="primary" @click="doSearch">{{ $t('common.search') }}</el-button>
         <el-button @click="doReset">{{ $t('common.reset') }}</el-button>
-        <span class="total-hint" style="margin-left: auto">{{ $t('files.totalItems', { n: total }) }}</span>
+        <span class="total-hint" style="margin-left: auto">{{ $t('sys.files.totalItems', { n: total }) }}</span>
       </div>
 
       <div class="toolbar">
         <el-button type="primary" @click="openAddKey">{{ $t('common.add') }}</el-button>
-        <el-button type="primary" @click="openAddLocale">{{ $t('rbac.addLocale') }}</el-button>
+        <el-button type="primary" @click="openAddLocale">{{ $t('sys.rbac.addLocale') }}</el-button>
         <el-button type="success" @click="batchSave" :loading="saving">{{ $t('common.save') }}</el-button>
         <el-button @click="load">{{ $t('common.refresh') }}</el-button>
       </div>
@@ -50,9 +50,9 @@
       />
     </el-card>
 
-    <OnDialog v-model="showAddLocale" :title="$t('rbac.addLocale')" width="400px">
+    <OnDialog v-model="showAddLocale" :title="$t('sys.rbac.addLocale')" width="400px">
       <el-form label-width="80px">
-        <el-form-item :label="$t('rbac.locale')">
+        <el-form-item :label="$t('sys.rbac.locale')">
           <el-input v-model="newLocale" placeholder="ja-JP / ko-KR / fr-FR ..." />
         </el-form-item>
       </el-form>
@@ -65,7 +65,7 @@
     <OnDialog v-model="showAddKey" :title="$t('common.add')" width="500px">
       <el-form label-width="100px">
         <el-form-item label="Key">
-          <el-input v-model="newKey" placeholder="menu.newItem" />
+          <el-input v-model="newKey" placeholder="sys.menu.newItem" />
         </el-form-item>
         <el-form-item v-for="loc in locales" :key="loc" :label="loc">
           <el-input v-model="newValues[loc]" />
@@ -217,7 +217,7 @@ async function addKey() {
 async function batchSave() {
   const dirty = rows.value.filter((r) => r._dirty)
   if (!dirty.length) {
-    ElMessage.info(t('rbac.noChange'))
+    ElMessage.info(t('sys.rbac.noChange'))
     return
   }
   saving.value = true
@@ -229,7 +229,7 @@ async function batchSave() {
       if (!entries.length) continue
       await api.post('/api/rbac/i18n', { locale: loc, entries })
     }
-    ElMessage.success(t('rbac.savedN', { n: dirty.length }))
+    ElMessage.success(t('sys.rbac.savedN', { n: dirty.length }))
     dirty.forEach((r) => (r._dirty = false))
   } finally {
     saving.value = false

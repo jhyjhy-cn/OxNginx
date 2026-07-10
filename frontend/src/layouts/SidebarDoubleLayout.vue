@@ -43,7 +43,7 @@
         <div class="topbar-left">
           <el-breadcrumb separator="/">
             <el-breadcrumb-item v-if="route.path !== '/dashboard'">
-              {{ t('menu.dashboard') }}
+              {{ t('sys.menu.dashboard') }}
             </el-breadcrumb-item>
             <el-breadcrumb-item v-for="name in route.matched.map((r) => r.meta?.title as string).filter(Boolean)" :key="name">
               {{ t(name) }}

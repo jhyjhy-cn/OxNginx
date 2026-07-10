@@ -15,23 +15,23 @@
               Nginx
               {{
                 nginxStatus.running
-                  ? $t('dashboard.running')
+                  ? $t('sys.dashboard.running')
                   : nginxStatus.not_installed
-                    ? $t('dashboard.notInstalled')
-                    : $t('dashboard.stopped')
+                    ? $t('sys.dashboard.notInstalled')
+                    : $t('sys.dashboard.stopped')
               }}
             </h2>
             <div class="status-meta">
-              <span v-if="nginxStatus.version">{{ $t('dashboard.version') }}: {{ nginxStatus.version }}</span>
+              <span v-if="nginxStatus.version">{{ $t('sys.dashboard.version') }}: {{ nginxStatus.version }}</span>
               <span v-if="nginxStatus.pid">PID: {{ nginxStatus.pid }}</span>
-              <span v-if="nginxStatus.uptime">{{ $t('dashboard.uptime') }}: {{ nginxStatus.uptime }}</span>
+              <span v-if="nginxStatus.uptime">{{ $t('sys.dashboard.uptime') }}: {{ nginxStatus.uptime }}</span>
             </div>
           </div>
         </div>
         <div class="status-actions">
           <el-button v-if="nginxStatus.not_installed" type="primary" :loading="loading.install" @click="installNginx">
             <el-icon v-if="!loading.install"><Download /></el-icon>
-            {{ $t('dashboard.install') }}
+            {{ $t('sys.dashboard.install') }}
           </el-button>
           <template v-else>
             <el-button :type="nginxStatus.running ? 'danger' : 'success'" :loading="loading.startStop" @click="toggleNginx">
@@ -39,19 +39,19 @@
                 <VideoPlay v-if="!nginxStatus.running" />
                 <VideoPause v-else />
               </el-icon>
-              {{ nginxStatus.running ? $t('dashboard.stop') : $t('dashboard.start') }}
+              {{ nginxStatus.running ? $t('sys.dashboard.stop') : $t('sys.dashboard.start') }}
             </el-button>
             <el-button :loading="loading.restart" @click="restartNginx">
               <el-icon v-if="!loading.restart"><RefreshRight /></el-icon>
-              {{ $t('dashboard.restart') }}
+              {{ $t('sys.dashboard.restart') }}
             </el-button>
             <el-button :loading="loading.reload" @click="reloadConfig">
               <el-icon v-if="!loading.reload"><Refresh /></el-icon>
-              {{ $t('dashboard.reloadConfig') }}
+              {{ $t('sys.dashboard.reloadConfig') }}
             </el-button>
             <el-button :loading="loading.test" @click="testConfig">
               <el-icon v-if="!loading.test"><Finished /></el-icon>
-              {{ $t('dashboard.testConfig') }}
+              {{ $t('sys.dashboard.testConfig') }}
             </el-button>
           </template>
         </div>
@@ -67,7 +67,7 @@
         <div class="stat-info">
           <el-statistic :value="stats.site_count" :duration="800">
             <template #title>
-              <div class="stat-label">{{ $t('dashboard.sites') }}</div>
+              <div class="stat-label">{{ $t('sys.dashboard.sites') }}</div>
             </template>
           </el-statistic>
         </div>
@@ -79,7 +79,7 @@
         <div class="stat-info">
           <el-statistic :value="stats.cert_count" :duration="800">
             <template #title>
-              <div class="stat-label">{{ $t('dashboard.certificates') }}</div>
+              <div class="stat-label">{{ $t('sys.dashboard.certificates') }}</div>
             </template>
           </el-statistic>
         </div>
@@ -91,7 +91,7 @@
         <div class="stat-info">
           <el-statistic :value="stats.cpu_usage" :precision="1" :duration="800" suffix="%">
             <template #title>
-              <div class="stat-label">{{ $t('dashboard.cpuUsage') }}</div>
+              <div class="stat-label">{{ $t('sys.dashboard.cpuUsage') }}</div>
             </template>
           </el-statistic>
         </div>
@@ -103,7 +103,7 @@
         <div class="stat-info">
           <el-statistic :value="stats.memory_usage" :precision="1" :duration="800" suffix="%">
             <template #title>
-              <div class="stat-label">{{ $t('dashboard.memoryUsage') }}</div>
+              <div class="stat-label">{{ $t('sys.dashboard.memoryUsage') }}</div>
             </template>
           </el-statistic>
         </div>
@@ -115,7 +115,7 @@
         <div class="stat-info">
           <el-statistic :value="stats.app_memory" :duration="800" suffix=" MB">
             <template #title>
-              <div class="stat-label">{{ $t('dashboard.appMemory') }}</div>
+              <div class="stat-label">{{ $t('sys.dashboard.appMemory') }}</div>
             </template>
           </el-statistic>
         </div>
@@ -125,31 +125,31 @@
     <!-- 快捷操作 -->
     <el-card class="quick-card">
       <template #header>
-        <span>{{ $t('dashboard.quickActions') }}</span>
+        <span>{{ $t('sys.dashboard.quickActions') }}</span>
       </template>
       <el-row :gutter="20">
         <el-col :span="6" :xs="12">
           <el-button class="quick-btn" @click="$router.push('/sites')">
             <el-icon :size="28"><Monitor /></el-icon>
-            <span>{{ $t('menu.sites') }}</span>
+            <span>{{ $t('sys.menu.sites') }}</span>
           </el-button>
         </el-col>
         <el-col :span="6" :xs="12">
           <el-button class="quick-btn" @click="$router.push('/ssl')">
             <el-icon :size="28"><Lock /></el-icon>
-            <span>{{ $t('dashboard.certificates') }}</span>
+            <span>{{ $t('sys.dashboard.certificates') }}</span>
           </el-button>
         </el-col>
         <el-col :span="6" :xs="12">
           <el-button class="quick-btn" @click="$router.push('/logs')">
             <el-icon :size="28"><Document /></el-icon>
-            <span>{{ $t('dashboard.viewLogs') }}</span>
+            <span>{{ $t('sys.dashboard.viewLogs') }}</span>
           </el-button>
         </el-col>
         <el-col :span="6" :xs="12">
           <el-button class="quick-btn" @click="$router.push('/settings')">
             <el-icon :size="28"><Setting /></el-icon>
-            <span>{{ $t('dashboard.sysSettings') }}</span>
+            <span>{{ $t('sys.dashboard.sysSettings') }}</span>
           </el-button>
         </el-col>
       </el-row>
@@ -158,17 +158,17 @@
     <!-- 系统信息 -->
     <el-card class="system-card">
       <template #header>
-        <span>{{ $t('dashboard.systemInfo') }}</span>
+        <span>{{ $t('sys.dashboard.systemInfo') }}</span>
       </template>
       <el-descriptions :column="3" border>
-        <el-descriptions-item :label="$t('dashboard.osVersion')">{{ systemInfo.os }}</el-descriptions-item>
-        <el-descriptions-item :label="$t('dashboard.arch')">{{ systemInfo.arch }}</el-descriptions-item>
-        <el-descriptions-item :label="$t('dashboard.hostname')">{{ systemInfo.hostname }}</el-descriptions-item>
-        <el-descriptions-item :label="$t('dashboard.cpuCores')">{{ systemInfo.cpu_cores }}</el-descriptions-item>
-        <el-descriptions-item :label="$t('dashboard.nginxVersion')">{{ systemInfo.nginx_version || '-' }}</el-descriptions-item>
-        <el-descriptions-item :label="$t('dashboard.rustVersion')">{{ systemInfo.rust_version }}</el-descriptions-item>
-        <el-descriptions-item :label="$t('dashboard.serverAddress')">{{ systemInfo.host }}:{{ systemInfo.port }}</el-descriptions-item>
-        <el-descriptions-item :label="$t('dashboard.oxnginxVersion')">1.0.0</el-descriptions-item>
+        <el-descriptions-item :label="$t('sys.dashboard.osVersion')">{{ systemInfo.os }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('sys.dashboard.arch')">{{ systemInfo.arch }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('sys.dashboard.hostname')">{{ systemInfo.hostname }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('sys.dashboard.cpuCores')">{{ systemInfo.cpu_cores }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('sys.dashboard.nginxVersion')">{{ systemInfo.nginx_version || '-' }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('sys.dashboard.rustVersion')">{{ systemInfo.rust_version }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('sys.dashboard.serverAddress')">{{ systemInfo.host }}:{{ systemInfo.port }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('sys.dashboard.oxnginxVersion')">1.0.0</el-descriptions-item>
       </el-descriptions>
     </el-card>
   </div>
@@ -301,20 +301,20 @@ async function toggleNginx() {
     if (nginxStatus.value.running) {
       const response = await api.post('/api/nginx/stop')
       if (response.data.code === 0) {
-        ElMessage.success(t('dashboard.nginxStopped'))
+        ElMessage.success(t('sys.dashboard.nginxStopped'))
       } else {
-        ElMessage.error(response.data.message || t('dashboard.stopFailed'))
+        ElMessage.error(response.data.message || t('sys.dashboard.stopFailed'))
       }
     } else {
       const response = await api.post('/api/nginx/start')
       if (response.data.code === 0) {
-        ElMessage.success(t('dashboard.nginxStarted'))
+        ElMessage.success(t('sys.dashboard.nginxStarted'))
       } else {
-        ElMessage.error(response.data.message || t('dashboard.startFailed'))
+        ElMessage.error(response.data.message || t('sys.dashboard.startFailed'))
       }
     }
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('dashboard.operationFailed'))
+    ElMessage.error(error.response?.data?.message || t('sys.dashboard.operationFailed'))
   } finally {
     loading.startStop = false
   }
@@ -325,12 +325,12 @@ async function restartNginx() {
   try {
     const response = await api.post('/api/nginx/restart')
     if (response.data.code === 0) {
-      ElMessage.success(t('dashboard.nginxRestarted'))
+      ElMessage.success(t('sys.dashboard.nginxRestarted'))
     } else {
-      ElMessage.error(response.data.message || t('dashboard.restartFailed'))
+      ElMessage.error(response.data.message || t('sys.dashboard.restartFailed'))
     }
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('dashboard.restartFailed'))
+    ElMessage.error(error.response?.data?.message || t('sys.dashboard.restartFailed'))
   } finally {
     loading.restart = false
   }
@@ -341,12 +341,12 @@ async function reloadConfig() {
   try {
     const response = await api.post('/api/nginx/reload')
     if (response.data.code === 0) {
-      ElMessage.success(t('dashboard.configReloaded'))
+      ElMessage.success(t('sys.dashboard.configReloaded'))
     } else {
-      ElMessage.error(response.data.message || t('dashboard.reloadFailed'))
+      ElMessage.error(response.data.message || t('sys.dashboard.reloadFailed'))
     }
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('dashboard.reloadFailed'))
+    ElMessage.error(error.response?.data?.message || t('sys.dashboard.reloadFailed'))
   } finally {
     loading.reload = false
   }
@@ -359,15 +359,15 @@ async function testConfig() {
     if (response.data.code === 0) {
       const result = response.data.data
       if (result.success) {
-        ElMessage.success(t('dashboard.configTestPassed'))
+        ElMessage.success(t('sys.dashboard.configTestPassed'))
       } else {
-        ElMessage.error(t('dashboard.configTestFailed') + ': ' + result.message)
+        ElMessage.error(t('sys.dashboard.configTestFailed') + ': ' + result.message)
       }
     } else {
-      ElMessage.error(response.data.message || t('dashboard.testFailed'))
+      ElMessage.error(response.data.message || t('sys.dashboard.testFailed'))
     }
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('dashboard.testFailed'))
+    ElMessage.error(error.response?.data?.message || t('sys.dashboard.testFailed'))
   } finally {
     loading.test = false
   }
@@ -376,15 +376,15 @@ async function testConfig() {
 async function installNginx() {
   loading.install = true
   try {
-    ElMessage.info(t('dashboard.installing'))
+    ElMessage.info(t('sys.dashboard.installing'))
     const response = await api.post('/api/nginx/install', null, { timeout: 300000 })
     if (response.data.code === 0) {
-      ElMessage.success(t('dashboard.installSuccess'))
+      ElMessage.success(t('sys.dashboard.installSuccess'))
     } else {
-      ElMessage.error(response.data.message || t('dashboard.installFailed'))
+      ElMessage.error(response.data.message || t('sys.dashboard.installFailed'))
     }
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('dashboard.installFailed'))
+    ElMessage.error(error.response?.data?.message || t('sys.dashboard.installFailed'))
   } finally {
     loading.install = false
   }

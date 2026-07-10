@@ -168,7 +168,7 @@ export function useFileManager(initialPath?: string, tabId?: string) {
         ElMessage.error(data.message)
       }
     } catch {
-      ElMessage.error(t('files.readError'))
+      ElMessage.error(t('sys.files.readError'))
     } finally {
       loading.value = false
     }
@@ -369,14 +369,14 @@ export function useFileManager(initialPath?: string, tabId?: string) {
 
   async function submitCreate() {
     if (!createDialog.name) {
-      ElMessage.warning(createDialog.isDir ? t('files.enterFolderName') : t('files.enterFileName'))
+      ElMessage.warning(createDialog.isDir ? t('sys.files.enterFolderName') : t('sys.files.enterFileName'))
       return
     }
     const url = createDialog.isDir ? '/api/files/mkdir' : '/api/files/touch'
     try {
       const { data } = await api.post(url, { path: currentPath.value, name: createDialog.name })
       if (data.code === 0) {
-        ElMessage.success(t('files.createSuccess'))
+        ElMessage.success(t('sys.files.createSuccess'))
         createDialog.visible = false
         fetchFiles()
       } else ElMessage.error(data.message)
@@ -394,13 +394,13 @@ export function useFileManager(initialPath?: string, tabId?: string) {
 
   async function submitRename() {
     if (!renameDialog.newName) {
-      ElMessage.warning(t('files.enterNewName'))
+      ElMessage.warning(t('sys.files.enterNewName'))
       return
     }
     try {
       const { data } = await api.post('/api/files/rename', { path: renameDialog.path, new_name: renameDialog.newName })
       if (data.code === 0) {
-        ElMessage.success(t('files.renameSuccess'))
+        ElMessage.success(t('sys.files.renameSuccess'))
         renameDialog.visible = false
         fetchFiles()
       } else ElMessage.error(data.message)
@@ -413,14 +413,14 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     if (row.is_dir) return
     contextMenu.visible = false
     if (row.size > 5 * 1024 * 1024) {
-      ElMessage.warning(t('files.fileTooLarge'))
+      ElMessage.warning(t('sys.files.fileTooLarge'))
       return
     }
     try {
       const { data } = await api.post('/api/files/read', { path: row.path })
       if (data.code === 0) {
         if (data.data.is_binary) {
-          ElMessage.warning(t('files.notEditable'))
+          ElMessage.warning(t('sys.files.notEditable'))
           return
         }
         editDialog.path = row.path
@@ -428,7 +428,7 @@ export function useFileManager(initialPath?: string, tabId?: string) {
         editDialog.visible = true
       } else ElMessage.error(data.message)
     } catch {
-      ElMessage.error(t('files.readError'))
+      ElMessage.error(t('sys.files.readError'))
     }
   }
 
@@ -436,7 +436,7 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     try {
       const { data } = await api.post('/api/files/write', { path: editDialog.path, content: editDialog.content })
       if (data.code === 0) {
-        ElMessage.success(t('files.saveSuccess'))
+        ElMessage.success(t('sys.files.saveSuccess'))
         editDialog.visible = false
         fetchFiles()
       } else ElMessage.error(data.message)
@@ -474,7 +474,7 @@ export function useFileManager(initialPath?: string, tabId?: string) {
         else ElMessage.error(data.message)
       }
       if (successCount > 0) {
-        ElMessage.success(moveDialog.isCopy ? t('files.copySuccess') : t('files.moveSuccess'))
+        ElMessage.success(moveDialog.isCopy ? t('sys.files.copySuccess') : t('sys.files.moveSuccess'))
         moveDialog.visible = false
         selectedFiles.value = []
         fetchFiles()
@@ -487,10 +487,10 @@ export function useFileManager(initialPath?: string, tabId?: string) {
   async function handleDelete(row: FileItem) {
     contextMenu.visible = false
     try {
-      await ElMessageBox.confirm(t('files.confirmDelete', { name: row.name }), t('common.warning'), { type: 'warning' })
+      await ElMessageBox.confirm(t('sys.files.confirmDelete', { name: row.name }), t('common.warning'), { type: 'warning' })
       const { data } = await api.delete('/api/files/delete', { data: { path: row.path } })
       if (data.code === 0) {
-        ElMessage.success(t('files.deleteSuccess'))
+        ElMessage.success(t('sys.files.deleteSuccess'))
         fetchFiles()
       } else ElMessage.error(data.message)
     } catch {
@@ -509,7 +509,7 @@ export function useFileManager(initialPath?: string, tabId?: string) {
 
   async function submitCompress() {
     if (!compressDialog.name) {
-      ElMessage.warning(t('files.enterCompressName'))
+      ElMessage.warning(t('sys.files.enterCompressName'))
       return
     }
     const dest = currentPath.value.replace(/[\\/]+$/, '') + '/' + compressDialog.name
@@ -520,7 +520,7 @@ export function useFileManager(initialPath?: string, tabId?: string) {
         format: compressDialog.format,
       })
       if (data.code === 0) {
-        ElMessage.success(t('files.compressSuccess'))
+        ElMessage.success(t('sys.files.compressSuccess'))
         compressDialog.visible = false
         fetchFiles()
       } else ElMessage.error(data.message)
@@ -535,7 +535,7 @@ export function useFileManager(initialPath?: string, tabId?: string) {
       .post('/api/files/extract', { path: row.path, destination: dest })
       .then(({ data }) => {
         if (data.code === 0) {
-          ElMessage.success(t('files.extractSuccess'))
+          ElMessage.success(t('sys.files.extractSuccess'))
           fetchFiles()
         } else ElMessage.error(data.message)
       })
@@ -562,7 +562,7 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     try {
       const { data } = await api.post('/api/files/chmod', { path: chmodDialog.path, mode: chmodDialog.mode })
       if (data.code === 0) {
-        ElMessage.success(t('files.permissionSuccess'))
+        ElMessage.success(t('sys.files.permissionSuccess'))
         chmodDialog.visible = false
         fetchFiles()
       } else ElMessage.error(data.message)
@@ -632,7 +632,7 @@ export function useFileManager(initialPath?: string, tabId?: string) {
       for (const f of selectedFiles.value) {
         await api.delete('/api/files/delete', { data: { path: f.path } })
       }
-      ElMessage.success(t('files.deleteSuccess'))
+      ElMessage.success(t('sys.files.deleteSuccess'))
       selectedFiles.value = []
       fetchFiles()
     } catch {

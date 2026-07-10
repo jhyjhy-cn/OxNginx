@@ -3,18 +3,18 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>{{ $t('sites.title') }}</span>
+          <span>{{ $t('sys.sites.title') }}</span>
           <div>
             <el-button-group v-if="selectedSites.length > 0" style="margin-right: 12px">
-              <el-button size="small" @click="batchEnable">{{ $t('sites.batchEnable') }} ({{ selectedSites.length }})</el-button>
-              <el-button size="small" @click="batchDisable">{{ $t('sites.batchDisable') }} ({{ selectedSites.length }})</el-button>
+              <el-button size="small" @click="batchEnable">{{ $t('sys.sites.batchEnable') }} ({{ selectedSites.length }})</el-button>
+              <el-button size="small" @click="batchDisable">{{ $t('sys.sites.batchDisable') }} ({{ selectedSites.length }})</el-button>
               <el-button size="small" type="danger" @click="batchDelete">
-                {{ $t('sites.batchDelete') }} ({{ selectedSites.length }})
+                {{ $t('sys.sites.batchDelete') }} ({{ selectedSites.length }})
               </el-button>
             </el-button-group>
             <el-button type="primary" @click="addVisible = true">
               <el-icon><Plus /></el-icon>
-              {{ $t('sites.addSite') }}
+              {{ $t('sys.sites.addSite') }}
             </el-button>
           </div>
         </div>
@@ -101,17 +101,17 @@ function onOpenBackup(site: Site) {
 
 async function deploySSL(site: Site) {
   try {
-    await ElMessageBox.confirm(t('sites.sslDeployConfirm', { domain: site.server_name }), t('sites.sslDeploy'), { type: 'warning' })
+    await ElMessageBox.confirm(t('sys.sites.sslDeployConfirm', { domain: site.server_name }), t('sys.sites.sslDeploy'), { type: 'warning' })
     const response = await api.post(`/api/sites/${site.id}/deploy-ssl`)
     if (response.data.code === 0) {
-      ElMessage.success(t('sites.sslDeploySuccess'))
+      ElMessage.success(t('sys.sites.sslDeploySuccess'))
       fetchSites()
     } else {
-      ElMessage.error(response.data.message || t('sites.deployFailed'))
+      ElMessage.error(response.data.message || t('sys.sites.deployFailed'))
     }
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || error.message || t('sites.deployFailed'))
+      ElMessage.error(error.response?.data?.message || error.message || t('sys.sites.deployFailed'))
     }
   }
 }
@@ -119,7 +119,7 @@ async function deploySSL(site: Site) {
 function openFileManager(path: string) {
   const tabStore = useTabStore()
   const filesStore = useFilesStore()
-  tabStore.addTab({ path: '/files', title: 'menu.files', closable: true })
+  tabStore.addTab({ path: '/files', title: 'sys.menu.files', closable: true })
   const normalized = path.replace(/\\/g, '/').replace(/\/+$/, '')
   const existing = filesStore.tabs.find((t) => t.path.replace(/\\/g, '/').replace(/\/+$/, '') === normalized)
   if (existing) {

@@ -1,10 +1,10 @@
 <template>
-  <OnDialog v-model="dialogVisible" :title="$t('sites.addSite')" width="600px">
+  <OnDialog v-model="dialogVisible" :title="$t('sys.sites.addSite')" width="600px">
     <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
-      <el-form-item :label="$t('sites.name')" prop="name">
-        <el-input v-model="form.name" :placeholder="$t('sites.enterSiteName')" />
+      <el-form-item :label="$t('sys.sites.name')" prop="name">
+        <el-input v-model="form.name" :placeholder="$t('sys.sites.enterSiteName')" />
       </el-form-item>
-      <el-form-item :label="$t('sites.domain')" prop="server_name">
+      <el-form-item :label="$t('sys.sites.domain')" prop="server_name">
         <el-input
           v-model="form.server_name"
           type="textarea"
@@ -13,31 +13,31 @@
           @input="onDomainsInput"
         />
       </el-form-item>
-      <el-form-item :label="$t('sites.enableSsl')">
+      <el-form-item :label="$t('sys.sites.enableSsl')">
         <el-switch v-model="form.ssl" />
       </el-form-item>
       <template v-if="form.ssl">
-        <el-form-item :label="$t('sites.certPath')">
+        <el-form-item :label="$t('sys.sites.certPath')">
           <el-input v-model="form.certificate_path" placeholder="/opt/oxnginx/ssl/fullchain.cer" />
         </el-form-item>
-        <el-form-item :label="$t('sites.keyPath')">
+        <el-form-item :label="$t('sys.sites.keyPath')">
           <el-input v-model="form.key_path" placeholder="/opt/oxnginx/ssl/private.key" />
         </el-form-item>
       </template>
-      <el-form-item :label="$t('sites.proxyPass')">
+      <el-form-item :label="$t('sys.sites.proxyPass')">
         <el-input v-model="form.proxy_pass" placeholder="http://127.0.0.1:8080" />
       </el-form-item>
-      <el-form-item :label="$t('sites.rootPath')">
-        <el-input v-model="form.root_path" :placeholder="$t('sites.rootPathHint')" />
+      <el-form-item :label="$t('sys.sites.rootPath')">
+        <el-input v-model="form.root_path" :placeholder="$t('sys.sites.rootPathHint')" />
       </el-form-item>
-      <el-form-item :label="$t('sites.remark')">
-        <el-input v-model="form.remark" type="textarea" :autosize="{ minRows: 2, maxRows: 4 }" :placeholder="$t('sites.remarkHint')" />
+      <el-form-item :label="$t('sys.sites.remark')">
+        <el-input v-model="form.remark" type="textarea" :autosize="{ minRows: 2, maxRows: 4 }" :placeholder="$t('sys.sites.remarkHint')" />
       </el-form-item>
-      <el-form-item :label="$t('sites.expireTime')">
+      <el-form-item :label="$t('sys.sites.expireTime')">
         <el-date-picker
           v-model="form.expire_time"
           type="datetime"
-          :placeholder="$t('sites.permanent')"
+          :placeholder="$t('sys.sites.permanent')"
           format="YYYY-MM-DD HH:mm:ss"
           value-format="YYYY-MM-DD HH:mm:ss"
           clearable
@@ -91,12 +91,12 @@ const form = reactive({
 })
 
 const rules = {
-  name: [{ required: true, message: t('sites.enterSiteName'), trigger: 'blur' }],
-  server_name: [{ required: true, message: t('sites.enterDomain'), trigger: 'blur' }],
+  name: [{ required: true, message: t('sys.sites.enterSiteName'), trigger: 'blur' }],
+  server_name: [{ required: true, message: t('sys.sites.enterDomain'), trigger: 'blur' }],
 }
 
 const domainPlaceholder = computed(
-  () => `${t('sites.domainHint')}\n${t('sites.domainFormatIp')}\n${t('sites.domainFormatPort')}\n${t('sites.domainFormatIpv6')}`
+  () => `${t('sys.sites.domainHint')}\n${t('sys.sites.domainFormatIp')}\n${t('sys.sites.domainFormatPort')}\n${t('sys.sites.domainFormatIpv6')}`
 )
 
 function extractPort(domains: string): string {
@@ -154,11 +154,11 @@ async function submit() {
       expire_time: form.expire_time || null,
     }
     await api.post('/api/sites', data)
-    ElMessage.success(t('sites.createSuccess'))
+    ElMessage.success(t('sys.sites.createSuccess'))
     dialogVisible.value = false
     emit('created')
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('sites.operationFailed'))
+    ElMessage.error(error.response?.data?.message || t('sys.sites.operationFailed'))
   } finally {
     submitting.value = false
   }

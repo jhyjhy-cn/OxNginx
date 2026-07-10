@@ -2,7 +2,7 @@
   <div class="rbac-page">
     <el-card>
       <div class="toolbar">
-        <span>{{ $t('rbac.menuPermission') }} - {{ role?.name || id }}</span>
+        <span>{{ $t('sys.rbac.menuPermission') }} - {{ role?.name || id }}</span>
         <el-button type="primary" @click="save" :loading="saving">{{ $t('common.save') }}</el-button>
       </div>
 
