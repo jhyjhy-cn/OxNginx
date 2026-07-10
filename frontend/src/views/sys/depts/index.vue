@@ -77,22 +77,21 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import api from '@/api'
 import OnPagination from '@/components/OnPagination/index.vue'
 import OnDialog from '@/components/OnDialog/index.vue'
+import {
+  listDepts,
+  createDept,
+  updateDept,
+  deleteDept,
+} from '@/api/sys/depts'
+import type { Dept } from '@/api/sys/depts/type'
+import { useMessage } from '@/hooks'
 
 const { t } = useI18n()
-
-interface Dept {
-  id: number
-  parent_id: number | null
-  name: string
-  sort: number
-  status: string
-  children?: Dept[]
-}
+const { success, error, confirm } = useMessage()
 
 const allDepts = ref<Dept[]>([])
 const depts = ref<Dept[]>([])
@@ -134,12 +133,11 @@ onMounted(load)
 async function load() {
   loading.value = true
   try {
-    const params: Record<string, string | number> = { page: currentPage.value, page_size: pageSize.value }
+    const params: Record<string, unknown> = { page: currentPage.value, page_size: pageSize.value }
     if (keyword.value) params.keyword = keyword.value
-    const { data } = await api.get('/api/rbac/depts', { params })
-    if (data.code !== 0) return
-    const list: Dept[] = data.data.list || data.data
-    total.value = data.data.total || list.length
+    const data = await listDepts(params)
+    const list: Dept[] = data?.list || []
+    total.value = data?.total ?? list.length
     const map = new Map<number, Dept>()
     list.forEach((m) => map.set(m.id, { ...m, children: [] }))
     const roots: Dept[] = []
@@ -149,6 +147,8 @@ async function load() {
     }
     allDepts.value = list
     depts.value = keyword.value ? list : roots
+  } catch (e: any) {
+    error(e?.message || "common.fail")
   } finally {
     loading.value = false
   }
@@ -178,26 +178,28 @@ async function submit() {
   submitting.value = true
   try {
     const payload = { name: form.name, parent_id: form.parent_id, sort: form.sort }
-    const { data } = form.id ? await api.put(`/api/rbac/depts/${form.id}`, payload) : await api.post('/api/rbac/depts', payload)
-    if (data.code === 0) {
-      ElMessage.success('ok')
-      dialogVisible.value = false
-      load()
-    } else ElMessage.error(data.message)
+    if (form.id) await updateDept(form.id, payload)
+    else await createDept(payload)
+    ElMessage.success('ok')
+    dialogVisible.value = false
+    load()
+  } catch (e: any) {
+    error(e?.message || "common.fail")
   } finally {
     submitting.value = false
   }
 }
 
 async function del(row: Dept) {
+  const ok = await confirm({ message: "common.confirmDelete" })
+  if (!ok) return
   try {
-    await ElMessageBox.confirm(t('common.confirmDelete'), t('common.tip'), { type: 'warning' })
-    const { data } = await api.delete(`/api/rbac/depts/${row.id}`)
-    if (data.code === 0) {
-      ElMessage.success('ok')
-      load()
-    } else ElMessage.error(data.message)
-  } catch {}
+    await deleteDept(row.id)
+    success("common.success")
+    load()
+  } catch (e: any) {
+    error(e?.message || "common.fail")
+  }
 }
 </script>
 

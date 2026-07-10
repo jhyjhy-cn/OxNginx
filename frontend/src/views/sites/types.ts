@@ -21,6 +21,7 @@ export interface Site {
   cert_expire_days?: number
   backup_count?: number
   traffic?: Record<string, number>
+  [key: string]: unknown
 }
 
 export interface DomainItem {

@@ -178,7 +178,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import api from '@/api'
+import { changePassword, changeUsername } from '@/api/auth'
 import OnDialog from '@/components/OnDialog/index.vue'
 
 const route = useRoute()
@@ -263,20 +263,13 @@ async function submitChangePassword() {
 
   pwdLoading.value = true
   try {
-    const res = await api.post('/api/change-password', {
-      old_password: pwdForm.oldPassword,
-      new_password: pwdForm.newPassword,
-    })
-    if (res.data.code === 0) {
-      ElMessage.success('密码修改成功，请重新登录')
-      pwdDialogVisible.value = false
-      authStore.logout()
-      router.push('/login')
-    } else {
-      ElMessage.error(res.data.message)
-    }
+    await changePassword(pwdForm.oldPassword, pwdForm.newPassword)
+    ElMessage.success('密码修改成功，请重新登录')
+    pwdDialogVisible.value = false
+    authStore.logout()
+    router.push('/login')
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.message || '修改密码失败')
+    ElMessage.error(err.message || '修改密码失败')
   } finally {
     pwdLoading.value = false
   }
@@ -308,19 +301,12 @@ async function submitChangeUsername() {
 
   userLoading.value = true
   try {
-    const res = await api.post('/api/change-username', {
-      password: userForm.password,
-      new_username: userForm.newUsername,
-    })
-    if (res.data.code === 0) {
-      authStore.updateUser(res.data.data.token, res.data.data.username)
-      ElMessage.success('账号修改成功')
-      userDialogVisible.value = false
-    } else {
-      ElMessage.error(res.data.message)
-    }
+    const data: any = await changeUsername(userForm.newUsername, userForm.password)
+    authStore.updateUser(data.token, data.username)
+    ElMessage.success('账号修改成功')
+    userDialogVisible.value = false
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.message || '修改账号失败')
+    ElMessage.error(err.message || '修改账号失败')
   } finally {
     userLoading.value = false
   }

@@ -63,21 +63,21 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, nextTick } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import api from '@/api'
 import OnPagination from '@/components/OnPagination/index.vue'
 import OnDialog from '@/components/OnDialog/index.vue'
+import {
+  listPosts,
+  createPost,
+  updatePost,
+  deletePost,
+} from '@/api/sys/posts'
+import type { Post } from '@/api/sys/posts/type'
+import { useMessage } from '@/hooks'
 
 const { t } = useI18n()
-
-interface Post {
-  id: number
-  code: string
-  name: string
-  sort: number
-  status: string
-}
+const { success, error, confirm } = useMessage()
 
 const posts = ref<Post[]>([])
 const loading = ref(false)
@@ -115,13 +115,13 @@ onMounted(load)
 async function load() {
   loading.value = true
   try {
-    const params: Record<string, string | number> = { page: currentPage.value, page_size: pageSize.value }
+    const params: Record<string, unknown> = { page: currentPage.value, page_size: pageSize.value }
     if (keyword.value) params.keyword = keyword.value
-    const { data } = await api.get('/api/rbac/posts', { params })
-    if (data.code === 0) {
-      posts.value = data.data.list
-      total.value = data.data.total
-    }
+    const data = await listPosts(params)
+    posts.value = data.list || []
+    total.value = data.total || 0
+  } catch (e: any) {
+    error(e?.message || "common.fail")
   } finally {
     loading.value = false
   }
@@ -151,26 +151,28 @@ async function submit() {
   submitting.value = true
   try {
     const payload = { code: form.code, name: form.name, sort: form.sort }
-    const { data } = form.id ? await api.put(`/api/rbac/posts/${form.id}`, payload) : await api.post('/api/rbac/posts', payload)
-    if (data.code === 0) {
-      ElMessage.success('ok')
-      dialogVisible.value = false
-      load()
-    } else ElMessage.error(data.message)
+    if (form.id) await updatePost(form.id, payload)
+    else await createPost(payload)
+    ElMessage.success('ok')
+    dialogVisible.value = false
+    load()
+  } catch (e: any) {
+    error(e?.message || "common.fail")
   } finally {
     submitting.value = false
   }
 }
 
 async function del(row: Post) {
+  const ok = await confirm({ message: "common.confirmDelete" })
+  if (!ok) return
   try {
-    await ElMessageBox.confirm(t('common.confirmDelete'), t('common.tip'), { type: 'warning' })
-    const { data } = await api.delete(`/api/rbac/posts/${row.id}`)
-    if (data.code === 0) {
-      ElMessage.success('ok')
-      load()
-    } else ElMessage.error(data.message)
-  } catch {}
+    await deletePost(row.id)
+    success("common.success")
+    load()
+  } catch (e: any) {
+    error(e?.message || "common.fail")
+  }
 }
 </script>
 

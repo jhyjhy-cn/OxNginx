@@ -25,14 +25,13 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance } from 'element-plus'
-import api from '@/api'
 import OnDialog from '@/components/OnDialog/index.vue'
-import type { ReverseProxy } from './types'
+import { createProxy, updateProxy } from '@/api/sites'
 
 const props = defineProps<{
   visible: boolean
   siteId: number
-  proxy?: ReverseProxy | null
+  proxy?: { id?: number; name?: string; proxy_dir?: string; target_url?: string; cache?: number } | null
 }>()
 
 const emit = defineEmits<{
@@ -65,9 +64,9 @@ watch(
   () => props.visible,
   (val) => {
     if (val && props.proxy) {
-      form.name = props.proxy.name
-      form.proxy_dir = props.proxy.proxy_dir
-      form.target_url = props.proxy.target_url
+      form.name = props.proxy.name ?? ''
+      form.proxy_dir = props.proxy.proxy_dir ?? '/'
+      form.target_url = props.proxy.target_url ?? ''
       form.cache = props.proxy.cache === 1
     } else if (val) {
       form.name = ''
@@ -89,16 +88,16 @@ async function submit() {
       target_url: form.target_url,
       cache: form.cache ? 1 : 0,
     }
-    if (isEdit.value && props.proxy) {
-      await api.put(`/api/proxies/${props.proxy.id}`, data)
+    if (isEdit.value && props.proxy?.id != null) {
+      await updateProxy(props.proxy.id, data)
     } else {
-      await api.post(`/api/sites/${props.siteId}/proxies`, data)
+      await createProxy(props.siteId, data)
     }
     ElMessage.success('保存成功')
     dialogVisible.value = false
     emit('saved')
   } catch (e: any) {
-    ElMessage.error(e.response?.data?.message || '操作失败')
+    ElMessage.error(e.message || '操作失败')
   } finally {
     submitting.value = false
   }

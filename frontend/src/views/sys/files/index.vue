@@ -72,21 +72,27 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import api from "@/api";
 import OnFormGrid from "@/components/OnForm/OnFormGrid/index.vue";
 import type { FormField } from "@/components/OnForm/types";
 import type { TableColumn } from "@/components/OnTable/types";
 import OnTable from "@/components/OnTable/index.vue";
 import { useCrud, useMessage } from "@/hooks";
+import { useAuthStore } from "@/stores/auth";
+import {
+  pageFiles,
+  deleteFile,
+  batchDeleteFiles,
+} from "@/api/sys/files";
 
 const { success, error, confirm } = useMessage();
+const authStore = useAuthStore();
 
 const selectedRows = ref<any[]>([]);
 const uploading = ref(false);
 
 const uploadUrl = "/api/rbac/files/upload";
 const uploadHeaders = {
-  Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+  Authorization: `Bearer ${authStore.token || ""}`,
 };
 
 const searchFields: FormField[] = [
@@ -124,8 +130,7 @@ const {
   search,
   reset,
 } = useCrud({
-  getListApi: (params) =>
-    api.get("/api/rbac/files/page", { params }).then((r) => r.data),
+  getListApi: pageFiles,
   isPage: true,
   pageSize: 20,
 });
@@ -168,12 +173,12 @@ async function del(row: any) {
   const ok = await confirm({ message: "sys.files.deleteConfirm" });
   if (!ok) return;
   try {
-    await api.delete(`/api/rbac/files/${row.id}`);
+    await deleteFile(row.id);
     success("common.success");
     selectedRows.value = selectedRows.value.filter((r) => r.id !== row.id);
     load();
   } catch (e: any) {
-    error(e?.response?.data?.message || e?.message);
+    error(e?.message || "common.fail");
   }
 }
 
@@ -186,16 +191,12 @@ async function batchDelete() {
   if (!ok) return;
   try {
     const ids = selectedRows.value.map((r) => r.id);
-    const { data } = await api.post("/api/rbac/files/batch-delete", { ids });
-    if (data.code === 0) {
-      success(data.data);
-      selectedRows.value = [];
-      load();
-    } else {
-      error(data.message);
-    }
+    const msg = await batchDeleteFiles(ids);
+    success(typeof msg === "string" ? msg : "common.success");
+    selectedRows.value = [];
+    load();
   } catch (e: any) {
-    error(e?.response?.data?.message || e?.message);
+    error(e?.message || "common.fail");
   }
 }
 

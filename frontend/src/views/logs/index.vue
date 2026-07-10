@@ -35,7 +35,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { Refresh, Download } from '@element-plus/icons-vue'
-import api from '@/api'
+import { getLog } from '@/api/logs'
 
 const logType = ref('access')
 const logs = ref<string[]>([])
@@ -48,10 +48,8 @@ onMounted(fetchLogs)
 async function fetchLogs() {
   loading.value = true
   try {
-    const response = await api.get(`/api/log/${logType.value}`)
-    if (response.data.code === 0) {
-      logs.value = response.data.data?.lines || []
-    }
+    const data = await getLog(logType.value as 'access' | 'error')
+    logs.value = data?.lines || []
   } catch {
     // ignore
   } finally {

@@ -77,13 +77,19 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, nextTick } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { useI18n } from 'vue-i18n'
-import api from '@/api'
 import OnPagination from '@/components/OnPagination/index.vue'
 import OnDialog from '@/components/OnDialog/index.vue'
+import {
+  listRoles,
+  createRole,
+  deleteRole,
+  getRoleMenus,
+  setRoleMenus,
+} from '@/api/sys/roles'
+import { listMenus } from '@/api/sys/menus'
+import { useMessage } from '@/hooks'
 
-const { t } = useI18n()
+const { success, error, confirm } = useMessage()
 const roles = ref<any[]>([])
 const loading = ref(false)
 const showCreate = ref(false)
@@ -114,13 +120,13 @@ onMounted(load)
 async function load() {
   loading.value = true
   try {
-    const params: Record<string, string | number> = { page: currentPage.value, page_size: pageSize.value }
+    const params: Record<string, unknown> = { page: currentPage.value, page_size: pageSize.value }
     if (keyword.value) params.keyword = keyword.value
-    const { data } = await api.get('/api/rbac/roles', { params })
-    if (data.code === 0) {
-      roles.value = data.data.list
-      total.value = data.data.total
-    }
+    const data = await listRoles(params)
+    roles.value = data.list || []
+    total.value = data.total || 0
+  } catch (e: any) {
+    error(e?.message || "common.fail")
   } finally {
     loading.value = false
   }
@@ -128,26 +134,29 @@ async function load() {
 
 async function submit() {
   if (!form.code || !form.name) return
-  const { data } = await api.post('/api/rbac/roles', form)
-  if (data.code === 0) {
-    ElMessage.success('ok')
+  try {
+    await createRole(form)
+    success("common.success")
     showCreate.value = false
     form.code = ''
     form.name = ''
     form.remark = ''
     load()
-  } else ElMessage.error(data.message)
+  } catch (e: any) {
+    error(e?.message || "common.fail")
+  }
 }
 
 async function del(row: any) {
+  const ok = await confirm({ message: "common.confirmDelete" })
+  if (!ok) return
   try {
-    await ElMessageBox.confirm(t('common.confirmDelete'), t('common.tip'), { type: 'warning' })
-    const { data } = await api.delete(`/api/rbac/roles/${row.id}`)
-    if (data.code === 0) {
-      ElMessage.success('ok')
-      load()
-    } else ElMessage.error(data.message)
-  } catch {}
+    await deleteRole(row.id)
+    success("common.success")
+    load()
+  } catch (e: any) {
+    error(e?.message || "common.fail")
+  }
 }
 
 // ========== 菜单权限弹窗 ==========
@@ -162,11 +171,11 @@ async function openMenuPerm(row: any) {
   menuPermRole.value = row
   showMenuPerm.value = true
   checkedMenuIds.value = []
-  const [mr, cr] = await Promise.all([
-    api.get('/api/rbac/menus', { params: { page: 1, page_size: 999 } }),
-    api.get(`/api/rbac/roles/${row.id}/menus`),
+  const [menus, ids] = await Promise.all([
+    listMenus({ page: 1, page_size: 999 }),
+    getRoleMenus(row.id),
   ])
-  const list: any[] = mr.data?.data?.list || mr.data?.data || []
+  const list: any[] = menus || []
   const map = new Map<number, any>()
   list.forEach((m) => map.set(m.id, { ...m, children: [] as any[] }))
   const roots: any[] = []
@@ -175,8 +184,7 @@ async function openMenuPerm(row: any) {
     else roots.push(m)
   }
   menuTree.value = roots
-  checkedMenuIds.value = (cr.data?.data || []) as number[]
-  // 树节点已存在后,让 el-tree 拿到 default-checked-keys
+  checkedMenuIds.value = (ids || []) as number[]
   await nextTick()
   if (treeRef.value && checkedMenuIds.value.length) {
     treeRef.value.setCheckedKeys(checkedMenuIds.value)
@@ -186,7 +194,7 @@ async function openMenuPerm(row: any) {
 async function saveMenuPerm() {
   if (!menuPermRole.value) return
   if (!treeRef.value) {
-    ElMessage.error('tree not ready')
+    error('tree not ready')
     return
   }
   saving.value = true
@@ -194,18 +202,11 @@ async function saveMenuPerm() {
     const checked = treeRef.value.getCheckedKeys() as number[]
     const half = treeRef.value.getHalfCheckedKeys() as number[]
     const ids = [...checked, ...half]
-    console.log('[saveMenuPerm] role=', menuPermRole.value.id, 'ids=', ids)
-    const { data } = await api.put(`/api/rbac/roles/${menuPermRole.value.id}/menus`, {
-      menu_ids: ids,
-    })
-    console.log('[saveMenuPerm] resp=', data)
-    if (data.code === 0) {
-      ElMessage.success('ok')
-      showMenuPerm.value = false
-    } else ElMessage.error(data.message)
+    await setRoleMenus(menuPermRole.value.id, ids)
+    success("common.success")
+    showMenuPerm.value = false
   } catch (e: any) {
-    console.error('[saveMenuPerm] error=', e)
-    ElMessage.error(e?.message || 'save failed')
+    error(e?.message || "common.fail")
   } finally {
     saving.value = false
   }

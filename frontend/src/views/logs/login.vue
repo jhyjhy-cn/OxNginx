@@ -61,18 +61,19 @@ import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 
 dayjs.extend(utc)
-import api from '@/api'
+import { listLoginLogs } from '@/api/logs'
 import OnPagination from '@/components/OnPagination/index.vue'
 
 interface LoginLog {
   id: number
-  username: string
-  ip: string | null
-  os: string | null
-  browser: string | null
-  type: string
-  status: string
-  created_at: string | null
+  username?: string
+  ip?: string | null
+  os?: string | null
+  browser?: string | null
+  type?: string
+  status?: string
+  created_at?: string | null
+  [key: string]: unknown
 }
 
 const logs = ref<LoginLog[]>([])
@@ -130,11 +131,9 @@ onMounted(load)
 async function load() {
   loading.value = true
   try {
-    const { data } = await api.get('/api/log/login', { params: buildParams() })
-    if (data.code === 0) {
-      logs.value = data.data.list
-      total.value = data.data.total
-    }
+    const data = await listLoginLogs(buildParams())
+    logs.value = data.list
+    total.value = data.total
   } catch {
     // 后端接口未实现时静默处理
   } finally {

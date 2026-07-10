@@ -57,8 +57,8 @@ import { ref, reactive, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import type { FormInstance } from 'element-plus'
-import api from '@/api'
 import OnDialog from '@/components/OnDialog/index.vue'
+import { createSite } from '@/api/sites'
 
 const { t } = useI18n()
 
@@ -153,12 +153,12 @@ async function submit() {
       remark: form.remark || null,
       expire_time: form.expire_time || null,
     }
-    await api.post('/api/sites', data)
+    await createSite(data)
     ElMessage.success(t('sys.sites.createSuccess'))
     dialogVisible.value = false
     emit('created')
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('sys.sites.operationFailed'))
+    ElMessage.error(error.message || t('sys.sites.operationFailed'))
   } finally {
     submitting.value = false
   }

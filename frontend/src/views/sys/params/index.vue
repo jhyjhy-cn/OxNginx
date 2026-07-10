@@ -47,7 +47,6 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from "vue";
-import api from "@/api";
 import OnForm from "@/components/OnForm/OnForm/index.vue";
 import OnFormGrid from "@/components/OnForm/OnFormGrid/index.vue";
 import OnDialog from "@/components/OnDialog/index.vue";
@@ -55,6 +54,14 @@ import type { FormField } from "@/components/OnForm/types";
 import type { TableColumn } from "@/components/OnTable/types";
 import OnTable from "@/components/OnTable/index.vue";
 import { useCrud, useMessage } from "@/hooks";
+import {
+  pageParams,
+  getParam,
+  createParam,
+  updateParam,
+  deleteParam,
+} from "@/api/sys/params";
+import type { ParamPayload } from "@/api/sys/params/type";
 
 const { success, error, confirm } = useMessage();
 
@@ -63,7 +70,7 @@ const isEdit = ref(false);
 const editingId = ref<number | null>(null);
 const formRef = ref<InstanceType<typeof OnForm>>();
 
-const form = reactive({
+const form = reactive<ParamPayload>({
   key: "",
   value: "",
   name: "",
@@ -83,8 +90,7 @@ const {
   search,
   reset,
 } = useCrud({
-  getListApi: (params) =>
-    api.get("/api/rbac/params", { params }).then((r) => r.data),
+  getListApi: pageParams,
   isPage: true,
   pageSize: 20,
 });
@@ -156,19 +162,19 @@ async function openEdit(row: any) {
   isEdit.value = true;
   editingId.value = row.id;
   try {
-    const { data } = await api.get(`/api/rbac/params/${row.id}`);
-    if (data.code === 0) {
-      Object.assign(form, {
-        key: data.data.key || "",
-        value: data.data.value || "",
-        name: data.data.name || "",
-        group_code: data.data.group_code || "default",
-        remark: data.data.remark || "",
-        sort: data.data.sort ?? 0,
-      });
-      showForm.value = true;
-    }
-  } catch {}
+    const data = await getParam(row.id);
+    Object.assign(form, {
+      key: data.key || "",
+      value: data.value || "",
+      name: data.name || "",
+      group_code: data.group_code || "default",
+      remark: data.remark || "",
+      sort: data.sort ?? 0,
+    });
+    showForm.value = true;
+  } catch (e: any) {
+    error(e?.message || "common.fail");
+  }
 }
 
 async function submit() {
@@ -180,18 +186,17 @@ async function submit() {
   }
   const payload = { ...form };
   try {
-    const { data } = isEdit.value
-      ? await api.put(`/api/rbac/params/${editingId.value}`, payload)
-      : await api.post("/api/rbac/params", payload);
-    if (data.code === 0) {
-      success(isEdit.value ? "sys.params.updateSuccess" : "sys.params.createSuccess");
-      showForm.value = false;
-      load();
+    if (isEdit.value) {
+      await updateParam(editingId.value!, payload);
+      success("sys.params.updateSuccess");
     } else {
-      error(data.message);
+      await createParam(payload);
+      success("sys.params.createSuccess");
     }
+    showForm.value = false;
+    load();
   } catch (e: any) {
-    error(e?.response?.data?.message || e?.message);
+    error(e?.message || "common.fail");
   }
 }
 
@@ -199,11 +204,11 @@ async function del(row: any) {
   const ok = await confirm({ message: "common.confirmDelete" });
   if (!ok) return;
   try {
-    await api.delete(`/api/rbac/params/${row.id}`);
+    await deleteParam(row.id);
     success("common.success");
     load();
   } catch (e: any) {
-    error(e?.response?.data?.message || e?.message);
+    error(e?.message || "common.fail");
   }
 }
 

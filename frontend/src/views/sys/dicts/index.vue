@@ -105,28 +105,23 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import api from '@/api'
+import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
+import {
+  listDicts,
+  getDict,
+  createDict,
+  updateDict,
+  deleteDict,
+  createDictItem,
+  updateDictItem,
+  deleteDictItem,
+} from '@/api/sys/dicts'
+import type { Dict, DictItem } from '@/api/sys/dicts/type'
+import { useMessage } from '@/hooks'
 
 const { t } = useI18n()
-
-interface Dict {
-  id?: number
-  name: string
-  code: string
-  description?: string
-  status: string
-}
-
-interface DictItem {
-  id?: number
-  dict_id?: number
-  label: string
-  value: string
-  sort: number
-  status: string
-}
+const { confirm } = useMessage()
 
 const dicts = ref<Dict[]>([])
 const loading = ref(false)
@@ -137,8 +132,9 @@ const form = reactive<Dict>({ name: '', code: '', description: '', status: 'enab
 async function load() {
   loading.value = true
   try {
-    const { data } = await api.get('/api/rbac/dicts')
-    if (data.code === 0) dicts.value = data.data
+    dicts.value = (await listDicts()) || []
+  } catch (e: any) {
+    ElMessage.error(e?.message || "common.fail")
   } finally {
     loading.value = false
   }
@@ -162,24 +158,29 @@ async function save() {
   saving.value = true
   try {
     if (form.id) {
-      await api.put(`/api/rbac/dicts/${form.id}`, { name: form.name, code: form.code, description: form.description, status: form.status })
+      await updateDict(form.id, { name: form.name, code: form.code, description: form.description, status: form.status })
     } else {
-      await api.post('/api/rbac/dicts', { name: form.name, code: form.code, description: form.description })
+      await createDict({ name: form.name, code: form.code, description: form.description })
     }
     ElMessage.success(t('common.success'))
     showForm.value = false
     load()
+  } catch (e: any) {
+    ElMessage.error(e?.message || "common.fail")
   } finally {
     saving.value = false
   }
 }
 
 async function del(row: Dict) {
-  await ElMessageBox.confirm(t('common.confirmDelete'), t('common.warning'))
-  const { data } = await api.delete(`/api/rbac/dicts/${row.id}`)
-  if (data.code === 0) {
+  const ok = await confirm({ message: "common.confirmDelete" })
+  if (!ok) return
+  try {
+    await deleteDict(row.id!)
     ElMessage.success(t('common.success'))
     load()
+  } catch (e: any) {
+    ElMessage.error(e?.message || "common.fail")
   }
 }
 
@@ -200,8 +201,10 @@ async function openItems(row: Dict) {
 async function loadItems(dictId: number) {
   loadingItems.value = true
   try {
-    const { data } = await api.get(`/api/rbac/dicts/${dictId}`)
-    if (data.code === 0) items.value = data.data.items
+    const data = await getDict(dictId)
+    items.value = data.items || []
+  } catch (e: any) {
+    ElMessage.error(e?.message || "common.fail")
   } finally {
     loadingItems.value = false
   }
@@ -225,24 +228,29 @@ async function saveItem() {
   saving.value = true
   try {
     if (itemForm.id) {
-      await api.put(`/api/rbac/dict-items/${itemForm.id}`, itemForm)
+      await updateDictItem(itemForm.id, itemForm)
     } else {
-      await api.post(`/api/rbac/dicts/${currentDict.value!.id}/items`, itemForm)
+      await createDictItem(currentDict.value!.id!, itemForm)
     }
     ElMessage.success(t('common.success'))
     showItemForm.value = false
     loadItems(currentDict.value!.id!)
+  } catch (e: any) {
+    ElMessage.error(e?.message || "common.fail")
   } finally {
     saving.value = false
   }
 }
 
 async function delItem(row: DictItem) {
-  await ElMessageBox.confirm(t('common.confirmDelete'), t('common.warning'))
-  const { data } = await api.delete(`/api/rbac/dict-items/${row.id}`)
-  if (data.code === 0) {
+  const ok = await confirm({ message: "common.confirmDelete" })
+  if (!ok) return
+  try {
+    await deleteDictItem(row.id!)
     ElMessage.success(t('common.success'))
     loadItems(currentDict.value!.id!)
+  } catch (e: any) {
+    ElMessage.error(e?.message || "common.fail")
   }
 }
 

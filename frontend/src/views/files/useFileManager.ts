@@ -1,8 +1,26 @@
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import api from '@/api'
+import { ElMessage } from 'element-plus'
 import { useFilesStore } from '@/stores/files'
+import {
+  listFiles,
+  listRoots,
+  readFile,
+  writeFile,
+  mkdir,
+  touch,
+  rename,
+  moveFile,
+  copyFile,
+  deleteFileEntry,
+  chmod,
+  compress,
+  extract,
+  saveNote,
+  calcSize,
+  downloadFileUrl,
+} from '@/api/files-mgr'
+import { useMessage } from '@/hooks'
 
 // ponytail: 盘符列表全局共享，只请求一次
 const sharedDrives = ref<string[]>([])
@@ -24,6 +42,7 @@ export interface FileItem {
 
 export function useFileManager(initialPath?: string, tabId?: string) {
   const { t } = useI18n()
+  const { confirm } = useMessage()
   const filesStore = useFilesStore()
 
   // ===== 核心状态 =====
@@ -63,7 +82,6 @@ export function useFileManager(initialPath?: string, tabId?: string) {
   const pathSegments = computed(() => {
     const p = currentPath.value.replace(/\\\\\?\\/g, '').replace(/\\/g, '/')
     const segs: { name: string; path: string }[] = []
-    // 盘符
     const driveMatch = p.match(/^([A-Za-z]:)/)
     if (driveMatch) {
       segs.push({ name: driveMatch[1], path: driveMatch[1] + '/' })
@@ -79,17 +97,13 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     return segs
   })
 
-  // 右键菜单
   const contextMenu = reactive({ visible: false, x: 0, y: 0, row: null as FileItem | null })
 
-  // 路径下拉菜单
   const pathInputFocused = ref(false)
   const pathDropdown = reactive({ visible: false, x: 0, y: 0, dirs: [] as { name: string; path: string }[], level: -1 })
 
-  // 选中
   const selectedFiles = ref<FileItem[]>([])
 
-  // 弹窗状态
   const createDialog = reactive({ visible: false, isDir: false, name: '' })
   const renameDialog = reactive({ visible: false, path: '', newName: '' })
   const moveDialog = reactive({ visible: false, source: '', destination: '', isCopy: false })
@@ -105,7 +119,6 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     if (initialPath) currentPath.value = initialPath
     else if (filesStore.lastPath) currentPath.value = filesStore.lastPath
     fetchDrives()
-    // 只在当前标签激活时加载，未激活的等切换过来再加载
     if (!tabId || filesStore.activeTabId === tabId) {
       fetchFiles()
     } else {
@@ -126,7 +139,6 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     document.removeEventListener('click', closeContextMenu)
   })
 
-  // 搜索防抖
   let searchTimer: ReturnType<typeof setTimeout> | null = null
   watch(searchQuery, () => {
     if (searchTimer) clearTimeout(searchTimer)
@@ -136,7 +148,6 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     }, 300)
   })
 
-  // 翻页 / 切换每页条数
   watch([currentPage, pageSize], () => fetchFiles())
 
   function closeContextMenu() {
@@ -149,26 +160,21 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     loading.value = true
     totalSize.value = null
     try {
-      const { data } = await api.post('/api/files/list', {
+      const data: any = await listFiles({
         path: currentPath.value,
-        search: searchQuery.value,
         page: currentPage.value,
         page_size: pageSize.value,
-      })
-      if (data.code === 0) {
-        files.value = data.data.items
-        total.value = data.data.total
-        dirCount.value = data.data.dir_count
-        fileCount.value = data.data.file_count
-        currentPath.value = data.data.path.replace(/\\\\\?\\/, '').replace(/\\/g, '/')
-        currentParent.value = data.data.parent ? data.data.parent.replace(/\\\\\?\\/, '').replace(/\\/g, '/') : null
-        filesStore.lastPath = currentPath.value
-        if (tabId) filesStore.updateTabPath(tabId, currentPath.value)
-      } else {
-        ElMessage.error(data.message)
-      }
-    } catch {
-      ElMessage.error(t('sys.files.readError'))
+      } as any)
+      files.value = data.items
+      total.value = data.total
+      dirCount.value = data.dir_count
+      fileCount.value = data.file_count
+      currentPath.value = data.path.replace(/\\\\\?\\/, '').replace(/\\/g, '/')
+      currentParent.value = data.parent ? data.parent.replace(/\\\\\?\\/, '').replace(/\\/g, '/') : null
+      filesStore.lastPath = currentPath.value
+      if (tabId) filesStore.updateTabPath(tabId, currentPath.value)
+    } catch (e: any) {
+      ElMessage.error(e?.message || t('sys.files.readError'))
     } finally {
       loading.value = false
     }
@@ -178,11 +184,10 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     if (drivesLoaded) return
     drivesLoaded = true
     try {
-      const { data } = await api.get('/api/files/roots')
-      if (data.code === 0) sharedDrives.value = data.data
+      sharedDrives.value = (await listRoots()) || []
     } catch {
       drivesLoaded = false
-    } // 失败时允许重试
+    }
   }
 
   function handleDriveChange(drive: string) {
@@ -195,11 +200,10 @@ export function useFileManager(initialPath?: string, tabId?: string) {
   async function calcTotalSize() {
     calcTotalLoading.value = true
     try {
-      const { data } = await api.post('/api/files/size', { path: currentPath.value })
-      if (data.code === 0) totalSize.value = data.data.size
-      else ElMessage.error(data.message)
-    } catch {
-      ElMessage.error(t('common.operationFailed'))
+      const data = await calcSize(currentPath.value)
+      totalSize.value = data.size
+    } catch (e: any) {
+      ElMessage.error(e?.message || t('common.operationFailed'))
     } finally {
       calcTotalLoading.value = false
     }
@@ -208,17 +212,15 @@ export function useFileManager(initialPath?: string, tabId?: string) {
   async function calcFileSize(row: FileItem) {
     row._calcLoading = true
     try {
-      const { data } = await api.post('/api/files/size', { path: row.path })
-      if (data.code === 0) row._size = data.data.size
-      else ElMessage.error(data.message)
-    } catch {
-      ElMessage.error(t('common.operationFailed'))
+      const data = await calcSize(row.path)
+      row._size = data.size
+    } catch (e: any) {
+      ElMessage.error(e?.message || t('common.operationFailed'))
     } finally {
       row._calcLoading = false
     }
   }
 
-  // ===== 工具 =====
   function formatSize(bytes: number): string {
     if (bytes === 0) return '0 B'
     const units = ['B', 'KB', 'MB', 'GB', 'TB']
@@ -232,24 +234,9 @@ export function useFileManager(initialPath?: string, tabId?: string) {
   }
 
   const extIconMap: Record<string, string> = {
-    pdf: 'pdf',
-    doc: 'word',
-    docx: 'word',
-    ppt: 'ppt',
-    pptx: 'ppt',
-    xls: 'excel',
-    xlsx: 'excel',
-    js: 'js',
-    mjs: 'js',
-    json: 'json',
-    java: 'java',
-    c: 'c',
-    h: 'c',
-    cpp: 'cpp',
-    cc: 'cpp',
-    cxx: 'cpp',
-    hpp: 'cpp',
-    py: 'python',
+    pdf: 'pdf', doc: 'word', docx: 'word', ppt: 'ppt', pptx: 'ppt',
+    xls: 'excel', xlsx: 'excel', js: 'js', mjs: 'js', json: 'json',
+    java: 'java', c: 'c', h: 'c', cpp: 'cpp', cc: 'cpp', cxx: 'cpp', hpp: 'cpp', py: 'python',
   }
 
   function getFileIcon(row: FileItem): string {
@@ -257,7 +244,6 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     return extIconMap[row.extension.toLowerCase()] || 'file'
   }
 
-  // ===== 导航 =====
   function goBack() {
     if (currentParent.value) {
       currentPath.value = currentParent.value
@@ -299,10 +285,10 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     pathDropdown.dirs = []
     pathDropdown.visible = true
     try {
-      const { data } = await api.post('/api/files/list', { path: targetPath })
-      if (data.code === 0) {
-        pathDropdown.dirs = data.data.items.filter((f: FileItem) => f.is_dir).map((f: FileItem) => ({ name: f.name, path: f.path }))
-      }
+      const data: any = await listFiles({ path: targetPath })
+      pathDropdown.dirs = (data.items || [])
+        .filter((f: FileItem) => f.is_dir)
+        .map((f: FileItem) => ({ name: f.name, path: f.path }))
     } catch {
       pathDropdown.dirs = []
     }
@@ -337,11 +323,8 @@ export function useFileManager(initialPath?: string, tabId?: string) {
   }
 
   function handleDblClick(row: FileItem) {
-    if (row.is_dir) {
-      enterDir(row)
-    } else {
-      handleEdit(row)
-    }
+    if (row.is_dir) enterDir(row)
+    else handleEdit(row)
   }
   function enterDir(row: FileItem) {
     currentPath.value = row.path.replace(/\\\\\?\\/, '').replace(/\\/g, '/')
@@ -360,7 +343,6 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     contextMenu.row = row
   }
 
-  // ===== CRUD =====
   function handleCreate(cmd: string) {
     createDialog.isDir = cmd === 'folder'
     createDialog.name = ''
@@ -372,16 +354,17 @@ export function useFileManager(initialPath?: string, tabId?: string) {
       ElMessage.warning(createDialog.isDir ? t('sys.files.enterFolderName') : t('sys.files.enterFileName'))
       return
     }
-    const url = createDialog.isDir ? '/api/files/mkdir' : '/api/files/touch'
     try {
-      const { data } = await api.post(url, { path: currentPath.value, name: createDialog.name })
-      if (data.code === 0) {
-        ElMessage.success(t('sys.files.createSuccess'))
-        createDialog.visible = false
-        fetchFiles()
-      } else ElMessage.error(data.message)
-    } catch {
-      ElMessage.error(t('common.operationFailed'))
+      if (createDialog.isDir) {
+        await mkdir(currentPath.value, createDialog.name)
+      } else {
+        await touch(currentPath.value, createDialog.name)
+      }
+      ElMessage.success(t('sys.files.createSuccess'))
+      createDialog.visible = false
+      fetchFiles()
+    } catch (e: any) {
+      ElMessage.error(e?.message || t('common.operationFailed'))
     }
   }
 
@@ -398,14 +381,12 @@ export function useFileManager(initialPath?: string, tabId?: string) {
       return
     }
     try {
-      const { data } = await api.post('/api/files/rename', { path: renameDialog.path, new_name: renameDialog.newName })
-      if (data.code === 0) {
-        ElMessage.success(t('sys.files.renameSuccess'))
-        renameDialog.visible = false
-        fetchFiles()
-      } else ElMessage.error(data.message)
-    } catch {
-      ElMessage.error(t('common.operationFailed'))
+      await rename(renameDialog.path, renameDialog.newName)
+      ElMessage.success(t('sys.files.renameSuccess'))
+      renameDialog.visible = false
+      fetchFiles()
+    } catch (e: any) {
+      ElMessage.error(e?.message || t('common.operationFailed'))
     }
   }
 
@@ -417,31 +398,27 @@ export function useFileManager(initialPath?: string, tabId?: string) {
       return
     }
     try {
-      const { data } = await api.post('/api/files/read', { path: row.path })
-      if (data.code === 0) {
-        if (data.data.is_binary) {
-          ElMessage.warning(t('sys.files.notEditable'))
-          return
-        }
-        editDialog.path = row.path
-        editDialog.content = data.data.content
-        editDialog.visible = true
-      } else ElMessage.error(data.message)
-    } catch {
-      ElMessage.error(t('sys.files.readError'))
+      const data: any = await readFile(row.path)
+      if (data.is_binary) {
+        ElMessage.warning(t('sys.files.notEditable'))
+        return
+      }
+      editDialog.path = row.path
+      editDialog.content = data.content
+      editDialog.visible = true
+    } catch (e: any) {
+      ElMessage.error(e?.message || t('sys.files.readError'))
     }
   }
 
   async function submitEdit() {
     try {
-      const { data } = await api.post('/api/files/write', { path: editDialog.path, content: editDialog.content })
-      if (data.code === 0) {
-        ElMessage.success(t('sys.files.saveSuccess'))
-        editDialog.visible = false
-        fetchFiles()
-      } else ElMessage.error(data.message)
-    } catch {
-      ElMessage.error(t('common.operationFailed'))
+      await writeFile(editDialog.path, editDialog.content)
+      ElMessage.success(t('sys.files.saveSuccess'))
+      editDialog.visible = false
+      fetchFiles()
+    } catch (e: any) {
+      ElMessage.error(e?.message || t('common.operationFailed'))
     }
   }
 
@@ -461,7 +438,6 @@ export function useFileManager(initialPath?: string, tabId?: string) {
   }
 
   async function submitMove() {
-    const url = moveDialog.isCopy ? '/api/files/copy' : '/api/files/move'
     const sources = moveDialog.source.split('|').filter(Boolean)
     const destBase = moveDialog.destination.replace(/[\\/]+$/, '')
     try {
@@ -469,9 +445,13 @@ export function useFileManager(initialPath?: string, tabId?: string) {
       for (const src of sources) {
         const name = src.replace(/\\/g, '/').split('/').pop() || src
         const dest = destBase + '/' + name
-        const { data } = await api.post(url, { source: src, destination: dest })
-        if (data.code === 0) successCount++
-        else ElMessage.error(data.message)
+        try {
+          if (moveDialog.isCopy) await copyFile(src, dest)
+          else await moveFile(src, dest)
+          successCount++
+        } catch (e: any) {
+          ElMessage.error(e?.message || t('common.operationFailed'))
+        }
       }
       if (successCount > 0) {
         ElMessage.success(moveDialog.isCopy ? t('sys.files.copySuccess') : t('sys.files.moveSuccess'))
@@ -486,15 +466,17 @@ export function useFileManager(initialPath?: string, tabId?: string) {
 
   async function handleDelete(row: FileItem) {
     contextMenu.visible = false
+    const ok = await confirm({
+      message: 'sys.files.confirmDelete',
+      params: { name: row.name },
+    })
+    if (!ok) return
     try {
-      await ElMessageBox.confirm(t('sys.files.confirmDelete', { name: row.name }), t('common.warning'), { type: 'warning' })
-      const { data } = await api.delete('/api/files/delete', { data: { path: row.path } })
-      if (data.code === 0) {
-        ElMessage.success(t('sys.files.deleteSuccess'))
-        fetchFiles()
-      } else ElMessage.error(data.message)
-    } catch {
-      /* 取消 */
+      await deleteFileEntry(row.path)
+      ElMessage.success(t('sys.files.deleteSuccess'))
+      fetchFiles()
+    } catch (e: any) {
+      ElMessage.error(e?.message || t('common.operationFailed'))
     }
   }
 
@@ -514,33 +496,25 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     }
     const dest = currentPath.value.replace(/[\\/]+$/, '') + '/' + compressDialog.name
     try {
-      const { data } = await api.post('/api/files/compress', {
-        paths: compressDialog.paths,
-        destination: dest,
-        format: compressDialog.format,
-      })
-      if (data.code === 0) {
-        ElMessage.success(t('sys.files.compressSuccess'))
-        compressDialog.visible = false
-        fetchFiles()
-      } else ElMessage.error(data.message)
-    } catch {
-      ElMessage.error(t('common.operationFailed'))
+      await compress({ paths: compressDialog.paths, destination: dest, format: compressDialog.format } as any)
+      ElMessage.success(t('sys.files.compressSuccess'))
+      compressDialog.visible = false
+      fetchFiles()
+    } catch (e: any) {
+      ElMessage.error(e?.message || t('common.operationFailed'))
     }
   }
 
-  function handleExtract(row: FileItem) {
+  async function handleExtract(row: FileItem) {
     const dest = currentPath.value.replace(/[\\/]+$/, '') + '/' + row.name.replace(/\.(zip|tar\.gz|tgz)$/i, '')
-    api
-      .post('/api/files/extract', { path: row.path, destination: dest })
-      .then(({ data }) => {
-        if (data.code === 0) {
-          ElMessage.success(t('sys.files.extractSuccess'))
-          fetchFiles()
-        } else ElMessage.error(data.message)
-      })
-      .catch(() => ElMessage.error(t('common.operationFailed')))
     contextMenu.visible = false
+    try {
+      await extract({ path: row.path, destination: dest })
+      ElMessage.success(t('sys.files.extractSuccess'))
+      fetchFiles()
+    } catch (e: any) {
+      ElMessage.error(e?.message || t('common.operationFailed'))
+    }
   }
 
   function handleChmod(row: FileItem) {
@@ -560,21 +534,19 @@ export function useFileManager(initialPath?: string, tabId?: string) {
 
   async function submitChmod() {
     try {
-      const { data } = await api.post('/api/files/chmod', { path: chmodDialog.path, mode: chmodDialog.mode })
-      if (data.code === 0) {
-        ElMessage.success(t('sys.files.permissionSuccess'))
-        chmodDialog.visible = false
-        fetchFiles()
-      } else ElMessage.error(data.message)
-    } catch {
-      ElMessage.error(t('common.operationFailed'))
+      await chmod(chmodDialog.path, chmodDialog.mode)
+      ElMessage.success(t('sys.files.permissionSuccess'))
+      chmodDialog.visible = false
+      fetchFiles()
+    } catch (e: any) {
+      ElMessage.error(e?.message || t('common.operationFailed'))
     }
   }
 
   function handleDownload(row: FileItem) {
     contextMenu.visible = false
     const a = document.createElement('a')
-    a.href = `/api/files/download?path=${encodeURIComponent(row.path)}`
+    a.href = downloadFileUrl(row.path)
     a.download = row.name
     document.body.appendChild(a)
     a.click()
@@ -587,7 +559,6 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     propDialog.visible = true
   }
 
-  // ===== 选中 & 批量 =====
   function handleSelectionChange(rows: FileItem[]) {
     selectedFiles.value = rows
   }
@@ -627,20 +598,23 @@ export function useFileManager(initialPath?: string, tabId?: string) {
   }
 
   async function batchDelete() {
+    const ok = await confirm({
+      message: '确定删除选中的 ' + selectedFiles.value.length + ' 项吗？',
+      title: 'common.warning',
+    })
+    if (!ok) return
     try {
-      await ElMessageBox.confirm(`确定删除选中的 ${selectedFiles.value.length} 项吗？`, t('common.warning'), { type: 'warning' })
       for (const f of selectedFiles.value) {
-        await api.delete('/api/files/delete', { data: { path: f.path } })
+        await deleteFileEntry(f.path)
       }
       ElMessage.success(t('sys.files.deleteSuccess'))
       selectedFiles.value = []
       fetchFiles()
-    } catch {
-      /* 取消 */
+    } catch (e: any) {
+      ElMessage.error(e?.message || t('common.operationFailed'))
     }
   }
 
-  // ===== 备注 =====
   function handleNoteEnter(row: FileItem) {
     hoverNotePath.value = row.path
     editingNote.value = row.note || ''
@@ -655,91 +629,36 @@ export function useFileManager(initialPath?: string, tabId?: string) {
       return
     }
     try {
-      const { data } = await api.post('/api/files/note', { path: row.path, note: editingNote.value })
-      if (data.code === 0) row.note = editingNote.value || null
+      await saveNote(row.path, editingNote.value)
+      row.note = editingNote.value || null
     } catch {
       /* 静默 */
     }
     hoverNotePath.value = ''
   }
 
-  // ===== 返回 =====
   return {
-    // 状态
-    loading,
-    currentPath,
-    currentParent,
-    files,
-    inputPath,
-    searchQuery,
-    viewMode,
-    filteredFiles,
-    currentPage,
-    pageSize,
-    filteredPagedFiles,
-    dirCount,
-    fileCount,
-    total,
-    totalSize,
-    calcTotalLoading,
-    drives,
-    currentDrive,
-    currentDriveLabel,
-    contextMenu,
-    selectedFiles,
-    createDialog,
-    renameDialog,
-    moveDialog,
-    compressDialog,
-    chmodDialog,
-    hoverNotePath,
-    editingNote,
-    editDialog,
-    propDialog,
-    pathInputFocused,
-    pathDropdown,
-    pathSegments,
-    // 方法
-    fetchFiles,
-    fetchDrives,
-    handleDriveChange,
-    calcTotalSize,
-    calcFileSize,
-    formatSize,
-    isArchive,
-    getFileIcon,
-    goBack,
-    goToInputPath,
-    startEditPath,
-    handleDblClick,
-    enterDir,
-    handleContextMenu,
-    closeContextMenu,
-    togglePathDropdown,
-    navigateToSegment,
-    closePathDropdown,
-    openDriveDropdown,
-    handleCreate,
-    submitCreate,
-    handleRename,
-    submitRename,
-    handleEdit,
-    submitEdit,
-    handleCopy,
-    handleMove,
-    submitMove,
-    handleDelete,
-    handleCompressSingle,
-    submitCompress,
-    handleExtract,
-    handleChmod,
-    submitChmod,
-    handleDownload,
-    handleProperties,
-    handleSelectionChange,
-    handleBatchCommand,
-    handleNoteEnter,
-    handleNoteLeave,
-    saveInlineNote,
+    loading, currentPath, currentParent, files, inputPath, searchQuery, viewMode,
+    filteredFiles, currentPage, pageSize, filteredPagedFiles,
+    dirCount, fileCount, total, totalSize, calcTotalLoading,
+    drives, currentDrive, currentDriveLabel,
+    contextMenu, selectedFiles,
+    createDialog, renameDialog, moveDialog, compressDialog, chmodDialog,
+    hoverNotePath, editingNote, editDialog, propDialog,
+    pathInputFocused, pathDropdown, pathSegments,
+    fetchFiles, fetchDrives, handleDriveChange,
+    calcTotalSize, calcFileSize,
+    formatSize, isArchive, getFileIcon,
+    goBack, goToInputPath, startEditPath,
+    handleDblClick, enterDir, handleContextMenu, closeContextMenu,
+    togglePathDropdown, navigateToSegment, closePathDropdown, openDriveDropdown,
+    handleCreate, submitCreate,
+    handleRename, submitRename,
+    handleEdit, submitEdit,
+    handleCopy, handleMove, submitMove,
+    handleDelete, handleCompressSingle, submitCompress, handleExtract,
+    handleChmod, submitChmod, handleDownload, handleProperties,
+    handleSelectionChange, handleBatchCommand,
+    handleNoteEnter, handleNoteLeave, saveInlineNote,
   }
 }

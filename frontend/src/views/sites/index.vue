@@ -54,12 +54,13 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import api from '@/api'
+import { ElMessage } from 'element-plus'
 import { useTabStore } from '@/stores/tabs'
 import { useFilesStore } from '@/stores/files'
 import { useSites } from './useSites'
 import type { Site } from './types'
+import { deploySsl } from '@/api/sites'
+import { useMessage } from '@/hooks'
 import SiteTable from './SiteTable.vue'
 import SiteAddDialog from './SiteAddDialog.vue'
 import SiteEditDialog from './SiteEditDialog.vue'
@@ -67,6 +68,7 @@ import SiteDeleteDialog from './SiteDeleteDialog.vue'
 import SiteBackupDialog from './SiteBackupDialog.vue'
 
 const { t } = useI18n()
+const { confirm } = useMessage()
 const router = useRouter()
 
 const { sites, selectedSites, loading, trafficMetric, fetchSites, toggleSite, batchEnable, batchDisable, batchDelete } = useSites()
@@ -100,19 +102,18 @@ function onOpenBackup(site: Site) {
 }
 
 async function deploySSL(site: Site) {
+  const ok = await confirm({
+    message: 'sys.sites.sslDeployConfirm',
+    params: { domain: site.server_name },
+    title: 'sys.sites.sslDeploy',
+  })
+  if (!ok) return
   try {
-    await ElMessageBox.confirm(t('sys.sites.sslDeployConfirm', { domain: site.server_name }), t('sys.sites.sslDeploy'), { type: 'warning' })
-    const response = await api.post(`/api/sites/${site.id}/deploy-ssl`)
-    if (response.data.code === 0) {
-      ElMessage.success(t('sys.sites.sslDeploySuccess'))
-      fetchSites()
-    } else {
-      ElMessage.error(response.data.message || t('sys.sites.deployFailed'))
-    }
+    await deploySsl(site.id)
+    ElMessage.success(t('sys.sites.sslDeploySuccess'))
+    fetchSites()
   } catch (error: any) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || error.message || t('sys.sites.deployFailed'))
-    }
+    ElMessage.error(error.message || t('sys.sites.deployFailed'))
   }
 }
 

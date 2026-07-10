@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import api from '@/api'
+import { getLog } from '@/api/logs'
 
 const { t } = useI18n()
 
@@ -41,10 +41,8 @@ const siteLog = ref('')
 async function loadSiteLog(type: 'access' | 'error') {
   logLoading.value = true
   try {
-    const res = await api.get(`/api/log/${type}`)
-    if (res.data.code === 0) {
-      siteLog.value = (res.data.data?.lines || []).join('\n')
-    }
+    const data = await getLog(type)
+    siteLog.value = (data?.lines || []).join('\n')
   } catch {
     siteLog.value = t('sys.sites.logLoadFailed')
   } finally {

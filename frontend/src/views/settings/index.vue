@@ -56,7 +56,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import api from '@/api'
+import { getSettings, updateSettings } from '@/api/settings'
 
 const { t } = useI18n()
 
@@ -91,14 +91,11 @@ onMounted(() => {
 
 async function fetchSettings() {
   try {
-    const response = await api.get('/api/settings')
-    if (response.data.code === 0) {
-      const data = response.data.data
-      Object.assign(settings.server, data.server)
-      Object.assign(settings.nginx, data.nginx)
-      Object.assign(settings.acme, data.acme)
-      Object.assign(settings.system, data.system)
-    }
+    const data: any = await getSettings()
+    Object.assign(settings.server, data.server)
+    Object.assign(settings.nginx, data.nginx)
+    Object.assign(settings.acme, data.acme)
+    Object.assign(settings.system, data.system)
   } catch (error) {
     console.error('获取设置失败:', error)
   }
@@ -107,20 +104,15 @@ async function fetchSettings() {
 async function saveSettings() {
   saving.value = true
   try {
-    const response = await api.put('/api/settings', {
+    const msg: any = await updateSettings({
       nginx_bin: settings.nginx.bin,
       nginx_config: settings.nginx.config,
       nginx_sites_enabled: settings.nginx.sites_enabled,
       acme_bin: settings.acme.bin,
     })
-
-    if (response.data.code === 0) {
-      ElMessage.success(response.data.data)
-    } else {
-      ElMessage.error(response.data.message || t('sys.settings.saveFailed'))
-    }
+    ElMessage.success(typeof msg === 'string' ? msg : t('common.success'))
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('sys.settings.saveFailed'))
+    ElMessage.error(error.message || t('sys.settings.saveFailed'))
   } finally {
     saving.value = false
   }

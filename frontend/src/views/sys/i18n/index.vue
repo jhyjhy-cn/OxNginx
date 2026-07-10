@@ -81,14 +81,21 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
-import api from '@/api'
 import OnPagination from '@/components/OnPagination/index.vue'
 import OnDialog from '@/components/OnDialog/index.vue'
+import {
+  listI18nLocales,
+  listI18n,
+  upsertI18n,
+  deleteI18n,
+} from '@/api/sys/i18n'
+import { useMessage } from '@/hooks'
 
 const { t } = useI18n()
+const { success, error, confirm } = useMessage()
 
 interface I18nRaw {
   id: number
@@ -141,20 +148,18 @@ async function load() {
   loading.value = true
   try {
     if (!locales.value.length) {
-      const { data: locRes } = await api.get('/api/rbac/i18n/locales')
-      if (locRes.code === 0) locales.value = locRes.data || []
+      locales.value = (await listI18nLocales()) || []
     }
 
-    const params: Record<string, string | number> = {
+    const params: Record<string, unknown> = {
       page: currentPage.value,
       page_size: pageSize.value,
     }
     if (search.value) params.key = search.value
-    const { data } = await api.get('/api/rbac/i18n', { params })
-    if (data.code !== 0) return
+    const data = await listI18n(params)
 
-    const list: I18nRaw[] = data.data.list || []
-    total.value = data.data.total || 0
+    const list: I18nRaw[] = data.list || []
+    total.value = data.total || 0
 
     const map = new Map<string, Row>()
     for (const e of list) {
@@ -166,6 +171,8 @@ async function load() {
       row._ids[e.locale] = e.id
     }
     rows.value = Array.from(map.values()).sort((a, b) => a.key.localeCompare(b.key))
+  } catch (e: any) {
+    error(e?.message || "common.fail")
   } finally {
     loading.value = false
   }
@@ -201,7 +208,7 @@ async function addKey() {
     for (const loc of locales.value) {
       const val = newValues[loc] || ''
       if (!val) continue
-      await api.post('/api/rbac/i18n', {
+      await upsertI18n({
         locale: loc,
         entries: [{ key: newKey.value.trim(), value: val }],
       })
@@ -209,6 +216,8 @@ async function addKey() {
     ElMessage.success('ok')
     showAddKey.value = false
     await load()
+  } catch (e: any) {
+    error(e?.message || "common.fail")
   } finally {
     saving.value = false
   }
@@ -227,24 +236,29 @@ async function batchSave() {
         .filter((r) => r.values[loc] !== undefined && r.values[loc] !== '')
         .map((r) => ({ key: r.key, value: r.values[loc] }))
       if (!entries.length) continue
-      await api.post('/api/rbac/i18n', { locale: loc, entries })
+      await upsertI18n({ locale: loc, entries })
     }
     ElMessage.success(t('sys.rbac.savedN', { n: dirty.length }))
     dirty.forEach((r) => (r._dirty = false))
+  } catch (e: any) {
+    error(e?.message || "common.fail")
   } finally {
     saving.value = false
   }
 }
 
 async function del(row: Row) {
+  const ok = await confirm({ message: "common.confirmDelete" })
+  if (!ok) return
   try {
-    await ElMessageBox.confirm(t('common.confirmDelete'), t('common.tip'), { type: 'warning' })
     for (const id of Object.values(row._ids)) {
-      await api.delete(`/api/rbac/i18n/${id}`)
+      await deleteI18n(id)
     }
-    ElMessage.success('ok')
+    success("common.success")
     await load()
-  } catch {}
+  } catch (e: any) {
+    error(e?.message || "common.fail")
+  }
 }
 </script>
 

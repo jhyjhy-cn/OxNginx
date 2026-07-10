@@ -362,8 +362,8 @@ function onUsernameBlur() {
 // 业务逻辑
 async function checkSetup() {
   try {
-    const response = await api.get('/api/setup/status')
-    if (response.data.code === 0 && response.data.data?.need_setup) {
+    const { data } = await api.get('/api/setup/status')
+    if (data.code === 0 && data.data?.need_setup) {
       needSetup.value = true
     }
   } catch {

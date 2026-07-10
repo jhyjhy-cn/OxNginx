@@ -29,7 +29,7 @@
     <el-table-column label="操作" width="180" fixed="right">
       <template #default="{ row }">
         <el-button type="primary" link size="small" @click="openProxyForm(row)">编辑</el-button>
-        <el-button type="danger" link size="small" @click="deleteProxy(row)">删除</el-button>
+        <el-button type="danger" link size="small" @click="delProxy(row)">删除</el-button>
       </template>
     </el-table-column>
   </el-table>
@@ -39,27 +39,27 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import api from '@/api'
+import { ElMessage } from 'element-plus'
 import ProxyFormDialog from '../ProxyFormDialog.vue'
-import type { ReverseProxy } from '../types'
+import { listProxies, updateProxy, deleteProxy } from '@/api/sites'
+import type { Proxy } from '@/api/sites/type'
+import { useMessage } from '@/hooks'
+
+const { confirm } = useMessage()
 
 const props = defineProps<{
   siteId: number
 }>()
 
-const proxyList = ref<ReverseProxy[]>([])
+const proxyList = ref<Proxy[]>([])
 const proxyLoading = ref(false)
 const proxyFormVisible = ref(false)
-const proxyFormTarget = ref<ReverseProxy | null>(null)
+const proxyFormTarget = ref<Proxy | null>(null)
 
 async function fetchProxies() {
   proxyLoading.value = true
   try {
-    const res = await api.get(`/api/sites/${props.siteId}/proxies`)
-    if (res.data.code === 0) {
-      proxyList.value = res.data.data || []
-    }
+    proxyList.value = (await listProxies(props.siteId)) || []
   } catch {
     proxyList.value = []
   } finally {
@@ -67,32 +67,31 @@ async function fetchProxies() {
   }
 }
 
-function openProxyForm(proxy?: ReverseProxy) {
+function openProxyForm(proxy?: Proxy) {
   proxyFormTarget.value = proxy || null
   proxyFormVisible.value = true
 }
 
-async function toggleProxy(proxy: ReverseProxy, enable: boolean) {
+async function toggleProxy(proxy: Proxy, enable: boolean) {
   try {
-    await api.put(`/api/proxies/${proxy.id}`, { status: enable ? 'enabled' : 'disabled' })
+    await updateProxy(proxy.id, { status: enable ? 'enabled' : 'disabled' })
     ElMessage.success(enable ? '已启用' : '已禁用')
     fetchProxies()
   } catch (e: any) {
-    ElMessage.error(e.response?.data?.message || '操作失败')
+    ElMessage.error(e.message || '操作失败')
   }
 }
 
-async function deleteProxy(proxy: ReverseProxy) {
+async function delProxy(proxy: Proxy) {
+  const ok = await confirm({ message: `确定删除反向代理「${proxy.name}」？` })
+  if (!ok) return
   try {
-    await ElMessageBox.confirm(`确定删除反向代理「${proxy.name}」？`, '提示', { type: 'warning' })
-    await api.delete(`/api/proxies/${proxy.id}`)
+    await deleteProxy(proxy.id)
     ElMessage.success('删除成功')
     fetchProxies()
   } catch (e: any) {
-    if (e !== 'cancel') ElMessage.error(e.response?.data?.message || '删除失败')
+    ElMessage.error(e.message || '删除失败')
   }
 }
-
-// tab 切换到 proxy 时由父组件触发
 defineExpose({ fetchProxies })
 </script>

@@ -88,7 +88,7 @@
 import { ref, onMounted } from 'vue'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
-import api from '@/api'
+import { listOperationLogs } from '@/api/logs'
 import OnPagination from '@/components/OnPagination/index.vue'
 import OnDialog from '@/components/OnDialog/index.vue'
 
@@ -191,8 +191,9 @@ onMounted(load)
 async function load() {
   loading.value = true
   try {
-    const { data } = await api.get('/api/log/operation', { params: buildParams() })
-    if (data.code === 0) { logs.value = data.data.list; total.value = data.data.total }
+    const data: any = await listOperationLogs(buildParams())
+    logs.value = data.list
+    total.value = data.total
   } catch { /* ignore */ } finally { loading.value = false }
 }
 </script>

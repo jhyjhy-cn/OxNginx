@@ -57,15 +57,33 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import api from '@/api'
+import { ElMessage } from 'element-plus'
 import OnDialog from '@/components/OnDialog/index.vue'
 import { useTabStore } from '@/stores/tabs'
 import { useFilesStore } from '@/stores/files'
-import type { Site, BackupFile } from './types'
+import type { Site } from '@/api/sites/type'
+import {
+  listSiteBackups,
+  createSiteBackup,
+  deleteSiteBackup,
+  downloadSiteBackup,
+  batchDeleteSiteBackups,
+} from '@/api/sites'
+import { useAuthStore } from '@/stores/auth'
+import { useMessage } from '@/hooks'
+
+interface BackupFile {
+  filename: string
+  size: number
+  path: string
+  remark?: string
+  created_at?: string
+}
 
 const { t } = useI18n()
+const { confirm } = useMessage()
 const router = useRouter()
+const authStore = useAuthStore()
 
 const props = defineProps<{
   visible: boolean
@@ -104,13 +122,12 @@ async function fetchList() {
   if (!props.site) return
   tableLoading.value = true
   try {
-    const res = await api.get(`/api/sites/${props.site.id}/backups`, {
-      params: { page: page.value, page_size: pageSize.value },
+    const data = await listSiteBackups(props.site.id, {
+      page: page.value,
+      page_size: pageSize.value,
     })
-    if (res.data.code === 0) {
-      list.value = res.data.data?.items || []
-      total.value = res.data.data?.total || 0
-    }
+    list.value = (data as any)?.items || (data as any) || []
+    total.value = (data as any)?.total || list.value.length
   } catch {
     list.value = []
   } finally {
@@ -122,16 +139,12 @@ async function createBackup() {
   if (!props.site) return
   creating.value = true
   try {
-    const res = await api.post(`/api/sites/${props.site.id}/backups`)
-    if (res.data.code === 0) {
-      ElMessage.success(t('sys.sites.backupCreated'))
-      fetchList()
-      emit('refresh')
-    } else {
-      ElMessage.error(res.data.message)
-    }
+    await createSiteBackup(props.site.id)
+    ElMessage.success(t('sys.sites.backupCreated'))
+    fetchList()
+    emit('refresh')
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('sys.sites.backupCreateFailed'))
+    ElMessage.error(error.message || t('sys.sites.backupCreateFailed'))
   } finally {
     creating.value = false
   }
@@ -139,54 +152,48 @@ async function createBackup() {
 
 function downloadBackup(filename: string) {
   if (!props.site) return
-  const url = `/api/sites/${props.site.id}/backups/${encodeURIComponent(filename)}/download`
-  const token = localStorage.getItem('token')
+  const url = downloadSiteBackup(props.site.id, filename)
   const a = document.createElement('a')
-  a.href = url + (token ? `?token=${token}` : '')
+  a.href = url + (authStore.token ? `?token=${authStore.token}` : '')
   a.download = filename
   a.click()
 }
 
 async function deleteBackup(filename: string) {
   if (!props.site) return
+  const ok = await confirm({
+    message: 'sys.sites.confirmDeleteBackup',
+    params: { name: filename },
+  })
+  if (!ok) return
   try {
-    await ElMessageBox.confirm(t('sys.sites.confirmDeleteBackup', { name: filename }), t('common.tip'), { type: 'warning' })
-    const res = await api.delete(`/api/sites/${props.site.id}/backups/${encodeURIComponent(filename)}`)
-    if (res.data.code === 0) {
-      ElMessage.success(t('sys.sites.backupDeleted'))
-      fetchList()
-      emit('refresh')
-    } else {
-      ElMessage.error(res.data.message)
-    }
+    await deleteSiteBackup(props.site.id, filename)
+    ElMessage.success(t('sys.sites.backupDeleted'))
+    fetchList()
+    emit('refresh')
   } catch (error: any) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || t('sys.sites.backupDeleteFailed'))
-    }
+    ElMessage.error(error.message || t('sys.sites.backupDeleteFailed'))
   }
 }
 
 async function batchDeleteBackups() {
   if (!props.site || selected.value.length === 0) return
+  const ok = await confirm({
+    message: 'sys.sites.confirmBatchDeleteBackup',
+    params: { count: selected.value.length },
+  })
+  if (!ok) return
   try {
-    await ElMessageBox.confirm(t('sys.sites.confirmBatchDeleteBackup', { count: selected.value.length }), t('common.warning'), {
-      type: 'warning',
-    })
-    const res = await api.post(`/api/sites/${props.site.id}/backups/batch-delete`, {
-      filenames: selected.value.map((b) => b.filename),
-    })
-    if (res.data.code === 0) {
-      ElMessage.success(t('sys.sites.backupDeleted'))
-      selected.value = []
-      fetchList()
-      emit('refresh')
-    } else {
-      ElMessage.error(res.data.message)
-    }
+    await batchDeleteSiteBackups(
+      props.site.id,
+      selected.value.map((b) => b.filename),
+    )
+    ElMessage.success(t('sys.sites.backupDeleted'))
+    selected.value = []
+    fetchList()
+    emit('refresh')
   } catch (error: any) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || t('sys.sites.backupDeleteFailed'))
-    }
+    ElMessage.error(error.message || t('sys.sites.backupDeleteFailed'))
   }
 }
 

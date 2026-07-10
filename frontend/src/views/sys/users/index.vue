@@ -121,7 +121,6 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from "vue";
 import { ArrowDown, Download } from "@element-plus/icons-vue";
-import api from "@/api";
 import OnForm from "@/components/OnForm/OnForm/index.vue";
 import OnFormGrid from "@/components/OnForm/OnFormGrid/index.vue";
 import OnDialog from "@/components/OnDialog/index.vue";
@@ -130,6 +129,20 @@ import type { TableColumn } from "@/components/OnTable/types";
 import OnTable from "@/components/OnTable/index.vue";
 import { useCrud, useMessage } from "@/hooks";
 import { downloadXlsx } from "@/utils/export";
+import {
+  listUsers,
+  getUser,
+  createUser,
+  updateUser,
+  deleteUser,
+  resetPassword,
+  batchResetPassword,
+  batchSetDisabled as batchSetDisabledApi,
+  getDeptTree,
+  listPosts,
+  listRoles,
+} from "@/api/sys/users";
+import type { UserPayload } from "@/api/sys/users/type";
 
 const { confirm, success, error } = useMessage();
 
@@ -142,8 +155,8 @@ const selectedDeptId = ref<number | null>(null);
 
 async function loadDeptTree() {
   try {
-    const { data } = await api.get("/api/rbac/depts/tree");
-    if (data.code === 0) deptTree.value = data.data || [];
+    const data = await getDeptTree();
+    deptTree.value = data || [];
   } catch {}
 }
 
@@ -159,7 +172,7 @@ const isEdit = ref(false);
 const editingId = ref<number | null>(null);
 const formRef = ref<InstanceType<typeof OnForm>>();
 
-const form = reactive({
+const form = reactive<UserPayload>({
   nickname: "",
   dept_id: null as number | null,
   phone: "",
@@ -184,8 +197,7 @@ const {
   search,
   reset,
 } = useCrud({
-  getListApi: (params) =>
-    api.get("/api/rbac/users", { params }).then((r) => r.data),
+  getListApi: listUsers,
   isPage: true,
   pageSize: 20,
 });
@@ -210,10 +222,8 @@ const genderLabels: Record<string, string> = {
 const posts = ref<any[]>([]);
 async function loadPosts() {
   try {
-    const { data } = await api.get("/api/rbac/posts", {
-      params: { page_size: 100 },
-    });
-    if (data.code === 0) posts.value = data.data?.list || [];
+    const data = await listPosts({ page_size: 100 });
+    posts.value = data?.list || [];
   } catch {}
 }
 
@@ -221,10 +231,8 @@ async function loadPosts() {
 const roles = ref<any[]>([]);
 async function loadRoles() {
   try {
-    const { data } = await api.get("/api/rbac/roles", {
-      params: { page_size: 100 },
-    });
-    if (data.code === 0) roles.value = data.data?.list || [];
+    const data = await listRoles({ page_size: 100 });
+    roles.value = data?.list || [];
   } catch {}
 }
 
@@ -397,23 +405,23 @@ async function openEdit(row: any) {
   isEdit.value = true;
   editingId.value = row.id;
   try {
-    const { data } = await api.get(`/api/rbac/users/${row.id}`);
-    if (data.code === 0) {
-      Object.assign(form, {
-        username: data.data.username || "",
-        nickname: data.data.nickname || "",
-        dept_id: data.data.dept_id,
-        phone: data.data.phone || "",
-        email: data.data.email || "",
-        gender: data.data.gender || "secret",
-        disabled: data.data.disabled,
-        post_id: data.data.post_id,
-        role_ids: data.data.role_ids || [],
-        remark: data.data.remark || "",
-      });
-      showForm.value = true;
-    }
-  } catch {}
+    const data = await getUser(row.id);
+    Object.assign(form, {
+      username: data.username || "",
+      nickname: data.nickname || "",
+      dept_id: data.dept_id,
+      phone: data.phone || "",
+      email: data.email || "",
+      gender: data.gender || "secret",
+      disabled: data.disabled,
+      post_id: data.post_id,
+      role_ids: data.role_ids || [],
+      remark: data.remark || "",
+    });
+    showForm.value = true;
+  } catch (e: any) {
+    error(e?.message || "common.fail");
+  }
 }
 
 async function submit() {
@@ -424,7 +432,7 @@ async function submit() {
     return; // el-form 校验失败会自动红字提示
   }
 
-  const payload: Record<string, any> = {
+  const payload: UserPayload = {
     username: form.username,
     nickname: form.nickname || undefined,
     dept_id: form.dept_id || undefined,
@@ -433,37 +441,34 @@ async function submit() {
     gender: form.gender || undefined,
     disabled: form.disabled,
     post_id: form.post_id || undefined,
-    role_ids: form.role_ids.length ? form.role_ids : undefined,
+    role_ids: form.role_ids?.length ? form.role_ids : undefined,
     remark: form.remark || undefined,
   };
   if (!isEdit.value) payload.password = form.password;
 
   try {
-    const { data } = isEdit.value
-      ? await api.put(`/api/rbac/users/${editingId.value}`, payload)
-      : await api.post("/api/rbac/users", payload);
-    if (data.code === 0) {
-      success(isEdit.value ? "sys.rbac.userUpdateSuccess" : "sys.rbac.userCreateSuccess");
-      showForm.value = false;
-      load();
+    if (isEdit.value) {
+      await updateUser(editingId.value!, payload);
+      success("sys.rbac.userUpdateSuccess");
     } else {
-      error(data.message);
+      await createUser(payload);
+      success("sys.rbac.userCreateSuccess");
     }
-  } catch {}
+    showForm.value = false;
+    load();
+  } catch (e: any) {
+    error(e?.message || "common.fail");
+  }
 }
 
 async function resetPwd(row: any) {
   const ok = await confirm({ message: "common.confirmResetPwd" });
   if (!ok) return;
   try {
-    const { data } = await api.post(
-      `/api/rbac/users/${row.id}/reset-password`,
-      { new_password: "123456" },
-    );
-    if (data.code === 0) success("common.success");
-    else error(data.message);
+    await resetPassword(row.id, "123456");
+    success("common.success");
   } catch (e: any) {
-    error(e?.data?.message || e?.message || "common.fail");
+    error(e?.message || "common.fail");
   }
 }
 
@@ -471,12 +476,12 @@ async function del(row: any) {
   const ok = await confirm({ message: "common.confirmDelete" });
   if (!ok) return;
   try {
-    const { data } = await api.delete(`/api/rbac/users/${row.id}`);
-    if (data.code === 0) {
-      success("common.deleteSuccess");
-      load();
-    } else error(data.message);
-  } catch {}
+    await deleteUser(row.id);
+    success("common.deleteSuccess");
+    load();
+  } catch (e: any) {
+    error(e?.message || "common.fail");
+  }
 }
 
 // 批量操作
@@ -491,13 +496,11 @@ async function batchResetPwd() {
   if (!ok) return;
   try {
     const ids = selectedRows.value.map((r) => r.id);
-    const { data } = await api.post("/api/rbac/users/batch/reset-password", { ids });
-    if (data.code === 0) {
-      success(data.data);
-      selectedRows.value = [];
-    } else error(data.message);
+    const msg = await batchResetPassword(ids);
+    success(msg || "common.success");
+    selectedRows.value = [];
   } catch (e: any) {
-    error(e?.response?.data?.message || e?.message || "common.fail");
+    error(e?.message || "common.fail");
   }
 }
 
@@ -514,14 +517,12 @@ async function batchSetDisabled(disabled: number) {
   if (!ok) return;
   try {
     const ids = selectedRows.value.map((r) => r.id);
-    const { data } = await api.post("/api/rbac/users/batch/disabled", { ids, disabled });
-    if (data.code === 0) {
-      success(data.data);
-      selectedRows.value = [];
-      load();
-    } else error(data.message);
+    const msg = await batchSetDisabledApi(ids, disabled);
+    success(msg || "common.success");
+    selectedRows.value = [];
+    load();
   } catch (e: any) {
-    error(e?.response?.data?.message || e?.message || "common.fail");
+    error(e?.message || "common.fail");
   }
 }
 

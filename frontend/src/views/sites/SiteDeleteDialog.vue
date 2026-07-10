@@ -22,9 +22,9 @@
 import { reactive, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import api from '@/api'
 import OnDialog from '@/components/OnDialog/index.vue'
-import type { Site } from './types'
+import type { Site } from '@/api/sites/type'
+import { deleteSite } from '@/api/sites'
 
 const { t } = useI18n()
 
@@ -61,17 +61,15 @@ watch(
 async function confirm() {
   if (!props.site) return
   try {
-    await api.delete(`/api/sites/${props.site.id}`, {
-      data: {
-        delete_record: options.deleteRecord,
-        delete_files: options.deleteFiles,
-      },
-    })
+    await deleteSite(props.site.id, {
+      delete_record: options.deleteRecord,
+      delete_files: options.deleteFiles,
+    } as any)
     ElMessage.success(t('sys.sites.deleteSuccess'))
     dialogVisible.value = false
     emit('deleted')
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('sys.sites.deleteFailed'))
+    ElMessage.error(error.message || t('sys.sites.deleteFailed'))
   }
 }
 </script>

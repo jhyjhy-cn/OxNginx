@@ -16,8 +16,8 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import api from '@/api'
 import { monaco } from '@/utils/monaco-env'
+import { updateSite } from '@/api/sites'
 
 const { t } = useI18n()
 
@@ -79,14 +79,14 @@ async function save() {
   saving.value = true
   try {
     const content = editor.getValue()
-    await api.put(`/api/sites/${props.siteId}`, {
+    await updateSite(props.siteId, {
       rewrite_rules: content || null,
     })
     emit('update:rewriteRules', content)
     ElMessage.success(t('common.success'))
     emit('saved')
   } catch (e: any) {
-    ElMessage.error(e.response?.data?.message || t('sys.sites.operationFailed'))
+    ElMessage.error(e.message || t('sys.sites.operationFailed'))
   } finally {
     saving.value = false
   }

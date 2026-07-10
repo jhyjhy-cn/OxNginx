@@ -195,8 +195,16 @@ import {
   Setting,
   Download,
 } from '@element-plus/icons-vue'
-import api from '@/api'
 import { useAuthStore } from '@/stores/auth'
+import {
+  startNginx,
+  stopNginx,
+  restartNginx as restartNginxApi,
+  reloadNginx,
+  testNginxConfig,
+  installNginx as installNginxApi,
+} from '@/api/nginx'
+import { getSettings } from '@/api/settings'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -283,13 +291,10 @@ function connectWs() {
 
 async function fetchSystemInfo() {
   try {
-    const response = await api.get('/api/settings')
-    if (response.data.code === 0) {
-      const data = response.data.data
-      Object.assign(systemInfo, data.system)
-      systemInfo.host = data.server.host
-      systemInfo.port = data.server.port
-    }
+    const data: any = await getSettings()
+    Object.assign(systemInfo, data.system)
+    systemInfo.host = data.server.host
+    systemInfo.port = data.server.port
   } catch (error) {
     console.error('获取系统信息失败:', error)
   }
@@ -299,22 +304,14 @@ async function toggleNginx() {
   loading.startStop = true
   try {
     if (nginxStatus.value.running) {
-      const response = await api.post('/api/nginx/stop')
-      if (response.data.code === 0) {
-        ElMessage.success(t('sys.dashboard.nginxStopped'))
-      } else {
-        ElMessage.error(response.data.message || t('sys.dashboard.stopFailed'))
-      }
+      await stopNginx()
+      ElMessage.success(t('sys.dashboard.nginxStopped'))
     } else {
-      const response = await api.post('/api/nginx/start')
-      if (response.data.code === 0) {
-        ElMessage.success(t('sys.dashboard.nginxStarted'))
-      } else {
-        ElMessage.error(response.data.message || t('sys.dashboard.startFailed'))
-      }
+      await startNginx()
+      ElMessage.success(t('sys.dashboard.nginxStarted'))
     }
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('sys.dashboard.operationFailed'))
+    ElMessage.error(error.message || t('sys.dashboard.operationFailed'))
   } finally {
     loading.startStop = false
   }
@@ -323,14 +320,10 @@ async function toggleNginx() {
 async function restartNginx() {
   loading.restart = true
   try {
-    const response = await api.post('/api/nginx/restart')
-    if (response.data.code === 0) {
-      ElMessage.success(t('sys.dashboard.nginxRestarted'))
-    } else {
-      ElMessage.error(response.data.message || t('sys.dashboard.restartFailed'))
-    }
+    await restartNginxApi()
+    ElMessage.success(t('sys.dashboard.nginxRestarted'))
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('sys.dashboard.restartFailed'))
+    ElMessage.error(error.message || t('sys.dashboard.restartFailed'))
   } finally {
     loading.restart = false
   }
@@ -339,14 +332,10 @@ async function restartNginx() {
 async function reloadConfig() {
   loading.reload = true
   try {
-    const response = await api.post('/api/nginx/reload')
-    if (response.data.code === 0) {
-      ElMessage.success(t('sys.dashboard.configReloaded'))
-    } else {
-      ElMessage.error(response.data.message || t('sys.dashboard.reloadFailed'))
-    }
+    await reloadNginx()
+    ElMessage.success(t('sys.dashboard.configReloaded'))
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('sys.dashboard.reloadFailed'))
+    ElMessage.error(error.message || t('sys.dashboard.reloadFailed'))
   } finally {
     loading.reload = false
   }
@@ -355,19 +344,14 @@ async function reloadConfig() {
 async function testConfig() {
   loading.test = true
   try {
-    const response = await api.post('/api/nginx/test')
-    if (response.data.code === 0) {
-      const result = response.data.data
-      if (result.success) {
-        ElMessage.success(t('sys.dashboard.configTestPassed'))
-      } else {
-        ElMessage.error(t('sys.dashboard.configTestFailed') + ': ' + result.message)
-      }
+    const result: any = await testNginxConfig()
+    if (result.success) {
+      ElMessage.success(t('sys.dashboard.configTestPassed'))
     } else {
-      ElMessage.error(response.data.message || t('sys.dashboard.testFailed'))
+      ElMessage.error(t('sys.dashboard.configTestFailed') + ': ' + result.message)
     }
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('sys.dashboard.testFailed'))
+    ElMessage.error(error.message || t('sys.dashboard.testFailed'))
   } finally {
     loading.test = false
   }
@@ -377,14 +361,10 @@ async function installNginx() {
   loading.install = true
   try {
     ElMessage.info(t('sys.dashboard.installing'))
-    const response = await api.post('/api/nginx/install', null, { timeout: 300000 })
-    if (response.data.code === 0) {
-      ElMessage.success(t('sys.dashboard.installSuccess'))
-    } else {
-      ElMessage.error(response.data.message || t('sys.dashboard.installFailed'))
-    }
+    await installNginxApi()
+    ElMessage.success(t('sys.dashboard.installSuccess'))
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('sys.dashboard.installFailed'))
+    ElMessage.error(error.message || t('sys.dashboard.installFailed'))
   } finally {
     loading.install = false
   }

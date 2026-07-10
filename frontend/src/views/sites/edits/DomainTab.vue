@@ -42,6 +42,7 @@ import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import type { DomainItem } from '../types'
+import { updateSite } from '@/api/sites'
 
 const { t } = useI18n()
 
@@ -114,15 +115,14 @@ function extractPort(domains: string): string {
 // 动态导入 api 避免循环依赖
 async function saveDomains(domainsList: string[]) {
   if (!props.siteId) return
-  const { default: api } = await import('@/api')
   try {
     const server_name = domainsList.join(' ')
     const listen = extractPort(domainsList[0] || '80')
-    await api.put(`/api/sites/${props.siteId}`, { server_name, listen })
+    await updateSite(props.siteId, { server_name, listen })
     ElMessage.success(t('common.success'))
     emit('saved')
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('sys.sites.operationFailed'))
+    ElMessage.error(error.message || t('sys.sites.operationFailed'))
   }
 }
 </script>

@@ -135,28 +135,25 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { Plus, Delete } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
-import api from '@/api'
 import OnPagination from '@/components/OnPagination/index.vue'
 import OnDialog from '@/components/OnDialog/index.vue'
+import {
+  listMenus,
+  createMenu,
+  updateMenu,
+  deleteMenu,
+  batchDeleteMenus,
+} from '@/api/sys/menus'
+import type { MenuItem } from '@/api/sys/menus/type'
+import { useMessage } from '@/hooks'
 
 const { t } = useI18n()
+const { success, error, confirm } = useMessage()
 
-interface Menu {
-  id: number
-  parent_id: number | null
-  name: string
-  title: string
-  icon: string | null
-  path: string | null
-  component: string | null
-  type: 'M' | 'C' | 'F'
-  permission: string | null
-  sort: number
-  children?: Menu[]
-}
+type Menu = MenuItem
 
 const allMenus = ref<Menu[]>([])
 const menus = ref<Menu[]>([])
@@ -221,12 +218,10 @@ onMounted(load)
 async function load() {
   loading.value = true
   try {
-    const params: Record<string, string | number> = { page: currentPage.value, page_size: pageSize.value }
+    const params: Record<string, unknown> = { page: currentPage.value, page_size: pageSize.value }
     if (keyword.value) params.keyword = keyword.value
-    const { data } = await api.get('/api/rbac/menus', { params })
-    if (data.code !== 0) return
-    const list: Menu[] = data.data.list || data.data
-    total.value = data.data.total || list.length
+    const list: Menu[] = (await listMenus(params)) || []
+    total.value = list.length
     const map = new Map<number, Menu>()
     list.forEach((m) => map.set(m.id, { ...m, children: [] }))
     const roots: Menu[] = []
@@ -239,6 +234,8 @@ async function load() {
     }
     allMenus.value = list
     menus.value = keyword.value ? list : roots
+  } catch (e: any) {
+    error(e?.message || "common.fail")
   } finally {
     loading.value = false
   }
@@ -306,46 +303,46 @@ async function submit() {
       permission: form.permission || null,
       sort: form.sort,
     }
-    const { data } = form.id ? await api.put(`/api/rbac/menus/${form.id}`, payload) : await api.post('/api/rbac/menus', payload)
-    if (data.code === 0) {
-      ElMessage.success('ok')
-      dialogVisible.value = false
-      load()
-    } else {
-      ElMessage.error(data.message)
-    }
+    if (form.id) await updateMenu(form.id, payload)
+    else await createMenu(payload)
+    ElMessage.success('ok')
+    dialogVisible.value = false
+    load()
+  } catch (e: any) {
+    error(e?.message || "common.fail")
   } finally {
     submitting.value = false
   }
 }
 
 async function del(row: Menu) {
+  const ok = await confirm({ message: "sys.rbac.confirmDeleteChildren" })
+  if (!ok) return
   try {
-    await ElMessageBox.confirm(`${t('common.confirmDelete')} ${t('sys.rbac.deleteChildrenHint')}`, t('common.tip'), { type: 'warning' })
-    const { data } = await api.delete(`/api/rbac/menus/${row.id}`)
-    if (data.code === 0) {
-      ElMessage.success('ok')
-      load()
-    } else {
-      ElMessage.error(data.message)
-    }
-  } catch {}
+    await deleteMenu(row.id)
+    success("common.success")
+    load()
+  } catch (e: any) {
+    error(e?.message || "common.fail")
+  }
 }
 
 async function batchDelete() {
   if (!selectedIds.value.length) return
+  const ok = await confirm({
+    message: "sys.rbac.batchDeleteConfirm",
+    params: { n: selectedIds.value.length },
+  })
+  if (!ok) return
   try {
-    await ElMessageBox.confirm(t('sys.rbac.batchDeleteConfirm', { n: selectedIds.value.length }), t('common.tip'), { type: 'warning' })
-    const { data } = await api.post('/api/rbac/menus/batch-delete', selectedIds.value)
-    if (data.code === 0) {
-      ElMessage.success(data.data || 'ok')
-      selectedIds.value = []
-      tableRef.value?.clearSelection()
-      load()
-    } else {
-      ElMessage.error(data.message)
-    }
-  } catch {}
+    const msg = await batchDeleteMenus(selectedIds.value)
+    success(typeof msg === "string" ? msg : "common.success")
+    selectedIds.value = []
+    tableRef.value?.clearSelection()
+    load()
+  } catch (e: any) {
+    error(e?.message || "common.fail")
+  }
 }
 </script>
 

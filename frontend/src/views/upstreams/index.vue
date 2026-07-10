@@ -113,9 +113,18 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import type { FormInstance } from 'element-plus'
-import api from '@/api'
+import {
+  listUpstreams,
+  getUpstream,
+  createUpstream,
+  updateUpstream,
+  deleteUpstream as deleteUpstreamApi,
+} from '@/api/sites'
+import { useMessage } from '@/hooks'
+
+const { confirm } = useMessage()
 import OnDialog from '@/components/OnDialog/index.vue'
 
 const { t } = useI18n()
@@ -181,10 +190,7 @@ onMounted(() => {
 async function fetchUpstreams() {
   loading.value = true
   try {
-    const response = await api.get('/api/upstreams')
-    if (response.data.code === 0) {
-      upstreams.value = response.data.data || []
-    }
+    upstreams.value = (await listUpstreams()) as any || []
   } catch (error) {
     console.error('获取上游服务器列表失败:', error)
   } finally {
@@ -204,20 +210,17 @@ async function editUpstream(upstream: Upstream) {
   editId.value = upstream.id
 
   try {
-    const response = await api.get(`/api/upstreams/${upstream.id}`)
-    if (response.data.code === 0) {
-      const data = response.data.data
-      form.name = data.upstream.name
-      form.method = data.upstream.method
-      form.keepalive = data.upstream.keepalive
-      form.servers = data.servers.map((s: any) => ({
-        address: s.address,
-        weight: s.weight,
-        max_fails: s.max_fails,
-        fail_timeout: s.fail_timeout,
-        backup: !!s.backup,
-      }))
-    }
+    const data: any = await getUpstream(upstream.id)
+    form.name = data.upstream.name
+    form.method = data.upstream.method
+    form.keepalive = data.upstream.keepalive
+    form.servers = data.servers.map((s: any) => ({
+      address: s.address,
+      weight: s.weight,
+      max_fails: s.max_fails,
+      fail_timeout: s.fail_timeout,
+      backup: !!s.backup,
+    }))
   } catch (error) {
     console.error('获取上游服务器详情失败:', error)
   }
@@ -270,34 +273,34 @@ async function submitForm() {
     }
 
     if (isEdit.value && editId.value) {
-      await api.put(`/api/upstreams/${editId.value}`, data)
+      await updateUpstream(editId.value, data)
       ElMessage.success(t('sys.upstreams.updateSuccess'))
     } else {
-      await api.post('/api/upstreams', data)
+      await createUpstream(data)
       ElMessage.success(t('sys.upstreams.createSuccess'))
     }
 
     dialogVisible.value = false
     fetchUpstreams()
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('sys.upstreams.operationFailed'))
+    ElMessage.error(error.message || t('sys.upstreams.operationFailed'))
   } finally {
     submitting.value = false
   }
 }
 
 async function deleteUpstream(upstream: Upstream) {
+  const ok = await confirm({
+    message: 'sys.upstreams.deleteConfirm',
+    params: { name: upstream.name },
+  })
+  if (!ok) return
   try {
-    await ElMessageBox.confirm(t('sys.upstreams.deleteConfirm', { name: upstream.name }), t('common.tip'), {
-      type: 'warning',
-    })
-    await api.delete(`/api/upstreams/${upstream.id}`)
+    await deleteUpstreamApi(upstream.id)
     ElMessage.success(t('sys.upstreams.deleteSuccess'))
     fetchUpstreams()
   } catch (error: any) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || t('sys.upstreams.deleteFailed'))
-    }
+    ElMessage.error(error.message || t('sys.upstreams.deleteFailed'))
   }
 }
 </script>

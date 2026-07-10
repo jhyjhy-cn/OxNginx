@@ -16,8 +16,9 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import api from '@/api'
 import { monaco } from '@/utils/monaco-env'
+import { getSiteConfig, saveSiteConfig } from '@/api/sites'
+import { reloadNginx } from '@/api/nginx'
 
 const { t } = useI18n()
 
@@ -63,10 +64,8 @@ onUnmounted(() => {
 async function loadContent() {
   if (!editor) return
   try {
-    const res = await api.get(`/api/config/file/${props.siteName}`)
-    if (res.data.code === 0) {
-      editor.setValue(res.data.data?.content || '')
-    }
+    const data = await getSiteConfig(props.siteName)
+    editor.setValue(data?.content || '')
   } catch {
     /* ignore */
   }
@@ -76,24 +75,17 @@ async function save() {
   if (!editor) return
   saving.value = true
   try {
-    const res = await api.put(`/api/config/file/${props.siteName}`, {
-      content: editor.getValue(),
-    })
-    if (res.data.code === 0) {
-      ElMessage.success(t('common.success'))
-      errorDecorations = editor.deltaDecorations(errorDecorations, [])
-      emit('saved')
-      // 保存成功后重载 nginx
-      try {
-        await api.post('/api/nginx/reload')
-      } catch {
-        /* 静默 */
-      }
-    } else {
-      showConfigError(res.data.message)
+    await saveSiteConfig(props.siteName, editor.getValue())
+    ElMessage.success(t('common.success'))
+    errorDecorations = editor.deltaDecorations(errorDecorations, [])
+    emit('saved')
+    try {
+      await reloadNginx()
+    } catch {
+      /* 静默 */
     }
   } catch (error: any) {
-    showConfigError(error.response?.data?.message || t('common.failed'))
+    showConfigError(error.message || t('common.failed'))
   } finally {
     saving.value = false
   }

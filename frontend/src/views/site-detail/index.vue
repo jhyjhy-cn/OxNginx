@@ -49,9 +49,9 @@
             <el-table-column prop="created_at" :label="$t('common.createdAt')" width="180" />
             <el-table-column :label="$t('common.action')" width="250">
               <template #default="{ row }">
-                <el-button size="small" @click="restoreBackup(row)">{{ $t('sys.siteDetail.restore') }}</el-button>
+                <el-button size="small" @click="restoreBackupAction(row)">{{ $t('sys.siteDetail.restore') }}</el-button>
                 <el-button size="small" @click="viewBackup(row)">{{ $t('sys.siteDetail.view') }}</el-button>
-                <el-button size="small" type="danger" @click="deleteBackup(row)">{{ $t('common.delete') }}</el-button>
+                <el-button size="small" type="danger" @click="deleteBackupAction(row)">{{ $t('common.delete') }}</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -62,18 +62,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import api from '@/api'
+import { ElMessage } from 'element-plus'
+import {
+  getSite,
+  listBackups,
+  createBackup as createBackupApi,
+  restoreBackup as restoreBackupApi,
+  deleteBackup as deleteBackupApiImpl,
+} from '@/api/sites'
+import { useMessage } from '@/hooks'
 
 const { t } = useI18n()
+const { confirm } = useMessage()
 
 interface Backup {
-  id: number
-  version: number
-  created_at: string
+  id: number | string
+  version?: number | string
+  created_at?: string
+  [key: string]: unknown
 }
 
 const route = useRoute()
@@ -90,11 +99,8 @@ onMounted(() => {
 async function fetchSite() {
   loading.value = true
   try {
-    const response = await api.get(`/api/sites/${route.params.id}`)
-    if (response.data.code === 0) {
-      site.value = response.data.data
-      generateConfig()
-    }
+    site.value = await getSite(routeId.value)
+    generateConfig()
   } catch (error) {
     console.error('获取站点详情失败:', error)
   } finally {
@@ -102,12 +108,10 @@ async function fetchSite() {
   }
 }
 
+const routeId = computed(() => Number(route.params.id))
 async function fetchBackups() {
   try {
-    const response = await api.get(`/api/backups/${route.params.id}`)
-    if (response.data.code === 0) {
-      backups.value = response.data.data || []
-    }
+    backups.value = (await listBackups(routeId.value)) || []
   } catch (error) {
     console.error('获取备份列表失败:', error)
   }
@@ -115,56 +119,46 @@ async function fetchBackups() {
 
 async function createBackup() {
   try {
-    const response = await api.post(`/api/backups/${route.params.id}`)
-    if (response.data.code === 0) {
-      ElMessage.success(t('sys.siteDetail.backupCreateSuccess'))
-      fetchBackups()
-    } else {
-      ElMessage.error(response.data.message || t('sys.siteDetail.createFailed'))
-    }
+    await createBackupApi(routeId.value)
+    ElMessage.success(t('sys.siteDetail.backupCreateSuccess'))
+    fetchBackups()
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('sys.siteDetail.createFailed'))
+    ElMessage.error(error.message || t('sys.siteDetail.createFailed'))
   }
 }
 
-async function restoreBackup(backup: Backup) {
+async function restoreBackupAction(backup: Backup) {
+  const ok = await confirm({
+    message: 'sys.siteDetail.restoreConfirm',
+    params: { version: backup.version },
+  })
+  if (!ok) return
   try {
-    await ElMessageBox.confirm(t('sys.siteDetail.restoreConfirm', { version: backup.version }), t('common.tip'))
-    const response = await api.post(`/api/backups/restore/${backup.id}`)
-    if (response.data.code === 0) {
-      ElMessage.success(t('sys.siteDetail.restoreSuccess'))
-      fetchSite()
-    } else {
-      ElMessage.error(response.data.message || t('sys.siteDetail.restoreFailed'))
-    }
+    await restoreBackupApi(routeId.value, backup.id)
+    ElMessage.success(t('sys.siteDetail.restoreSuccess'))
+    fetchSite()
   } catch (error: any) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || t('sys.siteDetail.restoreFailed'))
-    }
+    ElMessage.error(error.message || t('sys.siteDetail.restoreFailed'))
   }
 }
 
 function viewBackup(_backup: Backup) {
-  // TODO: 实现查看备份内容
   ElMessage.info(t('sys.siteDetail.viewDeveloping'))
 }
 
-async function deleteBackup(backup: Backup) {
+async function deleteBackupAction(backup: Backup) {
+  const ok = await confirm({
+    message: 'sys.siteDetail.deleteConfirm',
+    params: { version: backup.version },
+    title: 'common.warning',
+  })
+  if (!ok) return
   try {
-    await ElMessageBox.confirm(t('sys.siteDetail.deleteConfirm', { version: backup.version }), t('common.warning'), {
-      type: 'warning',
-    })
-    const response = await api.delete(`/api/backups/${backup.id}`)
-    if (response.data.code === 0) {
-      ElMessage.success(t('sys.siteDetail.deleteSuccess'))
-      fetchBackups()
-    } else {
-      ElMessage.error(response.data.message || t('sys.siteDetail.deleteFailed'))
-    }
+    await deleteBackupApiImpl(routeId.value, backup.id)
+    ElMessage.success(t('sys.siteDetail.deleteSuccess'))
+    fetchBackups()
   } catch (error: any) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || t('sys.siteDetail.deleteFailed'))
-    }
+    ElMessage.error(error.message || t('sys.siteDetail.deleteFailed'))
   }
 }
 

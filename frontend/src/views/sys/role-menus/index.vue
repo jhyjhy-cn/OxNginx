@@ -22,9 +22,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import api from '@/api'
+import { useMessage } from '@/hooks'
+import { listRoles, setRoleMenus } from '@/api/sys/roles'
+import { listMenus } from '@/api/sys/menus'
 
+const { success, error } = useMessage()
 const route = useRoute()
 const id = Number(route.params.id)
 const role = ref<any>(null)
@@ -34,20 +36,23 @@ const treeRef = ref()
 const saving = ref(false)
 
 onMounted(async () => {
-  const { data: rd } = await api.get('/api/rbac/roles', { params: { page: 1, page_size: 999 } })
-  const roleList = rd.data?.list || rd.data || []
-  role.value = roleList.find((r: any) => r.id === id)
+  try {
+    const roleRes = await listRoles({ page: 1, page_size: 999 })
+    const roleList: any[] = roleRes.list || []
+    role.value = roleList.find((r: any) => r.id === id)
 
-  const { data: md } = await api.get('/api/rbac/menus', { params: { page: 1, page_size: 999 } })
-  const list: any[] = md.data?.list || md.data || []
-  const map = new Map<number, any>()
-  list.forEach((m) => map.set(m.id, { ...m, children: [] as any[] }))
-  const roots: any[] = []
-  for (const m of map.values()) {
-    if (m.parent_id && map.has(m.parent_id)) map.get(m.parent_id).children.push(m)
-    else roots.push(m)
+    const list: any[] = (await listMenus({ page: 1, page_size: 999 })) || []
+    const map = new Map<number, any>()
+    list.forEach((m) => map.set(m.id, { ...m, children: [] as any[] }))
+    const roots: any[] = []
+    for (const m of map.values()) {
+      if (m.parent_id && map.has(m.parent_id)) map.get(m.parent_id).children.push(m)
+      else roots.push(m)
+    }
+    tree.value = roots
+  } catch (e: any) {
+    error(e?.message || "common.fail")
   }
-  tree.value = roots
 })
 
 async function save() {
@@ -56,9 +61,10 @@ async function save() {
     const checkedKeys = treeRef.value.getCheckedKeys() as number[]
     const halfChecked = treeRef.value.getHalfCheckedKeys() as number[]
     const all = [...checkedKeys, ...halfChecked]
-    const { data } = await api.put(`/api/rbac/roles/${id}/menus`, { menu_ids: all })
-    if (data.code === 0) ElMessage.success('ok')
-    else ElMessage.error(data.message)
+    await setRoleMenus(id, all)
+    success("common.success")
+  } catch (e: any) {
+    error(e?.message || "common.fail")
   } finally {
     saving.value = false
   }

@@ -56,7 +56,6 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import api from '@/api'
 import OnDialog from '@/components/OnDialog/index.vue'
 import DomainTab from './edits/DomainTab.vue'
 import RewriteTab from './edits/RewriteTab.vue'
@@ -67,6 +66,7 @@ import HotlinkTab from './edits/HotlinkTab.vue'
 import SslTab from './edits/SslTab.vue'
 import LogTab from './edits/LogTab.vue'
 import type { HotlinkCfg } from './types'
+import { getSite, updateSite } from '@/api/sites'
 
 const { t } = useI18n()
 
@@ -124,9 +124,7 @@ watch(
     activeTab.value = 'domain'
 
     try {
-      const res = await api.get(`/api/sites/${props.siteId}`)
-      if (res.data.code !== 0) return
-      const site = res.data.data
+      const site = await getSite(props.siteId)
       Object.assign(editForm, {
         name: site.name,
         server_name: site.server_name,
@@ -143,7 +141,7 @@ watch(
         log_access_path: site.log_access_path || '',
         log_error_path: site.log_error_path || '',
       })
-      domains.value = site.server_name
+      domains.value = (site.server_name ?? '')
         .split(' ')
         .map((d: string) => d.trim())
         .filter(Boolean)
@@ -207,11 +205,11 @@ async function saveAllSettings() {
       log_access_path: editForm.log_access_path || null,
       log_error_path: editForm.log_error_path || null,
     }
-    await api.put(`/api/sites/${props.siteId}`, data)
+    await updateSite(props.siteId, data)
     ElMessage.success(t('common.success'))
     emit('saved')
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || t('sys.sites.operationFailed'))
+    ElMessage.error(error.message || t('sys.sites.operationFailed'))
   }
 }
 </script>
