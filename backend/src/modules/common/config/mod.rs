@@ -21,6 +21,13 @@ pub struct ServerConfig {
 #[derive(Debug, Deserialize, Clone)]
 pub struct DatabaseConfig {
     pub path: String,
+    /// 是否输出 SQL 语句日志，默认关闭
+    #[serde(default = "default_log_sql")]
+    pub log_sql: bool,
+}
+
+fn default_log_sql() -> bool {
+    false
 }
 
 #[derive(Debug, Deserialize, Clone)]

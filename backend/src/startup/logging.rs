@@ -173,7 +173,7 @@ where
 
 // ========== 初始化 ==========
 
-pub fn init(log_dir: &Path, log_level: &str, max_size_mb: u64) {
+pub fn init(log_dir: &Path, log_level: &str, max_size_mb: u64, log_sql: bool) {
     let _ = std::fs::create_dir_all(log_dir);
     cleanup_old_logs(log_dir, 30);
 
@@ -188,7 +188,8 @@ pub fn init(log_dir: &Path, log_level: &str, max_size_mb: u64) {
         .with_ansi(false)
         .with_writer(appender);
 
-    let filter = format!("ox_nginx={},tower_http=warn,sqlx=debug", log_level);
+    let sqlx_level = if log_sql { "debug" } else { "off" };
+    let filter = format!("ox_nginx={},tower_http=warn,sqlx={}", log_level, sqlx_level);
 
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::new(std::env::var("RUST_LOG").unwrap_or(filter)))

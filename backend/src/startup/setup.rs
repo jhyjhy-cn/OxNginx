@@ -106,6 +106,7 @@ host = "0.0.0.0"
 
 [database]
 path = "{db}"
+log_sql = false
 
 [nginx]
 bin = "{bin}"
@@ -213,6 +214,7 @@ host = "0.0.0.0"
 
 [database]
 path = "{db}"
+log_sql = false
 
 [nginx]
 bin = "{bin}"

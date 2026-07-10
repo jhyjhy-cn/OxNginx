@@ -69,7 +69,7 @@ fn main() -> anyhow::Result<()> {
 
     // 初始化日志（控制台 + 文件双输出，大小轮转写入 wwwlogs/panel/）
     let log_dir = exe_dir.parent().and_then(|p| p.parent()).unwrap_or(&exe_dir).join("wwwlogs").join("panel");
-    startup::logging::init(&log_dir, &config.log.level, config.log.max_size_mb);
+    startup::logging::init(&log_dir, &config.log.level, config.log.max_size_mb, config.database.log_sql);
     tracing::info!("配置加载完成");
 
     // 运行服务
@@ -81,7 +81,7 @@ fn main() -> anyhow::Result<()> {
     rt.block_on(async {
         // 初始化数据库
         tracing::info!("[1/4] 初始化数据库...");
-        let db = Database::new(&config.database.path).await?;
+        let db = Database::new(&config.database.path, config.database.log_sql).await?;
         tracing::info!("[2/4] 数据库初始化完成");
 
         // 创建应用状态 & 构建路由

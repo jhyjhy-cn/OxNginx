@@ -15,7 +15,7 @@ pub struct Database {
 
 impl Database {
     /// 创建新的数据库连接
-    pub async fn new(db_path: &str) -> anyhow::Result<Self> {
+    pub async fn new(db_path: &str, log_sql: bool) -> anyhow::Result<Self> {
         // 确保目录存在
         if let Some(parent) = Path::new(db_path).parent() {
             std::fs::create_dir_all(parent)?;
@@ -28,7 +28,7 @@ impl Database {
 
         let url = format!("sqlite:{}?mode=rwc", db_path);
         let opts = SqliteConnectOptions::from_url(&url.parse()?)?
-            .log_statements(LevelFilter::Debug);
+            .log_statements(if log_sql { LevelFilter::Debug } else { LevelFilter::Off });
         let pool = SqlitePoolOptions::new()
             .max_connections(1)
             .connect_with(opts)
