@@ -253,12 +253,14 @@ pub async fn list_users_paged(
          LEFT JOIN sys_posts p ON u.post_id=p.id",
     );
     qb.push(where_clause);
-    qb.push(" ORDER BY u.id DESC LIMIT ").push_bind(page_size);
-    qb.push(" OFFSET ").push_bind(offset);
+    qb.push(" ORDER BY u.id DESC LIMIT ?");
+    qb.push(" OFFSET ?");
     let mut query = qb.build();
     for b in binds { query = query.bind(b); }
     for i in int_binds { query = query.bind(*i); }
     for d in dis_binds { query = query.bind(*d); }
+    query = query.bind(page_size);
+    query = query.bind(offset);
     let rows = query.fetch_all(pool).await?;
     Ok(rows
         .into_iter()
