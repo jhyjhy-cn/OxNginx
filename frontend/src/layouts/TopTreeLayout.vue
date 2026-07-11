@@ -1,4 +1,3 @@
-import { MenuType } from '@/consts'
 <template>
   <el-container class="layout-container" direction="vertical">
     <div class="top-header" :style="{ background: sidebarBg, '--menu-active-bg': menuActiveBg }">
@@ -71,6 +70,7 @@ import TabBar from './components/TabBar.vue'
 import { useSidebarTheme } from '@/composables/useSidebarTheme'
 import { useSettingsStore } from '@/stores/settings'
 import { useAuthStore } from '@/stores/auth'
+import { MenuType } from '@/consts'
 
 const route = useRoute()
 const { t } = useI18n()

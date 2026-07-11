@@ -1,3 +1,5 @@
+import type { LoginLogType, LogStatus } from '@/consts'
+
 export interface LogLines {
   lines: string[]
 }
@@ -11,7 +13,7 @@ export interface OperationLog {
   method?: string | null
   uri?: string | null
   ip?: string | null
-  status?: string
+  status?: LogStatus
   cost_ms?: number | null
   request_body?: string | null
   response_body?: string | null
@@ -25,8 +27,8 @@ export interface LoginLog {
   ip?: string | null
   os?: string | null
   browser?: string | null
-  type?: string
-  status?: string
+  type?: LoginLogType
+  status?: LogStatus
   created_at?: string | null
   [key: string]: unknown
 }

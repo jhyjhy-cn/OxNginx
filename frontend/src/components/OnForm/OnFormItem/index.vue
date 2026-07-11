@@ -118,6 +118,7 @@ const componentMap: Record<string, string> = {
   checkbox: "el-checkbox-group",
   switch: "el-switch",
   date: "el-date-picker",
+  daterange: "el-date-picker",
   datetime: "el-date-picker",
   time: "el-time-picker",
   number: "el-input-number",
@@ -158,6 +159,11 @@ const componentProps = computed(() => {
       break;
     case "date":
       p.type = "date";
+      p.format = props.format || "YYYY-MM-DD";
+      p.valueFormat = "YYYY-MM-DD";
+      break;
+    case "daterange":
+      p.type = "daterange";
       p.format = props.format || "YYYY-MM-DD";
       p.valueFormat = "YYYY-MM-DD";
       break;

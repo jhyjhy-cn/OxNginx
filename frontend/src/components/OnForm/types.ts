@@ -11,6 +11,7 @@ export type ItemType =
   | "checkbox"
   | "switch"
   | "date"
+  | "daterange"
   | "datetime"
   | "time"
   | "number";
