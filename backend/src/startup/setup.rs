@@ -49,7 +49,7 @@ home = ""
 token_expires_hours = 1
 
 [log]
-level = "info"
+level = "debug"
 max_size_mb = 10
 "#,
         db = db_path.to_string_lossy().replace('\\', "/"),

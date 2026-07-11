@@ -115,18 +115,30 @@ pub async fn replace_role_menus(
     role_id: i64,
     menu_ids: &[i64],
 ) -> sqlx::Result<()> {
+    tracing::debug!(role_id, menu_ids_len = menu_ids.len(), "replace_role_menus");
+    let mut tx = pool.begin().await?;
+
     sqlx::query("DELETE FROM sys_role_menus WHERE role_id=?")
         .bind(role_id)
-        .execute(pool)
+        .execute(&mut *tx)
         .await?;
-    for mid in menu_ids {
-        sqlx::query("INSERT OR IGNORE INTO sys_role_menus (role_id, menu_id) VALUES (?, ?)")
-            .bind(role_id)
-            .bind(mid)
-            .execute(pool)
-            .await?;
+
+    if !menu_ids.is_empty() {
+        let placeholders = std::iter::repeat("(?, ?)")
+            .take(menu_ids.len())
+            .collect::<Vec<_>>()
+            .join(", ");
+        let sql = format!(
+            "INSERT INTO sys_role_menus (role_id, menu_id) VALUES {placeholders}"
+        );
+        let mut q = sqlx::query(&sql);
+        for mid in menu_ids {
+            q = q.bind(role_id).bind(*mid);
+        }
+        q.execute(&mut *tx).await?;
     }
-    Ok(())
+
+    tx.commit().await
 }
 
 pub async fn list_role_menu_ids(pool: &SqlitePool, role_id: i64) -> sqlx::Result<Vec<i64>> {

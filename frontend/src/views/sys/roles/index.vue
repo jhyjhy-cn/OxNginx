@@ -3,8 +3,14 @@
     <el-card class="h-full">
       <!-- 搜索栏 -->
       <div class="search-bar">
-        <OnFormGrid :model="searchForm" :fields="searchFields" style="flex: 1" />
-        <el-button type="primary" @click="search">{{ $t("common.search") }}</el-button>
+        <OnFormGrid
+          :model="searchForm"
+          :fields="searchFields"
+          style="flex: 1"
+        />
+        <el-button type="primary" @click="search">{{
+          $t("common.search")
+        }}</el-button>
         <el-button @click="reset">{{ $t("common.reset") }}</el-button>
       </div>
 
@@ -21,7 +27,12 @@
         @selectionChange="(rows: any[]) => (selectedRows = rows)"
       >
         <template #toolbar-left>
-          <el-button v-auth="'sys:role:add'" type="primary" @click="openCreate">{{ $t("common.add") }}</el-button>
+          <el-button
+            v-auth="'sys:role:add'"
+            type="primary"
+            @click="openCreate"
+            >{{ $t("common.add") }}</el-button
+          >
           <el-button
             v-auth="'sys:role:batchDelete'"
             type="danger"
@@ -40,8 +51,12 @@
         <OnFormGrid :fields="formFields" :model="form" />
       </OnForm>
       <template #footer>
-        <el-button @click="showForm = false">{{ $t("common.cancel") }}</el-button>
-        <el-button type="primary" @click="submit">{{ $t("common.confirm") }}</el-button>
+        <el-button @click="showForm = false">{{
+          $t("common.cancel")
+        }}</el-button>
+        <el-button type="primary" @click="submit">{{
+          $t("common.confirm")
+        }}</el-button>
       </template>
     </OnDialog>
 
@@ -53,25 +68,41 @@
       height="60vh"
       destroy-on-close
     >
-      <div class="menu-perm-toolbar">
-        <el-button size="small" @click="treeExpandAll(true)">{{ $t('common.expandAll') }}</el-button>
-        <el-button size="small" @click="treeExpandAll(false)">{{ $t('common.collapseAll') }}</el-button>
-        <el-button size="small" @click="treeSelectAll">{{ $t('common.selectAll') }}</el-button>
-        <el-button size="small" @click="treeInvert">{{ $t('common.invert') }}</el-button>
-        <el-button size="small" @click="treeClear">{{ $t('common.clear') }}</el-button>
+      <div class="menu-perm-content">
+        <div class="menu-perm-toolbar">
+          <el-button size="small" @click="treeExpandAll(true)">{{
+            $t("common.expandAll")
+          }}</el-button>
+          <el-button size="small" @click="treeExpandAll(false)">{{
+            $t("common.collapseAll")
+          }}</el-button>
+          <el-button size="small" @click="treeSelectAll">{{
+            $t("common.selectAll")
+          }}</el-button>
+          <el-button size="small" @click="treeInvert">{{
+            $t("common.invert")
+          }}</el-button>
+          <el-button size="small" @click="treeClear">{{
+            $t("common.clear")
+          }}</el-button>
+        </div>
+        <div class="menu-perm-tree">
+          <el-tree
+            ref="treeRef"
+            :data="menuTree"
+            show-checkbox
+            node-key="id"
+            :props="{ label: (data: any) => $t(data.title), children: 'children' }"
+          />
+        </div>
       </div>
-      <el-tree
-        ref="treeRef"
-        :data="menuTree"
-        show-checkbox
-        node-key="id"
-        :default-checked-keys="checkedMenuIds"
-        :props="{ label: (data: any) => $t(data.title), children: 'children' }"
-        style="margin-top: 4px"
-      />
       <template #footer>
-        <el-button @click="showMenuPerm = false">{{ $t("common.cancel") }}</el-button>
-        <el-button type="primary" :loading="saving" @click="saveMenuPerm">{{ $t("common.save") }}</el-button>
+        <el-button @click="showMenuPerm = false">{{
+          $t("common.cancel")
+        }}</el-button>
+        <el-button type="primary" :loading="saving" @click="saveMenuPerm">{{
+          $t("common.save")
+        }}</el-button>
       </template>
     </OnDialog>
   </div>
@@ -138,20 +169,39 @@ const tableColumns: TableColumn[] = [
     width: 240,
     buttons: [
       { name: "common.edit", command: "edit", size: "small" },
-      { name: "sys.rbac.menuPermission", command: "menuPerm", size: "small", disabled: isSuperAdmin },
-      { name: "common.delete", command: "delete", type: "danger", size: "small", disabled: isSuperAdmin },
+      {
+        name: "sys.rbac.menuPermission",
+        command: "menuPerm",
+        size: "small",
+        disabled: isSuperAdmin,
+      },
+      {
+        name: "common.delete",
+        command: "delete",
+        type: "danger",
+        size: "small",
+        disabled: isSuperAdmin,
+      },
     ],
   },
 ];
 
 const formFields = computed<FormField[]>(() => [
-  { prop: "code", label: "sys.rbac.colCode", type: "input", required: true, disabled: isEdit.value },
+  {
+    prop: "code",
+    label: "sys.rbac.colCode",
+    type: "input",
+    required: true,
+    disabled: isEdit.value,
+  },
   { prop: "name", label: "sys.rbac.colName", type: "input", required: true },
   { prop: "remark", label: "sys.rbac.colRemark", type: "input" },
 ]);
 
 // ponytail: template 里 $t() 取 i18n,script setup 里 useI18n().t —— 这里只返回 i18n key 让模板翻译
-const formTitle = computed(() => (isEdit.value ? "common.edit" : "sys.rbac.createRole"));
+const formTitle = computed(() =>
+  isEdit.value ? "common.edit" : "sys.rbac.createRole",
+);
 
 function onPageChange(p: number) {
   page.value = p;
@@ -174,7 +224,11 @@ function openCreate() {
 async function openEdit(row: any) {
   isEdit.value = true;
   editingId.value = row.id;
-  Object.assign(form, { code: row.code || "", name: row.name || "", remark: row.remark || "" });
+  Object.assign(form, {
+    code: row.code || "",
+    name: row.name || "",
+    remark: row.remark || "",
+  });
   showForm.value = true;
 }
 
@@ -239,8 +293,13 @@ const showMenuPerm = ref(false);
 const menuPermRole = ref<any>(null);
 const menuTree = ref<any[]>([]);
 const checkedMenuIds = ref<number[]>([]);
+const menuPermNodeMap = ref<Map<number, any>>(new Map());
 const treeRef = ref();
 const saving = ref(false);
+
+function getLeafIds(ids: number[]) {
+  return ids.filter((id) => !menuPermNodeMap.value.get(id)?.children?.length);
+}
 
 async function openMenuPerm(row: any) {
   menuPermRole.value = row;
@@ -253,17 +312,17 @@ async function openMenuPerm(row: any) {
   const list: any[] = menus || [];
   const map = new Map<number, any>();
   list.forEach((m) => map.set(m.id, { ...m, children: [] as any[] }));
+  menuPermNodeMap.value = map;
   const roots: any[] = [];
   for (const m of map.values()) {
-    if (m.parent_id && map.has(m.parent_id)) map.get(m.parent_id).children.push(m);
+    if (m.parent_id && map.has(m.parent_id))
+      map.get(m.parent_id).children.push(m);
     else roots.push(m);
   }
   menuTree.value = roots;
-  checkedMenuIds.value = (ids || []) as number[];
+  checkedMenuIds.value = getLeafIds((ids || []) as number[]);
   await nextTick();
-  if (treeRef.value && checkedMenuIds.value.length) {
-    treeRef.value.setCheckedKeys(checkedMenuIds.value);
-  }
+  treeRef.value?.setCheckedKeys(checkedMenuIds.value);
 }
 
 async function saveMenuPerm() {
@@ -276,7 +335,9 @@ async function saveMenuPerm() {
   try {
     const checked = treeRef.value.getCheckedKeys() as number[];
     const half = treeRef.value.getHalfCheckedKeys() as number[];
-    const ids = [...checked, ...half];
+    const ids = Array.from(new Set([...checked, ...half])).filter((id) =>
+      menuPermNodeMap.value.has(id),
+    );
     await setRoleMenus(menuPermRole.value.id, ids);
     success("common.success");
     showMenuPerm.value = false;
@@ -303,7 +364,8 @@ const flattenIds = (nodes: any[]): number[] => {
 function treeExpandAll(expand: boolean) {
   const ids = flattenIds(menuTree.value);
   ids.forEach((id) => treeRef.value?.store?.nodesMap[id]?.expand()); // ponytail: expand 全部走 store;传 false 用 collapse
-  if (!expand) ids.forEach((id) => treeRef.value?.store?.nodesMap[id]?.collapse());
+  if (!expand)
+    ids.forEach((id) => treeRef.value?.store?.nodesMap[id]?.collapse());
 }
 
 function treeSelectAll() {
@@ -314,18 +376,10 @@ function treeSelectAll() {
 function treeInvert() {
   if (!treeRef.value) return;
   const all = flattenIds(menuTree.value);
-  const checked = new Set<number>(
-    treeRef.value.getCheckedKeys() as number[],
-  );
+  const checked = new Set<number>(treeRef.value.getCheckedKeys() as number[]);
   const half = new Set<number>(treeRef.value.getHalfCheckedKeys() as number[]);
-  // ponytail: 当前已勾的（包括半选父）取反
   const nextChecked = all.filter((id) => !checked.has(id) && !half.has(id));
-  const nextUncheck = new Set([...checked, ...half]);
   treeRef.value.setCheckedKeys(nextChecked);
-  // ponytail: 那些"曾经选中"的节点若不在新选中集里,要显式清掉,否则它们的子树会保留
-  for (const id of nextUncheck) {
-    if (!nextChecked.includes(id)) treeRef.value.setChecked(id, false, false);
-  }
 }
 
 function treeClear() {
@@ -344,10 +398,20 @@ onMounted(() => {
   align-items: flex-start;
   margin-bottom: 12px;
 }
+.menu-perm-content {
+  height: 420px;
+  display: flex;
+  flex-direction: column;
+}
 .menu-perm-toolbar {
   display: flex;
   gap: 8px;
   margin-bottom: 8px;
   flex-wrap: wrap;
+}
+.menu-perm-tree {
+  flex: 1;
+  overflow: auto;
+  margin-top: 4px;
 }
 </style>
