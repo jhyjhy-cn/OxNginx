@@ -3,6 +3,7 @@
 
 mod common_directives;
 mod ensure_include;
+mod nginx_config_from_db;
 mod process;
 mod site_config;
 mod upstream;
@@ -24,3 +25,6 @@ pub use process::{
 
 // ensure_include.rs
 pub use ensure_include::ensure_sites_enabled_include;
+
+// nginx_config_from_db.rs
+pub use nginx_config_from_db::get_nginx_config;

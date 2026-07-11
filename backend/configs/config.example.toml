@@ -10,14 +10,6 @@ path = ""
 # 是否输出 SQL 语句日志, false (关闭) true (开启)
 log_sql = false
 
-[nginx]
-# nginx 二进制文件路径
-bin = ""
-# nginx 配置文件路径
-config = ""
-# nginx 站点启用目录路径
-sites_enabled = ""
-
 [acme]
 # acme.sh 二进制文件路径
 bin = ""

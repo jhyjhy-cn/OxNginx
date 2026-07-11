@@ -49,7 +49,7 @@ pub async fn create_backup(
 #[audit_log(module = "backup", action = "恢复备份")]
 pub async fn restore_backup(
     ctx: Extension<SharedAuditContext>,
-    
+
     State(state): State<AppState>,
     Path(backup_id): Path<i64>,
 ) -> Json<serde_json::Value> {
@@ -58,9 +58,11 @@ pub async fn restore_backup(
             // 恢复配置文件
             if let Some(site_id) = backup.site_id {
                 if let Ok(Some(site)) = crate::modules::site::service::site_service::get_site(&state, site_id).await {
-                    let config = state.get_config();
-                    let sites_enabled = &config.nginx.sites_enabled;
-                    let _ = crate::modules::common::nginx::write_site_config(sites_enabled, &site.name, &backup.config).await;
+                    if let Ok(nginx_config) = crate::modules::common::nginx::get_nginx_config(&state).await {
+                        if let Some(sites_enabled) = nginx_config.sites_enabled {
+                            let _ = crate::modules::common::nginx::write_site_config(&sites_enabled, &site.name, &backup.config).await;
+                        }
+                    }
                 }
             }
             Json(json!(ApiResponse::success(backup)))

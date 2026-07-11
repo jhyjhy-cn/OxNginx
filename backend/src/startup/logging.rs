@@ -195,7 +195,7 @@ pub fn init(log_dir: &Path, log_level: &str, max_size_mb: u64, log_sql: bool) {
         .with(tracing_subscriber::EnvFilter::new(std::env::var("RUST_LOG").unwrap_or(filter)))
         .with(stdout_layer)
         .with(file_layer)
-        .init();
+        .try_init().ok(); // 幂等初始化，第二次调用会忽略
 }
 
 fn cleanup_old_logs(log_dir: &Path, retention_days: i64) {

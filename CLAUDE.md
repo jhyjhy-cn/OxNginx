@@ -135,7 +135,6 @@ frontend/src/
 `config.toml` 包含:
 - `[server]` - HTTP 服务端口/host
 - `[database]` - SQLite 路径、SQL 日志开关
-- `[nginx]` - nginx 可执行文件路径、配置文件路径、sites-enabled 目录
 - `[acme]` - acme.sh 路径
 - `[auth]` - JWT secret 和过期时间
 - `[log]` - 日志级别与轮转大小

@@ -127,13 +127,18 @@ async fn get_proxy_site_id(state: &AppState, proxy_id: i64) -> Option<i64> {
 }
 
 async fn regenerate_and_reload(state: &AppState, site_id: i64) {
-    let config = state.get_config();
-    if let Ok(Some(site)) = crate::modules::site::service::site_service::get_site(state, site_id).await {
-        if site.status != 0 {
-            let proxies = reverse_proxy_service::list_by_site(state, site_id).await.unwrap_or_default();
-            let content = crate::modules::common::nginx::generate_site_config_with_proxies(&site, &proxies);
-            let _ = crate::modules::common::nginx::write_site_config(&config.nginx.sites_enabled, &site.name, &content).await;
+    if let Ok(nginx_config) = crate::modules::common::nginx::get_nginx_config(state).await {
+        if let Ok(Some(site)) = crate::modules::site::service::site_service::get_site(state, site_id).await {
+            if site.status != 0 {
+                let proxies = reverse_proxy_service::list_by_site(state, site_id).await.unwrap_or_default();
+                let content = crate::modules::common::nginx::generate_site_config_with_proxies(&site, &proxies);
+                if let Some(sites_enabled) = &nginx_config.sites_enabled {
+                    let _ = crate::modules::common::nginx::write_site_config(sites_enabled, &site.name, &content).await;
+                }
+            }
+            if let Some(nginx_bin) = &nginx_config.bin {
+                let _ = crate::modules::common::nginx::reload_nginx(nginx_bin).await;
+            }
         }
-        let _ = crate::modules::common::nginx::reload_nginx(&config.nginx.bin).await;
     }
 }

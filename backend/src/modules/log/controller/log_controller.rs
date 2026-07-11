@@ -18,8 +18,11 @@ fn parse_status_str(s: Option<String>) -> Option<i32> {
 
 /// 获取Access日志
 pub async fn access_log(State(state): State<AppState>) -> Json<serde_json::Value> {
-    let config = state.get_config();
-    let log_path = &config.nginx.log_access;
+    let nginx_config = crate::modules::common::nginx::get_nginx_config(&state).await.unwrap_or_default();
+    let log_path = nginx_config.log_access.as_deref().unwrap_or("");
+    if log_path.is_empty() {
+        return Json(json!(ApiResponse::<()>::error("Nginx未安装或日志路径未配置")));
+    }
     match read_log_tail(log_path, 100).await {
         Ok(lines) => Json(json!(ApiResponse::success(LogResponse { lines }))),
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("读取日志失败: {}", e)))),
@@ -28,8 +31,11 @@ pub async fn access_log(State(state): State<AppState>) -> Json<serde_json::Value
 
 /// 获取Error日志
 pub async fn error_log(State(state): State<AppState>) -> Json<serde_json::Value> {
-    let config = state.get_config();
-    let log_path = &config.nginx.log_error;
+    let nginx_config = crate::modules::common::nginx::get_nginx_config(&state).await.unwrap_or_default();
+    let log_path = nginx_config.log_error.as_deref().unwrap_or("");
+    if log_path.is_empty() {
+        return Json(json!(ApiResponse::<()>::error("Nginx未安装或日志路径未配置")));
+    }
     match read_log_tail(log_path, 100).await {
         Ok(lines) => Json(json!(ApiResponse::success(LogResponse { lines }))),
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("读取日志失败: {}", e)))),

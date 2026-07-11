@@ -60,11 +60,6 @@ host = "0.0.0.0"
 [database]
 path = "./data.db"
 
-[nginx]
-bin = "/usr/sbin/nginx"
-config = "/etc/nginx/nginx.conf"
-sites_enabled = "/etc/nginx/sites-enabled"
-
 [acme]
 bin = "/root/.acme.sh/acme.sh"
 

@@ -257,6 +257,7 @@ pub async fn seed_menus(pool: &SqlitePool) -> Result<()> {
     seed_default_post(pool).await?;
     seed_default_dicts(pool).await?;
     crate::modules::sys::service::param_service::ensure_default_params(pool).await?;
+    crate::modules::sys::service::param_service::ensure_nginx_params(pool).await?;
     Ok(())
 }
 

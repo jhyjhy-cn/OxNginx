@@ -87,13 +87,13 @@ async fn collect_dashboard_data(state: &AppState) -> String {
     use crate::modules::dashboard::service::dashboard_service;
     use crate::modules::common::nginx;
 
-    let config = state.get_config();
-    let nginx_bin = config.nginx.bin.clone();
+    let nginx_config = nginx::get_nginx_config(state).await.unwrap_or_default();
+    let nginx_bin = nginx_config.bin.as_deref().unwrap_or("");
 
     // 并发采集 dashboard 统计和 nginx 状态
     let (dashboard, nginx_status) = tokio::join!(
         dashboard_service::get_dashboard(state),
-        nginx::get_nginx_status(&nginx_bin),
+        nginx::get_nginx_status(nginx_bin),
     );
 
     let stats = dashboard.unwrap_or_else(|_| crate::modules::common::dto::DashboardData {

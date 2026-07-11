@@ -93,15 +93,6 @@ host = "0.0.0.0"
 [database]
 path = "$DATA_DIR/data.db"
 
-[nginx]
-bin = "/usr/sbin/nginx"
-config = "/etc/nginx/nginx.conf"
-sites_enabled = "/etc/nginx/conf.d"
-ssl_dir = "$SSL_DIR"
-default_root = "$WWWROOT_DIR"
-log_access = "$LOG_DIR/access.log"
-log_error = "$LOG_DIR/error.log"
-
 [acme]
 bin = "/root/.acme.sh/acme.sh"
 home = "/root/.acme.sh"

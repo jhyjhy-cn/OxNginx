@@ -10,7 +10,9 @@ use serde_json::json;
 use ox_nginx_macros::audit_log;
 
 use crate::modules::common::dto::{ApiResponse, CreateSiteRequest, DeleteSiteRequest, UpdateSiteRequest};
+use crate::modules::common::nginx::get_nginx_config;
 use crate::modules::site::service::site_service;
+use crate::modules::sys::service::param_service::NginxConfigFromDb;
 use crate::AppState;
 
 /// 批量操作请求
@@ -100,11 +102,14 @@ pub async fn get_site(
 #[audit_log(module = "site", action = "创建站点", capture = req)]
 pub async fn create_site(
     ctx: Extension<SharedAuditContext>,
-    
+
     State(state): State<AppState>,
     Json(mut req): Json<CreateSiteRequest>,
 ) -> Json<serde_json::Value> {
-    let config = state.get_config();
+    let nginx_config = match get_nginx_config(&state).await {
+        Ok(cfg) => cfg,
+        Err(e) => return Json(json!(ApiResponse::<()>::error(format!("读取配置失败: {}", e)))),
+    };
 
     // 归一化 server_name：换行符转空格，去首尾空白
     req.server_name = req.server_name
@@ -116,7 +121,11 @@ pub async fn create_site(
 
     // 如果未指定根目录，以站点名称自动创建
     if req.root_path.is_none() || req.root_path.as_deref() == Some("") {
-        let auto_root = format!("{}/{}", config.nginx.default_root, req.name);
+        let default_root = nginx_config.default_root.as_deref().unwrap_or("");
+        if default_root.is_empty() {
+            return Json(json!(ApiResponse::<()>::error("默认站点根目录未设置，请检查系统参数")));
+        }
+        let auto_root = format!("{}/{}", default_root, req.name);
         req.root_path = Some(auto_root);
     }
 
@@ -128,7 +137,9 @@ pub async fn create_site(
     }
 
     // 确保 nginx.conf 包含 sites-enabled 的 include 指令
-    let _ = crate::modules::common::nginx::ensure_sites_enabled_include(&config.nginx.config, &config.nginx.sites_enabled).await;
+    if let (Some(config_path), Some(sites_enabled)) = (&nginx_config.config, &nginx_config.sites_enabled) {
+        let _ = crate::modules::common::nginx::ensure_sites_enabled_include(config_path, sites_enabled).await;
+    }
 
     // 生成配置
     let site_model = crate::modules::site::entity::site::Site {
@@ -156,13 +167,21 @@ pub async fn create_site(
     let config_content = crate::modules::common::nginx::generate_site_config(&site_model);
 
     // 备份并写入配置
-    let sites_enabled = &config.nginx.sites_enabled;
+    let sites_enabled = match &nginx_config.sites_enabled {
+        Some(p) if !p.is_empty() => p,
+        _ => return Json(json!(ApiResponse::<()>::error("站点配置目录未设置，请检查系统参数"))),
+    };
     if let Err(e) = crate::modules::common::nginx::write_site_config(sites_enabled, &req.name, &config_content).await {
         return Json(json!(ApiResponse::<()>::error(format!("写入配置文件失败: {}", e))));
     }
 
+    let nginx_bin = match &nginx_config.bin {
+        Some(p) if !p.is_empty() => p,
+        _ => return Json(json!(ApiResponse::<()>::error("Nginx未安装，请先执行一键安装"))),
+    };
+
     // 测试配置
-    let test_result = crate::modules::common::nginx::test_config(&config.nginx.bin).await;
+    let test_result = crate::modules::common::nginx::test_config(nginx_bin).await;
     if !test_result.success {
         // 回滚：删除配置文件
         let _ = crate::modules::common::nginx::remove_site_config(sites_enabled, &req.name).await;
@@ -172,7 +191,7 @@ pub async fn create_site(
     // 保存到数据库
     match site_service::create_site(&state, req).await {
         Ok(site) => {
-            let _ = crate::modules::common::nginx::reload_nginx(&config.nginx.bin).await;
+            let _ = crate::modules::common::nginx::reload_nginx(nginx_bin).await;
             Json(json!(ApiResponse::success(site)))
         }
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("创建站点失败: {}", e)))),
@@ -183,15 +202,20 @@ pub async fn create_site(
 #[audit_log(module = "site", action = "更新站点", capture = req)]
 pub async fn update_site(
     ctx: Extension<SharedAuditContext>,
-    
+
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(req): Json<UpdateSiteRequest>,
 ) -> Json<serde_json::Value> {
+    let nginx_config = match get_nginx_config(&state).await {
+        Ok(cfg) => cfg,
+        Err(e) => return Json(json!(ApiResponse::<()>::error(format!("读取配置失败: {}", e)))),
+    };
+
     match site_service::update_site(&state, id, req).await {
         Ok(Some(site)) => {
-            let config = state.get_config();
-            let sites_enabled = &config.nginx.sites_enabled;
+            let sites_enabled = nginx_config.sites_enabled.as_deref().unwrap_or("");
+            let nginx_bin = nginx_config.bin.as_deref().unwrap_or("");
 
             if site.status == 0 {
                 // 禁用：删除配置文件
@@ -203,7 +227,9 @@ pub async fn update_site(
             }
 
             // 重载 nginx 配置
-            let _ = crate::modules::common::nginx::reload_nginx(&config.nginx.bin).await;
+            if !nginx_bin.is_empty() {
+                let _ = crate::modules::common::nginx::reload_nginx(nginx_bin).await;
+            }
             Json(json!(ApiResponse::success(site)))
         }
         Ok(None) => Json(json!(ApiResponse::<()>::error("站点不存在"))),
@@ -215,7 +241,7 @@ pub async fn update_site(
 #[audit_log(module = "site", action = "删除站点", capture = req)]
 pub async fn delete_site(
     ctx: Extension<SharedAuditContext>,
-    
+
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(req): Json<DeleteSiteRequest>,
@@ -227,8 +253,12 @@ pub async fn delete_site(
         Err(e) => return Json(json!(ApiResponse::<()>::error(format!("获取站点失败: {}", e)))),
     };
 
-    let config = state.get_config();
-    let sites_enabled = &config.nginx.sites_enabled;
+    let nginx_config = match get_nginx_config(&state).await {
+        Ok(cfg) => cfg,
+        Err(e) => return Json(json!(ApiResponse::<()>::error(format!("读取配置失败: {}", e)))),
+    };
+    let sites_enabled = nginx_config.sites_enabled.as_deref().unwrap_or("");
+    let nginx_bin = nginx_config.bin.as_deref().unwrap_or("");
 
     // 删除配置文件（总是删除）
     let _ = crate::modules::common::nginx::remove_site_config(sites_enabled, &site.name).await;
@@ -248,7 +278,9 @@ pub async fn delete_site(
         match site_service::delete_site(&state, id).await {
             Ok(true) => {
                 // 重载 nginx 配置
-                let _ = crate::modules::common::nginx::reload_nginx(&config.nginx.bin).await;
+                if !nginx_bin.is_empty() {
+                    let _ = crate::modules::common::nginx::reload_nginx(nginx_bin).await;
+                }
                 Json(json!(ApiResponse::success("站点已删除")))
             }
             Ok(false) => Json(json!(ApiResponse::<()>::error("删除站点失败"))),
@@ -256,7 +288,9 @@ pub async fn delete_site(
         }
     } else {
         // 只删除文件，保留记录
-        let _ = crate::modules::common::nginx::reload_nginx(&config.nginx.bin).await;
+        if !nginx_bin.is_empty() {
+            let _ = crate::modules::common::nginx::reload_nginx(nginx_bin).await;
+        }
         Json(json!(ApiResponse::success("站点文件已删除")))
     }
 }
@@ -265,10 +299,17 @@ pub async fn delete_site(
 #[audit_log(module = "site", action = "批量启用站点", capture = req)]
 pub async fn batch_enable(
     ctx: Extension<SharedAuditContext>,
-    
+
     State(state): State<AppState>,
     Json(req): Json<BatchRequest>,
 ) -> Json<serde_json::Value> {
+    let nginx_config = match get_nginx_config(&state).await {
+        Ok(cfg) => cfg,
+        Err(e) => return Json(json!(ApiResponse::<()>::error(format!("读取配置失败: {}", e)))),
+    };
+    let sites_enabled = nginx_config.sites_enabled.as_deref().unwrap_or("");
+    let nginx_bin = nginx_config.bin.as_deref().unwrap_or("");
+
     let mut success_count = 0;
     let mut error_count = 0;
 
@@ -295,8 +336,6 @@ pub async fn batch_enable(
         match site_service::update_site(&state, *id, update_req).await {
             Ok(Some(site)) => {
                 let config_content = crate::modules::common::nginx::generate_site_config(&site);
-                let config = state.get_config();
-                let sites_enabled = &config.nginx.sites_enabled;
                 let _ = crate::modules::common::nginx::write_site_config(sites_enabled, &site.name, &config_content).await;
                 success_count += 1;
             }
@@ -305,8 +344,9 @@ pub async fn batch_enable(
     }
 
     // 重载 nginx 配置
-    let config = state.get_config();
-    let _ = crate::modules::common::nginx::reload_nginx(&config.nginx.bin).await;
+    if !nginx_bin.is_empty() {
+        let _ = crate::modules::common::nginx::reload_nginx(nginx_bin).await;
+    }
 
     Json(json!(ApiResponse::success(serde_json::json!({
         "success": success_count,
@@ -318,10 +358,17 @@ pub async fn batch_enable(
 #[audit_log(module = "site", action = "批量禁用站点", capture = req)]
 pub async fn batch_disable(
     ctx: Extension<SharedAuditContext>,
-    
+
     State(state): State<AppState>,
     Json(req): Json<BatchRequest>,
 ) -> Json<serde_json::Value> {
+    let nginx_config = match get_nginx_config(&state).await {
+        Ok(cfg) => cfg,
+        Err(e) => return Json(json!(ApiResponse::<()>::error(format!("读取配置失败: {}", e)))),
+    };
+    let sites_enabled = nginx_config.sites_enabled.as_deref().unwrap_or("");
+    let nginx_bin = nginx_config.bin.as_deref().unwrap_or("");
+
     let mut success_count = 0;
     let mut error_count = 0;
 
@@ -347,8 +394,6 @@ pub async fn batch_disable(
 
         match site_service::update_site(&state, *id, update_req).await {
             Ok(Some(site)) => {
-                let config = state.get_config();
-                let sites_enabled = &config.nginx.sites_enabled;
                 let _ = crate::modules::common::nginx::remove_site_config(sites_enabled, &site.name).await;
                 success_count += 1;
             }
@@ -357,8 +402,9 @@ pub async fn batch_disable(
     }
 
     // 重载 nginx 配置
-    let config = state.get_config();
-    let _ = crate::modules::common::nginx::reload_nginx(&config.nginx.bin).await;
+    if !nginx_bin.is_empty() {
+        let _ = crate::modules::common::nginx::reload_nginx(nginx_bin).await;
+    }
 
     Json(json!(ApiResponse::success(serde_json::json!({
         "success": success_count,
@@ -370,32 +416,43 @@ pub async fn batch_disable(
 #[audit_log(module = "site", action = "部署SSL证书")]
 pub async fn deploy_ssl(
     ctx: Extension<SharedAuditContext>,
-    
+
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Json<serde_json::Value> {
+    let nginx_config = match get_nginx_config(&state).await {
+        Ok(cfg) => cfg,
+        Err(e) => return Json(json!(ApiResponse::<()>::error(format!("读取配置失败: {}", e)))),
+    };
+    let nginx_bin = match nginx_config.bin.as_deref() {
+        Some(b) if !b.is_empty() => b,
+        _ => return Json(json!(ApiResponse::<()>::error("Nginx未安装，请先执行一键安装"))),
+    };
+    let nginx_config_path = match nginx_config.config.as_deref() {
+        Some(c) if !c.is_empty() => c,
+        _ => return Json(json!(ApiResponse::<()>::error("Nginx配置文件路径未设置"))),
+    };
+
     let site = match site_service::get_site(&state, id).await {
         Ok(Some(s)) => s,
         Ok(None) => return Json(json!(ApiResponse::<()>::error("站点不存在"))),
         Err(e) => return Json(json!(ApiResponse::<()>::error(format!("获取站点失败: {}", e)))),
     };
 
-    let config = state.get_config();
-
     // 停止nginx（释放80端口给standalone模式）
-    let _ = crate::modules::common::nginx::stop_nginx(&config.nginx.bin).await;
+    let _ = crate::modules::common::nginx::stop_nginx(nginx_bin).await;
 
     // 申请证书
     let cert = match crate::modules::site::service::cert_service::apply_cert(&state, &site.server_name).await {
         Ok(c) => c,
         Err(e) => {
-            let _ = crate::modules::common::nginx::start_nginx(&config.nginx.bin, &config.nginx.config).await;
+            let _ = crate::modules::common::nginx::start_nginx(nginx_bin, nginx_config_path).await;
             return Json(json!(ApiResponse::<()>::error(format!("证书申请失败: {}", e))));
         }
     };
 
     // 重启nginx
-    let _ = crate::modules::common::nginx::start_nginx(&config.nginx.bin, &config.nginx.config).await;
+    let _ = crate::modules::common::nginx::start_nginx(nginx_bin, nginx_config_path).await;
 
     let cert_domain = cert.domain.clone();
     let cert_src = cert.cert_path.clone().unwrap_or_default();
@@ -403,7 +460,10 @@ pub async fn deploy_ssl(
     let expire_time = cert.expire_time.clone();
 
     // 将证书复制到 nginx 可读的位置
-    let ssl_dir = format!("{}/{}", config.nginx.ssl_dir, cert_domain);
+    let ssl_dir = match &nginx_config.ssl_dir {
+        Some(d) if !d.is_empty() => format!("{}/{}", d, cert_domain),
+        _ => return Json(json!(ApiResponse::<()>::error("SSL证书目录未设置"))),
+    };
     let final_cert = format!("{}/fullchain.cer", ssl_dir);
     let final_key = format!("{}/private.key", ssl_dir);
 
@@ -451,8 +511,7 @@ pub async fn deploy_ssl(
         Err(e) => return Json(json!(ApiResponse::<()>::error(format!("更新站点失败: {}", e)))),
     };
 
-    let config = state.get_config();
-    let sites_enabled = &config.nginx.sites_enabled;
+    let sites_enabled = nginx_config.sites_enabled.as_deref().unwrap_or("");
 
     // 生成并写入nginx配置
     let config_content = crate::modules::common::nginx::generate_site_config(&updated_site);
@@ -461,14 +520,14 @@ pub async fn deploy_ssl(
     }
 
     // 测试配置
-    let test_result = crate::modules::common::nginx::test_config(&config.nginx.bin).await;
+    let test_result = crate::modules::common::nginx::test_config(nginx_bin).await;
     if !test_result.success {
         let _ = crate::modules::common::nginx::remove_site_config(sites_enabled, &site.name).await;
         return Json(json!(ApiResponse::<()>::error(format!("配置测试失败: {}", test_result.message))));
     }
 
     // 重载nginx
-    let _ = crate::modules::common::nginx::reload_nginx(&config.nginx.bin).await;
+    let _ = crate::modules::common::nginx::reload_nginx(nginx_bin).await;
 
     Json(json!(ApiResponse::success(serde_json::json!({
         "domain": cert_domain,
@@ -484,10 +543,16 @@ pub async fn deploy_ssl(
 #[audit_log(module = "site", action = "批量删除站点", capture = req)]
 pub async fn batch_delete(
     ctx: Extension<SharedAuditContext>,
-    
+
     State(state): State<AppState>,
     Json(req): Json<BatchRequest>,
 ) -> Json<serde_json::Value> {
+    let nginx_config = match get_nginx_config(&state).await {
+        Ok(cfg) => cfg,
+        Err(_) => NginxConfigFromDb::default(),
+    };
+    let sites_enabled = nginx_config.sites_enabled.as_deref().unwrap_or("");
+
     let mut success_count = 0;
     let mut error_count = 0;
 
@@ -502,8 +567,6 @@ pub async fn batch_delete(
         };
 
         // 删除配置文件
-        let config = state.get_config();
-        let sites_enabled = &config.nginx.sites_enabled;
         let _ = crate::modules::common::nginx::remove_site_config(sites_enabled, &site.name).await;
 
         // 删除数据库记录

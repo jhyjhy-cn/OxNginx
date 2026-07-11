@@ -3,31 +3,55 @@ use std::path::Path;
 /// 首次运行自动初始化
 /// 检测 bundled 资源（nginx.zip、static/），自动解压、生成配置
 pub fn first_run_setup(exe_dir: &Path) -> anyhow::Result<()> {
-    let config_path = std::env::var("CONFIG_PATH")
-        .unwrap_or_else(|_| exe_dir.join("configs").join("config.toml").to_string_lossy().to_string());
+    println!("[setup.rs:first_run_setup] ===> 执行首次运行初始化");
+    // 尝试从环境变量 "CONFIG_PATH" 获取配置文件的路径
+    //  ↓ 如果环境变量没设置
+    //  就用默认值: {exe程序所在目录}/configs/config.toml
+    let config_path = std::env::var("CONFIG_PATH").unwrap_or_else(|_| {
+        exe_dir
+            .join("configs")
+            .join("config.toml")
+            .to_string_lossy()
+            .to_string()
+    });
+    println!(
+        "[setup.rs:first_run_setup] ===> 配置文件路径: {}",
+        config_path
+    );
 
     // 已有配置文件则跳过
     if Path::new(&config_path).exists() {
+        println!("[setup.rs:first_run_setup] ===> 配置文件已存在，跳过初始化");
         return Ok(());
     }
 
     // 检查 bundled 资源是否存在
     let nginx_zip = exe_dir.join("libs").join("nginx").join("nginx-1.30.3.zip");
     let static_dir = exe_dir.join("static");
-    tracing::info!("first_run_setup: exe_dir={}, nginx_zip={}, static_dir={}",
-        exe_dir.display(), nginx_zip.exists(), static_dir.exists());
+    println!(
+        "[setup.rs:first_run_setup] ===> exe_dir={}, nginx_zip={}, static_dir={}",
+        exe_dir.display(),
+        nginx_zip.exists(),
+        static_dir.exists()
+    );
     if !nginx_zip.exists() || !static_dir.exists() {
         // 不是安装环境，正常启动（开发模式）
+        println!("[setup.rs:first_run_setup] ===> 不是安装环境，正常启动（开发模式）");
         return Ok(());
     }
 
     println!("");
-    println!("  OxNginx 首次运行，正在初始化...");
-    println!("  ========================================");
+    println!("[setup.rs:first_run_setup] ===> OxNginx 首次运行，正在初始化...");
+    println!("[setup.rs:first_run_setup] ========================================");
 
     // 创建目录结构
     let base = exe_dir; // C:\oxnginx\server\panel 或 /opt/oxnginx/server/panel
     let base_root = base.parent().and_then(|p| p.parent()).unwrap_or(base); // C:\oxnginx 或 /opt/oxnginx
+    println!(
+        "[setup.rs:first_run_setup] 创建目录结构 base={}, base_root={}",
+        base.display(),
+        base_root.display()
+    );
     let dirs = [
         base.join("configs"),
         base.join("datas"),
@@ -38,12 +62,14 @@ pub fn first_run_setup(exe_dir: &Path) -> anyhow::Result<()> {
         base_root.join("backup"),
         base_root.join("server").join("nginx"),
     ];
+    println!("[setup.rs:first_run_setup] ===> 将创建以下目录:");
     for d in &dirs {
+        println!("[setup.rs:first_run_setup] ===> 创建目录: {}", d.display());
         std::fs::create_dir_all(d)?;
     }
 
     // 解压 nginx
-    println!("  [1/3] 解压 nginx...");
+    println!("[setup.rs:first_run_setup] ===> [1/3] 解压 nginx...");
     let nginx_target = base_root.join("server").join("nginx");
     let nginx_zip_file = std::fs::File::open(&nginx_zip)?;
     let mut archive = zip::ZipArchive::new(nginx_zip_file)?;
@@ -72,50 +98,44 @@ pub fn first_run_setup(exe_dir: &Path) -> anyhow::Result<()> {
         }
         let _ = std::fs::remove_dir_all(&extracted_subdir);
     }
-    println!("  [1/3] nginx 解压完成");
+    println!("[setup.rs:first_run_setup] ===> [1/3] nginx 解压完成");
 
     // 生成 nginx.conf
-    println!("  [2/3] 生成配置...");
+    println!("[setup.rs:first_run_setup] ===> [2/3] 生成配置...");
     let nginx_conf = nginx_target.join("conf").join("nginx.conf");
     let sites_enabled = nginx_target.join("conf").join("sites-enabled");
     std::fs::create_dir_all(&sites_enabled)?;
 
-    let nginx_logs = base_root.join("wwwlogs").join("nginx").to_string_lossy().replace('\\', "/");
+    let nginx_logs = base_root
+        .join("wwwlogs")
+        .join("nginx")
+        .to_string_lossy()
+        .replace('\\', "/");
     let se_path = sites_enabled.to_string_lossy().replace('\\', "/");
     std::fs::write(&nginx_conf, format!(
         "worker_processes 2;\nerror_log {nginx_logs}/error.log warn;\nevents {{ worker_connections 1024; }}\nhttp {{\n    include mime.types;\n    default_type application/octet-stream;\n    access_log {nginx_logs}/access.log;\n    sendfile on;\n    keepalive_timeout 65;\n    include {se_path}/*.conf;\n}}\n"
     ))?;
 
     // 生成 config.toml
-
+    println!("[setup.rs:first_run_setup] ===> [3/3] 生成配置文件...");
     // Windows zip 里 nginx.exe 在根目录，Linux 编译的在 sbin/
     let nginx_bin = if cfg!(windows) {
         nginx_target.join("nginx.exe")
     } else {
         nginx_target.join("sbin").join("nginx")
     };
-    let nginx_conf_path = nginx_target.join("conf").join("nginx.conf");
     let db_path = base.join("datas").join("data.db");
-    let ssl_dir = base_root.join("ssl").to_string_lossy().replace('\\', "/");
-    let wwwroot = base_root.join("wwwroot").to_string_lossy().replace('\\', "/");
 
-    std::fs::write(&config_path, format!(
-        r#"[server]
+    std::fs::write(
+        &config_path,
+        format!(
+            r#"[server]
 port = 9000
 host = "0.0.0.0"
 
 [database]
 path = "{db}"
 log_sql = false
-
-[nginx]
-bin = "{bin}"
-config = "{conf}"
-sites_enabled = "{se}"
-ssl_dir = "{ssl}"
-default_root = "{root}"
-log_access = "{logs}/nginx/access.log"
-log_error = "{logs}/nginx/error.log"
 
 [acme]
 bin = ""
@@ -128,21 +148,16 @@ token_expires_hours = 24
 level = "debug"
 max_size_mb = 10
 "#,
-        db = db_path.to_string_lossy().replace('\\', "/"),
-        bin = nginx_bin.to_string_lossy().replace('\\', "/"),
-        conf = nginx_conf_path.to_string_lossy().replace('\\', "/"),
-        se = sites_enabled.to_string_lossy().replace('\\', "/"),
-        ssl = ssl_dir,
-        root = wwwroot,
-        logs = base_root.join("wwwlogs").to_string_lossy().replace('\\', "/"),
-    ))?;
+            db = db_path.to_string_lossy().replace('\\', "/"),
+        ),
+    )?;
 
     // 注册 Windows 服务
     #[cfg(target_os = "windows")]
     {
         let nssm = exe_dir.join("nssm.exe");
         if nssm.exists() {
-            println!("  [3/3] 注册服务...");
+            println!("[setup.rs:first_run_setup] ===> [3/3] 注册服务...");
             let svc_name = "OxNginx";
             let exe_path = exe_dir.join("ox-nginx.exe");
 
@@ -159,25 +174,40 @@ max_size_mb = 10
             run_nssm(&["stop", svc_name]);
             run_nssm(&["remove", svc_name, "confirm"]);
             run_nssm(&["install", svc_name, exe_path.to_str().unwrap_or("")]);
-            run_nssm(&["set", svc_name, "AppDirectory", exe_dir.to_str().unwrap_or("")]);
+            run_nssm(&[
+                "set",
+                svc_name,
+                "AppDirectory",
+                exe_dir.to_str().unwrap_or(""),
+            ]);
             run_nssm(&["set", svc_name, "DisplayName", "OxNginx"]);
             run_nssm(&["set", svc_name, "Start", "SERVICE_AUTO_START"]);
             let env = format!("CONFIG_PATH={}", config_path);
-            run_nssm(&["set", svc_name, "AppEnvironmentExtra", &env, "RUST_LOG=info"]);
-            let log = base_root.join("wwwlogs").join("panel").join("nssm.log").to_string_lossy().to_string();
+            run_nssm(&[
+                "set",
+                svc_name,
+                "AppEnvironmentExtra",
+                &env,
+                "RUST_LOG=info",
+            ]);
+            let log = base_root
+                .join("wwwlogs")
+                .join("panel")
+                .join("nssm.log")
+                .to_string_lossy()
+                .to_string();
             run_nssm(&["set", svc_name, "AppStdout", &log]);
             run_nssm(&["set", svc_name, "AppStderr", &log]);
             run_nssm(&["set", svc_name, "AppRotateFiles", "1"]);
             run_nssm(&["set", svc_name, "AppRotateBytes", "10485760"]);
             run_nssm(&["start", svc_name]);
-            println!("  [3/3] 服务已注册并启动");
+            println!("[setup.rs:first_run_setup] ===> [3/3] 服务已注册并启动");
         }
     }
 
-    println!("  ========================================");
-    println!("  初始化完成！");
-    println!("  ========================================");
-    println!("");
+    println!("[setup.rs:first_run_setup] ===> ========================================");
+    println!("[setup.rs:first_run_setup] ===> 初始化完成！");
+    println!("[setup.rs:first_run_setup] ===> ========================================");
 
     Ok(())
 }
@@ -194,9 +224,20 @@ pub fn generate_default_config(config_path: &str, exe_dir: &Path) -> anyhow::Res
     let (nginx_bin, nginx_conf, sites_enabled) = {
         let nginx_dir = exe_dir.join("server").join("nginx");
         (
-            nginx_dir.join("nginx.exe").to_string_lossy().replace('\\', "/"),
-            nginx_dir.join("conf").join("nginx.conf").to_string_lossy().replace('\\', "/"),
-            nginx_dir.join("conf").join("sites-enabled").to_string_lossy().replace('\\', "/"),
+            nginx_dir
+                .join("nginx.exe")
+                .to_string_lossy()
+                .replace('\\', "/"),
+            nginx_dir
+                .join("conf")
+                .join("nginx.conf")
+                .to_string_lossy()
+                .replace('\\', "/"),
+            nginx_dir
+                .join("conf")
+                .join("sites-enabled")
+                .to_string_lossy()
+                .replace('\\', "/"),
         )
     };
 
@@ -207,23 +248,16 @@ pub fn generate_default_config(config_path: &str, exe_dir: &Path) -> anyhow::Res
         "/etc/nginx/conf.d".to_string(),
     );
 
-    std::fs::write(config_path, format!(
-        r#"[server]
+    std::fs::write(
+        config_path,
+        format!(
+            r#"[server]
 port = 9000
 host = "0.0.0.0"
 
 [database]
 path = "{db}"
 log_sql = false
-
-[nginx]
-bin = "{bin}"
-config = "{conf}"
-sites_enabled = "{se}"
-ssl_dir = "{base}/ssl"
-default_root = "{base}/wwwroot"
-log_access = "{base}/wwwlogs/nginx/access.log"
-log_error = "{base}/wwwlogs/nginx/error.log"
 
 [acme]
 bin = ""
@@ -236,17 +270,25 @@ token_expires_hours = 24
 level = "debug"
 max_size_mb = 10
 "#,
-        db = db_path.to_string_lossy().replace('\\', "/"),
-        bin = nginx_bin,
-        conf = nginx_conf,
-        se = sites_enabled,
-        base = exe_dir.to_string_lossy().replace('\\', "/"),
-    ))?;
+            db = db_path.to_string_lossy().replace('\\', "/"),
+        ),
+    )?;
 
-    for dir in &["datas", "wwwroot", "wwwlogs/nginx", "wwwlogs/panel", "ssl", "backup", "server"] {
+    for dir in &[
+        "datas",
+        "wwwroot",
+        "wwwlogs/nginx",
+        "wwwlogs/panel",
+        "ssl",
+        "backup",
+        "server",
+    ] {
         let _ = std::fs::create_dir_all(exe_dir.join(dir));
     }
 
-    tracing::info!("默认配置已生成: {}", config_path);
+    println!(
+        "[setup.rs:generate_default_config] ===> 默认配置已生成: {}",
+        config_path
+    );
     Ok(())
 }

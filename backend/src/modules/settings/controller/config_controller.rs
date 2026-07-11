@@ -10,6 +10,7 @@ use serde_json::json;
 use ox_nginx_macros::audit_log;
 
 use crate::modules::common::dto::ApiResponse;
+use crate::modules::common::nginx::get_nginx_config;
 use crate::AppState;
 
 /// 配置文件内容
@@ -29,8 +30,14 @@ pub struct SaveConfigRequest {
 pub async fn list_config_files(
     State(state): State<AppState>,
 ) -> Json<serde_json::Value> {
-    let config = state.get_config();
-    let sites_enabled = &config.nginx.sites_enabled;
+    let nginx_config = match get_nginx_config(&state).await {
+        Ok(cfg) => cfg,
+        Err(e) => return Json(json!(ApiResponse::<()>::error(format!("读取配置失败: {}", e)))),
+    };
+    let sites_enabled = match &nginx_config.sites_enabled {
+        Some(p) if !p.is_empty() => p,
+        _ => return Json(json!(ApiResponse::<()>::error("站点配置目录未设置"))),
+    };
 
     let mut files = Vec::new();
 
@@ -66,8 +73,14 @@ pub async fn list_config_files(
 pub async fn get_main_config(
     State(state): State<AppState>,
 ) -> Json<serde_json::Value> {
-    let config = state.get_config();
-    let config_path = &config.nginx.config;
+    let nginx_config = match get_nginx_config(&state).await {
+        Ok(cfg) => cfg,
+        Err(e) => return Json(json!(ApiResponse::<()>::error(format!("读取配置失败: {}", e)))),
+    };
+    let config_path = match &nginx_config.config {
+        Some(p) if !p.is_empty() => p,
+        _ => return Json(json!(ApiResponse::<()>::error("Nginx配置文件路径未设置"))),
+    };
     match tokio::fs::read_to_string(config_path).await {
         Ok(content) => Json(json!(ApiResponse::success(ConfigContent {
             path: config_path.clone(),
@@ -81,12 +94,23 @@ pub async fn get_main_config(
 #[audit_log(module = "config", action = "保存主配置", capture = req)]
 pub async fn save_main_config(
     ctx: Extension<SharedAuditContext>,
-    
+
     State(state): State<AppState>,
     Json(req): Json<SaveConfigRequest>,
 ) -> Json<serde_json::Value> {
-    let config = state.get_config();
-    let config_path = &config.nginx.config;
+    let _ = ctx;
+    let nginx_config = match get_nginx_config(&state).await {
+        Ok(cfg) => cfg,
+        Err(e) => return Json(json!(ApiResponse::<()>::error(format!("读取配置失败: {}", e)))),
+    };
+    let config_path = match &nginx_config.config {
+        Some(p) if !p.is_empty() => p,
+        _ => return Json(json!(ApiResponse::<()>::error("Nginx配置文件路径未设置"))),
+    };
+    let nginx_bin = match &nginx_config.bin {
+        Some(p) if !p.is_empty() => p,
+        _ => return Json(json!(ApiResponse::<()>::error("Nginx未安装"))),
+    };
 
     // 备份原配置
     let backup_path = format!("{}.bak.{}", config_path, chrono::Local::now().format("%Y%m%d%H%M%S"));
@@ -98,7 +122,7 @@ pub async fn save_main_config(
     match tokio::fs::write(config_path, &req.content).await {
         Ok(_) => {
             // 测试配置
-            let test_result = crate::modules::common::nginx::test_config(&config.nginx.bin).await;
+            let test_result = crate::modules::common::nginx::test_config(nginx_bin).await;
             if test_result.success {
                 Json(json!(ApiResponse::success("配置保存成功")))
             } else {
@@ -118,9 +142,16 @@ pub async fn get_site_config(
     State(state): State<AppState>,
     Path(name): Path<String>,
 ) -> Json<serde_json::Value> {
-    let config = state.get_config();
+    let nginx_config = match get_nginx_config(&state).await {
+        Ok(cfg) => cfg,
+        Err(e) => return Json(json!(ApiResponse::<()>::error(format!("读取配置失败: {}", e)))),
+    };
+    let sites_enabled = match &nginx_config.sites_enabled {
+        Some(p) if !p.is_empty() => p,
+        _ => return Json(json!(ApiResponse::<()>::error("站点配置目录未设置"))),
+    };
     let conf_name = if name.ends_with(".conf") { name } else { format!("{}.conf", name) };
-    let config_path = format!("{}/{}", config.nginx.sites_enabled, conf_name);
+    let config_path = format!("{}/{}", sites_enabled, conf_name);
     tracing::info!("读取站点配置: {}", config_path);
 
     match tokio::fs::read_to_string(&config_path).await {
@@ -139,14 +170,26 @@ pub async fn get_site_config(
 #[audit_log(module = "config", action = "保存站点配置", capture = req)]
 pub async fn save_site_config(
     ctx: Extension<SharedAuditContext>,
-    
+
     State(state): State<AppState>,
     Path(name): Path<String>,
     Json(req): Json<SaveConfigRequest>,
 ) -> Json<serde_json::Value> {
-    let config = state.get_config();
+    let _ = ctx;
+    let nginx_config = match get_nginx_config(&state).await {
+        Ok(cfg) => cfg,
+        Err(e) => return Json(json!(ApiResponse::<()>::error(format!("读取配置失败: {}", e)))),
+    };
+    let sites_enabled = match &nginx_config.sites_enabled {
+        Some(p) if !p.is_empty() => p,
+        _ => return Json(json!(ApiResponse::<()>::error("站点配置目录未设置"))),
+    };
+    let nginx_bin = match &nginx_config.bin {
+        Some(p) if !p.is_empty() => p,
+        _ => return Json(json!(ApiResponse::<()>::error("Nginx未安装"))),
+    };
     let conf_name = if name.ends_with(".conf") { name } else { format!("{}.conf", name) };
-    let config_path = format!("{}/{}", config.nginx.sites_enabled, conf_name);
+    let config_path = format!("{}/{}", sites_enabled, conf_name);
     tracing::info!("保存站点配置: {}", config_path);
 
     // 备份原配置
@@ -159,7 +202,7 @@ pub async fn save_site_config(
     match tokio::fs::write(&config_path, &req.content).await {
         Ok(_) => {
             // 测试配置
-            let test_result = crate::modules::common::nginx::test_config(&config.nginx.bin).await;
+            let test_result = crate::modules::common::nginx::test_config(nginx_bin).await;
             if test_result.success {
                 Json(json!(ApiResponse::success("配置保存成功")))
             } else {
@@ -182,13 +225,21 @@ pub async fn save_site_config(
 #[audit_log(module = "config", action = "启禁站点配置")]
 pub async fn toggle_site_config(
     ctx: Extension<SharedAuditContext>,
-    
+
     State(state): State<AppState>,
     Path(name): Path<String>,
 ) -> Json<serde_json::Value> {
-    let config = state.get_config();
+    let _ = ctx;
+    let nginx_config = match get_nginx_config(&state).await {
+        Ok(cfg) => cfg,
+        Err(e) => return Json(json!(ApiResponse::<()>::error(format!("读取配置失败: {}", e)))),
+    };
+    let sites_enabled = match &nginx_config.sites_enabled {
+        Some(p) if !p.is_empty() => p,
+        _ => return Json(json!(ApiResponse::<()>::error("站点配置目录未设置"))),
+    };
     let conf_name = if name.ends_with(".conf") { name } else { format!("{}.conf", name) };
-    let config_path = format!("{}/{}", config.nginx.sites_enabled, conf_name);
+    let config_path = format!("{}/{}", sites_enabled, conf_name);
 
     if !std::path::Path::new(&config_path).exists() {
         tracing::error!("配置文件不存在: {}", config_path);
@@ -208,13 +259,21 @@ pub async fn toggle_site_config(
 #[audit_log(module = "config", action = "删除站点配置")]
 pub async fn delete_site_config(
     ctx: Extension<SharedAuditContext>,
-    
+
     State(state): State<AppState>,
     Path(name): Path<String>,
 ) -> Json<serde_json::Value> {
-    let config = state.get_config();
+    let _ = ctx;
+    let nginx_config = match get_nginx_config(&state).await {
+        Ok(cfg) => cfg,
+        Err(e) => return Json(json!(ApiResponse::<()>::error(format!("读取配置失败: {}", e)))),
+    };
+    let sites_enabled = match &nginx_config.sites_enabled {
+        Some(p) if !p.is_empty() => p,
+        _ => return Json(json!(ApiResponse::<()>::error("站点配置目录未设置"))),
+    };
     let conf_name = if name.ends_with(".conf") { name } else { format!("{}.conf", name) };
-    let config_path = format!("{}/{}", config.nginx.sites_enabled, conf_name);
+    let config_path = format!("{}/{}", sites_enabled, conf_name);
 
     match tokio::fs::remove_file(&config_path).await {
         Ok(_) => Json(json!(ApiResponse::success("配置文件已删除"))),

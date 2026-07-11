@@ -16,8 +16,9 @@ pub async fn get_dashboard(state: &AppState) -> anyhow::Result<DashboardData> {
             .await?;
 
     // 获取Nginx信息
-    let config = state.get_config();
-    let nginx_info = get_nginx_info(&config.nginx.bin).await;
+    let nginx_config = crate::modules::common::nginx::get_nginx_config(state).await?;
+    let nginx_bin = nginx_config.bin.as_deref().unwrap_or("");
+    let nginx_info = get_nginx_info(nginx_bin).await;
 
     // 获取系统信息
     let system_info = crate::modules::system::service::system_service::get_system_info(state).await
