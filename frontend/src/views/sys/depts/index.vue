@@ -22,8 +22,9 @@
         @selectionChange="(rows: any[]) => (selectedRows = rows)"
       >
         <template #toolbar-left>
-          <el-button type="primary" @click="openCreate(null)">{{ $t('common.add') }}</el-button>
+          <el-button v-auth="'sys:dept:add'" type="primary" @click="openCreate(null)">{{ $t('common.add') }}</el-button>
           <el-button
+            v-auth="'sys:dept:batchDelete'"
             type="danger"
             :disabled="!selectedRows.length"
             @click="batchDelete"

@@ -17,19 +17,6 @@ pub async fn list_all_enabled_permissions(pool: &SqlitePool) -> sqlx::Result<Vec
     .await
 }
 
-/// 统计某用户是否拥有 super_admin 角色
-pub async fn count_super_admin_by_username(pool: &SqlitePool, username: &str) -> sqlx::Result<i64> {
-    sqlx::query_scalar(
-        "SELECT COUNT(*) FROM sys_user_roles ur
-         JOIN sys_roles r ON ur.role_id = r.id
-         WHERE r.code = 'super_admin'
-           AND ur.user_id = (SELECT id FROM sys_users WHERE username = ?)",
-    )
-    .bind(username)
-    .fetch_one(pool)
-    .await
-}
-
 /// 列出用户所有启用的角色编码
 pub async fn list_enabled_role_codes_by_username(
     pool: &SqlitePool,

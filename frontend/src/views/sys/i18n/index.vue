@@ -28,9 +28,9 @@
         @reload="load"
       >
         <template #toolbar-left>
-          <el-button type="primary" @click="openAddKey">{{ $t('common.add') }}</el-button>
-          <el-button type="primary" @click="openAddLocale">{{ $t('sys.rbac.addLocale') }}</el-button>
-          <el-button type="success" @click="batchSave" :loading="saving">{{ $t('common.save') }}</el-button>
+          <el-button v-auth="'sys:i18n:add'" type="primary" @click="openAddKey">{{ $t('common.add') }}</el-button>
+          <el-button v-auth="'sys:i18n:import'" type="primary" @click="openAddLocale">{{ $t('sys.rbac.addLocale') }}</el-button>
+          <el-button v-auth="'sys:i18n:export'" type="success" @click="batchSave" :loading="saving">{{ $t('common.save') }}</el-button>
         </template>
         <!-- 每个 locale 一列可编辑输入 -->
         <template v-for="loc in locales" :key="loc" #[localeSlot(loc)]="{ row }">

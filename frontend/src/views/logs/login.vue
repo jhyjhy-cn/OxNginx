@@ -45,7 +45,7 @@
         </template>
         <template #created="{ row }">{{ formatTime(row.created_at) }}</template>
         <template #toolbar-left>
-          <el-button type="success" @click="doExport">
+          <el-button v-auth="'sys:loginLog:export'" type="success" @click="doExport">
             {{ $t("common.export") }}
           </el-button>
         </template>

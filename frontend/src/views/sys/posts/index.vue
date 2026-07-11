@@ -21,7 +21,7 @@
         @reload="load"
       >
         <template #toolbar-left>
-          <el-button type="primary" @click="openCreate">{{ $t("common.add") }}</el-button>
+          <el-button v-auth="'sys:post:add'" type="primary" @click="openCreate">{{ $t("common.add") }}</el-button>
         </template>
         <template #status="{ row }">
           <el-tag size="small" :type="row.status === 'enabled' ? 'success' : 'info'">

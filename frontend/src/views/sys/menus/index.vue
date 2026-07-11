@@ -22,8 +22,8 @@
         @reload="load"
       >
         <template #toolbar-left>
-          <el-button type="primary" @click="openCreate(null)">{{ $t('common.add') }}</el-button>
-          <el-button type="danger" :disabled="!selectedIds.length" @click="batchDelete">
+          <el-button v-auth="'sys:menu:add'" type="primary" @click="openCreate(null)">{{ $t('common.add') }}</el-button>
+          <el-button v-auth="'sys:menu:batchDelete'" type="danger" :disabled="!selectedIds.length" @click="batchDelete">
             {{ $t('sys.rbac.batchDelete') }} ({{ selectedIds.length }})
           </el-button>
           <span class="hint" style="margin-left: 8px">{{ $t('sys.rbac.hintMenuRefresh') }}</span>
@@ -145,7 +145,7 @@ const isFolder = (row: Menu) => row.type === MenuType.Button
 
 const tableColumns: TableColumn[] = [
   { type: 'selection', width: 48 },
-  { prop: 'name', label: 'sys.rbac.colName', minWidth: 160, slot: 'name' },
+  { prop: 'name', label: 'sys.rbac.colName', minWidth: 200, slot: 'name',showOverflowTooltip:true },
   { prop: 'title', label: 'sys.rbac.colTitle', minWidth: 160, slot: 'title' },
   { prop: 'path', label: 'sys.rbac.colPath', minWidth: 180 },
   { prop: 'component', label: 'sys.rbac.colComponent', minWidth: 140 },

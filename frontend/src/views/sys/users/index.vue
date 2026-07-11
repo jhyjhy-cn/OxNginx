@@ -52,10 +52,11 @@
             @selectionChange="(rows: any[]) => (selectedRows = rows)"
           >
             <template #toolbar-left>
-              <el-button type="primary" @click="openCreate">
+              <el-button v-auth="'sys:user:add'" type="primary" @click="openCreate">
                 {{ $t("common.add") }}
               </el-button>
               <el-button
+                v-auth="'sys:user:resetPwd'"
                 type="warning"
                 :disabled="!selectedRows.length"
                 @click="batchResetPwd"
@@ -63,6 +64,7 @@
                 {{ $t("sys.rbac.resetPassword") }} ({{ selectedRows.length }})
               </el-button>
               <el-dropdown
+                v-auth="'sys:user:changeStatus'"
                 :disabled="!selectedRows.length"
                 @command="batchSetDisabled"
               >
@@ -81,7 +83,7 @@
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
-              <el-button @click="exportXlsx">
+              <el-button v-auth="'sys:user:export'" @click="exportXlsx">
                 <el-icon style="margin-right: 4px"><Download /></el-icon>
                 {{ $t("common.export") }}
               </el-button>

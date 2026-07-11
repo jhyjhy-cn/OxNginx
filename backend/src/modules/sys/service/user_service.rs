@@ -22,10 +22,6 @@ pub async fn get_rbac_info(pool: &SqlitePool, username: &str) -> Result<(Vec<Str
     Ok((roles, perms, menus))
 }
 
-pub async fn user_is_super_admin(pool: &SqlitePool, username: &str) -> Result<bool> {
-    Ok(user_dao::count_super_admin_by_username(pool, username).await? > 0)
-}
-
 async fn get_user_roles(pool: &SqlitePool, username: &str) -> Result<Vec<String>> {
     Ok(user_dao::list_enabled_role_codes_by_username(pool, username).await?)
 }

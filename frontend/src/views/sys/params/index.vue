@@ -25,7 +25,7 @@
         @reload="load"
       >
         <template #toolbar-left>
-          <el-button type="primary" @click="openCreate">
+          <el-button v-auth="'sys:param:add'" type="primary" @click="openCreate">
             {{ $t("common.add") }}
           </el-button>
         </template>

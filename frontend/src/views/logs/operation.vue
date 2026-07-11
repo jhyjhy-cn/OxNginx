@@ -32,7 +32,7 @@
         <template #created="{ row }">{{ formatTime(row.created_at) }}</template>
         <template #cost="{ row }">{{ durationMs(row) }}</template>
         <template #toolbar-left>
-          <el-button type="success" @click="doExport">
+          <el-button v-auth="'sys:opLog:export'" type="success" @click="doExport">
             {{ $t("common.export") }}
           </el-button>
         </template>

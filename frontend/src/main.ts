@@ -14,6 +14,7 @@ import router, { restoreDynamicRoutes } from './router'
 import i18n, { restoreLocale } from './i18n'
 import { useSettingsStore } from './stores/settings'
 import OnIconPlugin from './components/OnIcon'
+import { vAuth } from './directives/auth'
 
 const app = createApp(App)
 
@@ -38,4 +39,5 @@ const settingsStore = useSettingsStore()
 settingsStore.initTheme()
 restoreLocale()
 
+app.directive('auth', vAuth)
 app.mount('#app')

@@ -121,10 +121,6 @@ pub fn build(state: AppState) -> Router {
         .route("/api/rbac/me", get(modules::sys::controller::user_controller::me))
         .route("/api/rbac/i18n/messages", get(modules::sys::controller::i18n_controller::get_i18n_messages))
         .route("/api/rbac/i18n", get(modules::sys::controller::i18n_controller::list_i18n))  // 读，全局可用
-        .layer(from_fn_with_state(state.clone(), audit::middleware::audit_middleware)) // 先添加 = 后执行
-        .layer(from_fn_with_state(state.clone(), middleware::auth_middleware));         // 后添加 = 先执行 = 注入 TokenInfo
-
-    let admin_routes = Router::new()
         // 用户
         .route("/api/rbac/users", get(modules::sys::controller::user_controller::list_users).post(modules::sys::controller::user_controller::create_user))
         .route("/api/rbac/users/{id}", get(modules::sys::controller::user_controller::get_user).put(modules::sys::controller::user_controller::update_user).delete(modules::sys::controller::user_controller::delete_user))
@@ -168,9 +164,8 @@ pub fn build(state: AppState) -> Router {
         .route("/api/rbac/files/{id}", get(modules::sys::controller::file_controller::get_file).delete(modules::sys::controller::file_controller::delete_file))
         .route("/api/rbac/files/batch-delete", post(modules::sys::controller::file_controller::batch_delete_files))
         .route("/api/rbac/files/{id}/download", get(modules::sys::controller::file_controller::download_file))
-        .layer(from_fn_with_state(state.clone(), audit::middleware::audit_middleware)) // 先添加 = 第3执行
-        .layer(from_fn_with_state(state.clone(), middleware::auth_middleware))          // 第2添加 = 第2执行
-        .layer(from_fn_with_state(state.clone(), middleware::require_admin));                       // 最后添加 = 第1执行
+        .layer(from_fn_with_state(state.clone(), audit::middleware::audit_middleware)) // 先添加 = 后执行
+        .layer(from_fn_with_state(state.clone(), middleware::auth_middleware));         // 后添加 = 先执行 = 注入 TokenInfo
 
     // 静态文件服务（前端 SPA）
     let run_dir = crate::modules::common::config::get_run_dir();
@@ -193,7 +188,6 @@ pub fn build(state: AppState) -> Router {
 
     public_routes
         .merge(protected_routes)
-        .merge(admin_routes)
         .merge(files_service)
         .merge(api_with_fallback)
         // ponytail: 文件上传默认 body limit 是 2MB，调到 50MB；超大文件再换 streaming
