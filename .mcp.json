@@ -2,7 +2,17 @@
   "mcpServers": {
     "sqlite": {
       "command": "uvx",
-      "args": ["sqlite-mcp-server"]
+      "args": [
+        "sqlite-mcp-server"
+      ]
+    },
+    "codegraph": {
+      "type": "stdio",
+      "command": "codegraph",
+      "args": [
+        "serve",
+        "--mcp"
+      ]
     }
   }
 }
