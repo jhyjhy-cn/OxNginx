@@ -20,7 +20,7 @@ pub use upstream::{generate_upstream_config, generate_upstream_config_from_reque
 // process.rs
 pub use process::{
     get_nginx_status, install_nginx, reload_nginx, restart_nginx, start_nginx, stop_nginx,
-    test_config,
+    test_config, NginxInstallResult,
 };
 
 // ensure_include.rs

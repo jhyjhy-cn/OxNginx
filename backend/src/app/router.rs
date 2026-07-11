@@ -176,7 +176,8 @@ pub fn build(state: AppState) -> Router {
     let run_dir = crate::modules::common::config::get_run_dir();
     let static_dir = run_dir.join("static");
     let files_dir = run_dir.join("files");
-    tracing::info!("静态文件目录: {}, 上传目录: {}", static_dir.display(), files_dir.display());
+    tracing::info!("静态文件目录: {}", static_dir.display());
+    tracing::info!("本地上传目录: {}", files_dir.display());
 
     // /files/* 路由：指向 run_dir/files/（上传文件实际目录）
     // nest_service 会自动剥掉 /files 前缀，ServeDir 拿到的是相对路径

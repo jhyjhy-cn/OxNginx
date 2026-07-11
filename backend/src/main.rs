@@ -35,7 +35,7 @@ const BANNER: &str = r#"
 //      ========`-.____`-.___\_____/___.-`____.-'========         //
 //                           `=---='                              //
 //      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^        //
-//             佛祖保佑       永不宕机      永无BUG                 //
+//             佛祖保佑       永不宕机      永无BUG               //
 ////////////////////////////////////////////////////////////////////
 "#;
 
@@ -78,12 +78,7 @@ fn main() -> anyhow::Result<()> {
     let config = AppConfig::load()?;
 
     // 初始化日志（控制台 + 文件双输出，大小轮转写入 wwwlogs/panel/）
-    let log_dir = run_dir
-        .parent()
-        .and_then(|p| p.parent())
-        .unwrap_or(&run_dir)
-        .join("wwwlogs")
-        .join("panel");
+    let log_dir = run_dir.join("wwwlogs").join("panel");
     startup::logging::init(
         &log_dir,
         &config.log.level,

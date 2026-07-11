@@ -1,9 +1,11 @@
 use axum::{extract::State, Extension, Json};
 use serde_json::json;
+use sqlx::SqlitePool;
 
 use crate::modules::common::audit::context::SharedAuditContext;
 use crate::modules::common::dto::{ApiResponse, NginxTestResult};
-use crate::modules::common::nginx::get_nginx_config;
+use crate::modules::common::nginx::{get_nginx_config, NginxInstallResult};
+use crate::modules::sys::service::param_service;
 use crate::AppState;
 use ox_nginx_macros::audit_log;
 
@@ -132,20 +134,64 @@ pub async fn restart(
     }
 }
 
+/// 将 nginx 安装路径写入 sys_params
+async fn write_nginx_params_to_db(pool: &SqlitePool, result: &NginxInstallResult) -> anyhow::Result<()> {
+    let exe_dir = crate::modules::common::config::get_run_dir();
+
+    let ssl_dir = exe_dir.join("ssl").to_string_lossy().replace('\\', "/");
+    let default_root = exe_dir.join("wwwroot").to_string_lossy().replace('\\', "/");
+    let log_access = exe_dir
+        .join("wwwlogs")
+        .join("nginx")
+        .join("access.log")
+        .to_string_lossy()
+        .replace('\\', "/");
+    let log_error = exe_dir
+        .join("wwwlogs")
+        .join("nginx")
+        .join("error.log")
+        .to_string_lossy()
+        .replace('\\', "/");
+
+    let params = [
+        ("nginx.bin", result.bin.replace('\\', "/")),
+        ("nginx.config", result.config.replace('\\', "/")),
+        ("nginx.sites_enabled", result.sites_enabled.replace('\\', "/")),
+        ("nginx.ssl_dir", ssl_dir),
+        ("nginx.default_root", default_root),
+        ("nginx.log_access", log_access),
+        ("nginx.log_error", log_error),
+    ];
+
+    for (key, value) in params {
+        let param = param_service::get_param_by_key(pool, key).await?;
+        if let Some(p) = param {
+            param_service::update_param(pool, p.id, Some(&value), None, None, None, None).await?;
+        }
+    }
+    Ok(())
+}
+
 #[audit_log(module = "nginx", action = "一键安装Nginx")]
 pub async fn install(
     ctx: Extension<SharedAuditContext>,
     State(state): State<AppState>,
 ) -> Json<serde_json::Value> {
     let _ = ctx;
-    // 解压到 server/nginx/ 目录
     let install_dir = crate::modules::common::config::get_run_dir()
         .join("server")
         .join("nginx")
         .to_string_lossy()
         .to_string();
+
     match crate::modules::common::nginx::install_nginx(&install_dir).await {
-        Ok(_) => { crate::modules::dashboard::controller::dashboard_ws::trigger_push(&state).await; Json(json!(ApiResponse::success("Nginx安装成功"))) }
+        Ok(result) => {
+            if let Err(e) = write_nginx_params_to_db(state.db.pool(), &result).await {
+                tracing::error!("写入nginx系统参数失败: {}", e);
+            }
+            crate::modules::dashboard::controller::dashboard_ws::trigger_push(&state).await;
+            Json(json!(ApiResponse::success("Nginx安装成功")))
+        }
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("安装失败: {}", e)))),
     }
 }
