@@ -11,11 +11,17 @@
       <span class="tab-title">{{ t('sys.menu.dashboard') }}</span>
     </div>
 
+    <!-- 向左滚动按钮 -->
+    <el-icon v-show="hasOverflow" class="tab-scroll-btn" :class="{ disabled: !canScrollLeft }" :size="14" @click="scrollLeft">
+      <DArrowLeft />
+    </el-icon>
+
     <!-- 可拖拽排序的标签页 -->
     <draggable
       v-model="sortableTabs"
       item-key="path"
       class="tab-list"
+      ref="tabListRef"
       animation="200"
       ghost-class="tab-ghost"
       chosen-class="tab-chosen"
@@ -38,6 +44,11 @@
         </div>
       </template>
     </draggable>
+
+    <!-- 向右滚动按钮 -->
+    <el-icon v-show="hasOverflow" class="tab-scroll-btn" :class="{ disabled: !canScrollRight }" :size="14" @click="scrollRight">
+      <DArrowRight />
+    </el-icon>
 
     <!-- 右键菜单 -->
     <Teleport to="body">
@@ -70,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, onMounted, onUnmounted } from 'vue'
+import { computed, reactive, ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import draggable from 'vuedraggable'
@@ -84,6 +95,34 @@ const { t } = useI18n()
 const tabStore = useTabStore()
 const settingsStore = useSettingsStore()
 const authStore = useAuthStore()
+
+// ========== 滚动控制 ==========
+const tabListRef = ref<{ $el: HTMLElement } | null>(null)
+const hasOverflow = ref(false)
+const canScrollLeft = ref(false)
+const canScrollRight = ref(false)
+
+function updateScrollState() {
+  const el = tabListRef.value?.$el
+  if (!el) return
+  hasOverflow.value = el.scrollWidth > el.clientWidth
+  canScrollLeft.value = el.scrollLeft > 0
+  canScrollRight.value = el.scrollLeft < el.scrollWidth - el.clientWidth - 1
+}
+
+function scrollLeft() {
+  const el = tabListRef.value?.$el
+  if (!el) return
+  el.scrollBy({ left: -200, behavior: 'smooth' })
+  setTimeout(updateScrollState, 200)
+}
+
+function scrollRight() {
+  const el = tabListRef.value?.$el
+  if (!el) return
+  el.scrollBy({ left: 200, behavior: 'smooth' })
+  setTimeout(updateScrollState, 200)
+}
 
 // ponytail: 静态 tabIconMap 作兜底,动态菜单优先
 function getTabIcon(path: string): string {
@@ -120,6 +159,7 @@ const sortableTabs = computed({
     tabStore.tabs = [tabStore.tabs[0], ...newList]
   },
 })
+watch(sortableTabs, () => nextTick(updateScrollState), { deep: true })
 
 // ========== 导航 ==========
 function navigateTo(tab: TabItem) {
@@ -157,8 +197,19 @@ function closeContextMenu() {
   contextMenu.visible = false
 }
 
-onMounted(() => document.addEventListener('click', closeContextMenu))
-onUnmounted(() => document.removeEventListener('click', closeContextMenu))
+onMounted(() => {
+  document.addEventListener('click', closeContextMenu)
+  const el = tabListRef.value?.$el
+  if (el) {
+    el.addEventListener('scroll', updateScrollState)
+    updateScrollState()
+  }
+})
+onUnmounted(() => {
+  document.removeEventListener('click', closeContextMenu)
+  const el = tabListRef.value?.$el
+  if (el) el.removeEventListener('scroll', updateScrollState)
+})
 
 function handleRefresh() {
   closeContextMenu()
@@ -207,6 +258,21 @@ function handleCloseOther() {
 .tab-home {
   margin-right: 6px;
   cursor: pointer;
+}
+
+.tab-scroll-btn {
+  flex-shrink: 0;
+  cursor: pointer;
+  color: var(--el-text-color-regular);
+  transition: color 0.2s;
+  padding: 4px;
+}
+.tab-scroll-btn:hover:not(.disabled) {
+  color: var(--el-color-primary);
+}
+.tab-scroll-btn.disabled {
+  color: var(--el-text-color-disabled);
+  cursor: not-allowed;
 }
 
 .tab-list {
