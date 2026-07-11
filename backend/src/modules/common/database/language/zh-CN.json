@@ -517,6 +517,7 @@
   "sys.user.secret": "保密",
   "sys.menu.rbacParams": "系统参数",
   "sys.menu.rbacFiles": "系统文件",
+  "sys.menu.systemManagement": "系统管理",
   "sys.params.key": "参数键",
   "sys.params.value": "参数值",
   "sys.params.name": "参数名",

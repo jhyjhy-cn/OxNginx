@@ -517,6 +517,7 @@
   "sys.user.secret": "Secret",
   "sys.menu.rbacParams": "System Params",
   "sys.menu.rbacFiles": "System Files",
+  "sys.menu.systemManagement": "System Management",
   "sys.params.key": "Key",
   "sys.params.value": "Value",
   "sys.params.name": "Name",
