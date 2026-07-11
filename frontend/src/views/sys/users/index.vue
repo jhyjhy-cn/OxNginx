@@ -119,6 +119,7 @@
 </template>
 
 <script setup lang="ts">
+import dayjs from "dayjs";
 import { ref, reactive, onMounted, computed } from "vue";
 import { ArrowDown, Download } from "@element-plus/icons-vue";
 import OnForm from "@/components/OnForm/OnForm/index.vue";
@@ -538,7 +539,7 @@ async function exportXlsx() {
       delete params[k];
     }
   });
-  const ts = new Date().toISOString().slice(0, 10);
+  const ts = dayjs().format("YYYY-MM-DD");
   await downloadXlsx("/api/rbac/users/export", params, `users-${ts}.xlsx`);
 }
 

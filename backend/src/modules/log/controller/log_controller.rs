@@ -1,8 +1,9 @@
-use axum::{extract::State, http::header, Json};
+use axum::{extract::State, Json};
 use serde_json::json;
 
 use crate::modules::common::dto::{ApiResponse, LogResponse, PagedResult};
 use crate::modules::common::enums::LogStatus;
+use crate::modules::common::util::excel::xlsx_response;
 use crate::modules::log::service::log_service::{LoginLogQuery, OperationLogQuery};
 use crate::modules::common::util::read_log_tail;
 use crate::AppState;
@@ -81,22 +82,14 @@ pub async fn list_operation_logs(
     }
 }
 
-/// 导出操作日志 CSV
+/// 导出操作日志 xlsx
 pub async fn export_operation_logs(
     State(state): State<AppState>,
     axum::extract::Query(params): axum::extract::Query<OperationLogParams>,
 ) -> Result<axum::response::Response, Json<serde_json::Value>> {
     let q = build_op_query(&params);
-    match crate::modules::log::service::log_service::export_operation_logs_csv(state.db.pool(), &q).await {
-        Ok(csv) => {
-            let response = axum::response::Response::builder()
-                .status(200)
-                .header(header::CONTENT_TYPE, "text/csv; charset=utf-8")
-                .header(header::CONTENT_DISPOSITION, "attachment; filename=\"operation_logs.csv\"")
-                .body(axum::body::Body::from(csv))
-                .unwrap();
-            Ok(response)
-        }
+    match crate::modules::log::service::log_service::export_operation_logs_xlsx(state.db.pool(), &q).await {
+        Ok(buf) => Ok(xlsx_response("operation_logs.xlsx".to_string(), buf)),
         Err(e) => Err(Json(json!(ApiResponse::<()>::error(e.to_string())))),
     }
 }
@@ -138,22 +131,14 @@ pub async fn list_login_logs(
     }
 }
 
-/// 导出登录日志 CSV
+/// 导出登录日志 xlsx
 pub async fn export_login_logs(
     State(state): State<AppState>,
     axum::extract::Query(params): axum::extract::Query<LoginLogParams>,
 ) -> Result<axum::response::Response, Json<serde_json::Value>> {
     let q = build_query(&params);
-    match crate::modules::log::service::log_service::export_login_logs_csv(state.db.pool(), &q).await {
-        Ok(csv) => {
-            let response = axum::response::Response::builder()
-                .status(200)
-                .header(header::CONTENT_TYPE, "text/csv; charset=utf-8")
-                .header(header::CONTENT_DISPOSITION, "attachment; filename=\"login_logs.csv\"")
-                .body(axum::body::Body::from(csv))
-                .unwrap();
-            Ok(response)
-        }
+    match crate::modules::log::service::log_service::export_login_logs_xlsx(state.db.pool(), &q).await {
+        Ok(buf) => Ok(xlsx_response("login_logs.xlsx".to_string(), buf)),
         Err(e) => Err(Json(json!(ApiResponse::<()>::error(e.to_string())))),
     }
 }

@@ -81,24 +81,12 @@ pub async fn list_operation_logs(
     offset: i64,
 ) -> sqlx::Result<(Vec<OperationLog>, i64)> {
     let mut wheres = Vec::new();
-    if username.is_some() {
-        wheres.push("username LIKE ?");
-    }
-    if status.is_some() {
-        wheres.push("status = ?");
-    }
-    if start_time.is_some() {
-        wheres.push("created_at >= ?");
-    }
-    if end_time.is_some() {
-        wheres.push("created_at <= ?");
-    }
-    if trace_id.is_some() {
-        wheres.push("trace_id = ?");
-    }
-    if module.is_some() {
-        wheres.push("module = ?");
-    }
+    if username.is_some() { wheres.push("username LIKE ?"); }
+    if status.is_some() { wheres.push("status = ?"); }
+    if start_time.is_some() { wheres.push("created_at >= ?"); }
+    if end_time.is_some() { wheres.push("created_at <= ?"); }
+    if trace_id.is_some() { wheres.push("trace_id = ?"); }
+    if module.is_some() { wheres.push("module = ?"); }
     let where_sql = if wheres.is_empty() {
         String::new()
     } else {
@@ -144,6 +132,39 @@ pub async fn list_operation_logs(
     Ok((list, total))
 }
 
+/// 导出查询（不分页，用于 xlsx 导出）
+pub async fn list_operation_logs_for_export(
+    pool: &SqlitePool,
+    username: Option<&str>,
+    status: Option<i32>,
+    start_time: Option<&str>,
+    end_time: Option<&str>,
+    trace_id: Option<&str>,
+    module: Option<&str>,
+) -> sqlx::Result<Vec<OperationLog>> {
+    let mut wheres = Vec::new();
+    if username.is_some() { wheres.push("username LIKE ?"); }
+    if status.is_some() { wheres.push("status = ?"); }
+    if start_time.is_some() { wheres.push("created_at >= ?"); }
+    if end_time.is_some() { wheres.push("created_at <= ?"); }
+    if trace_id.is_some() { wheres.push("trace_id = ?"); }
+    if module.is_some() { wheres.push("module = ?"); }
+    let where_sql = if wheres.is_empty() {
+        String::new()
+    } else {
+        format!(" WHERE {}", wheres.join(" AND "))
+    };
+    let sql = format!("SELECT * FROM sys_operation_logs{} ORDER BY id DESC", where_sql);
+    let mut q = sqlx::query_as::<_, OperationLog>(&sql);
+    if let Some(v) = username { q = q.bind(format!("%{}%", v)); }
+    if let Some(v) = status { q = q.bind(v); }
+    if let Some(v) = start_time { q = q.bind(v); }
+    if let Some(v) = end_time { q = q.bind(v); }
+    if let Some(v) = trace_id { q = q.bind(v); }
+    if let Some(v) = module { q = q.bind(v); }
+    q.fetch_all(pool).await
+}
+
 #[allow(clippy::too_many_arguments)]
 pub async fn insert_login_log(
     pool: &SqlitePool,
@@ -173,21 +194,11 @@ pub async fn list_login_logs(
     offset: i64,
 ) -> sqlx::Result<(Vec<LoginLog>, i64)> {
     let mut wheres = Vec::new();
-    if username.is_some() {
-        wheres.push("username LIKE ?");
-    }
-    if ip.is_some() {
-        wheres.push("ip LIKE ?");
-    }
-    if status.is_some() {
-        wheres.push("status = ?");
-    }
-    if start_time.is_some() {
-        wheres.push("created_at >= ?");
-    }
-    if end_time.is_some() {
-        wheres.push("created_at <= ?");
-    }
+    if username.is_some() { wheres.push("username LIKE ?"); }
+    if ip.is_some() { wheres.push("ip LIKE ?"); }
+    if status.is_some() { wheres.push("status = ?"); }
+    if start_time.is_some() { wheres.push("created_at >= ?"); }
+    if end_time.is_some() { wheres.push("created_at <= ?"); }
     let where_sql = if wheres.is_empty() {
         String::new()
     } else {
@@ -201,39 +212,52 @@ pub async fn list_login_logs(
     );
 
     let mut count_q = sqlx::query_scalar(&count_sql);
-    if let Some(v) = username {
-        count_q = count_q.bind(format!("%{}%", v));
-    }
-    if let Some(v) = ip {
-        count_q = count_q.bind(format!("%{}%", v));
-    }
-    if let Some(v) = status {
-        count_q = count_q.bind(v);
-    }
-    if let Some(v) = start_time {
-        count_q = count_q.bind(v);
-    }
-    if let Some(v) = end_time {
-        count_q = count_q.bind(v);
-    }
+    if let Some(v) = username { count_q = count_q.bind(format!("%{}%", v)); }
+    if let Some(v) = ip { count_q = count_q.bind(format!("%{}%", v)); }
+    if let Some(v) = status { count_q = count_q.bind(v); }
+    if let Some(v) = start_time { count_q = count_q.bind(v); }
+    if let Some(v) = end_time { count_q = count_q.bind(v); }
     let total: i64 = count_q.fetch_one(pool).await?;
 
     let mut list_q = sqlx::query_as::<_, LoginLog>(&list_sql);
-    if let Some(v) = username {
-        list_q = list_q.bind(format!("%{}%", v));
-    }
-    if let Some(v) = ip {
-        list_q = list_q.bind(format!("%{}%", v));
-    }
-    if let Some(v) = status {
-        list_q = list_q.bind(v);
-    }
-    if let Some(v) = start_time {
-        list_q = list_q.bind(v);
-    }
-    if let Some(v) = end_time {
-        list_q = list_q.bind(v);
-    }
+    if let Some(v) = username { list_q = list_q.bind(format!("%{}%", v)); }
+    if let Some(v) = ip { list_q = list_q.bind(format!("%{}%", v)); }
+    if let Some(v) = status { list_q = list_q.bind(v); }
+    if let Some(v) = start_time { list_q = list_q.bind(v); }
+    if let Some(v) = end_time { list_q = list_q.bind(v); }
     let list = list_q.bind(page_size).bind(offset).fetch_all(pool).await?;
     Ok((list, total))
+}
+
+/// 导出查询（不分页，用于 xlsx 导出）
+pub async fn list_login_logs_for_export(
+    pool: &SqlitePool,
+    username: Option<&str>,
+    ip: Option<&str>,
+    status: Option<i32>,
+    start_time: Option<&str>,
+    end_time: Option<&str>,
+) -> sqlx::Result<Vec<LoginLog>> {
+    let mut wheres = Vec::new();
+    if username.is_some() { wheres.push("username LIKE ?"); }
+    if ip.is_some() { wheres.push("ip LIKE ?"); }
+    if status.is_some() { wheres.push("status = ?"); }
+    if start_time.is_some() { wheres.push("created_at >= ?"); }
+    if end_time.is_some() { wheres.push("created_at <= ?"); }
+    let where_sql = if wheres.is_empty() {
+        String::new()
+    } else {
+        format!(" WHERE {}", wheres.join(" AND "))
+    };
+    let sql = format!(
+        "SELECT id, username, ip, os, browser, type, status, created_at FROM sys_login_logs{} ORDER BY id DESC",
+        where_sql
+    );
+    let mut q = sqlx::query_as::<_, LoginLog>(&sql);
+    if let Some(v) = username { q = q.bind(format!("%{}%", v)); }
+    if let Some(v) = ip { q = q.bind(format!("%{}%", v)); }
+    if let Some(v) = status { q = q.bind(v); }
+    if let Some(v) = start_time { q = q.bind(v); }
+    if let Some(v) = end_time { q = q.bind(v); }
+    q.fetch_all(pool).await
 }

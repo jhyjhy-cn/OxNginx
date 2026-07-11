@@ -49,31 +49,60 @@ pub async fn list_operation_logs(
     .await?)
 }
 
-pub async fn export_operation_logs_csv(
+pub async fn list_operation_logs_for_export(
     pool: &SqlitePool,
     q: &OperationLogQuery,
-) -> Result<String> {
-    let (list, _) = list_operation_logs(pool, q).await?;
-    let mut csv =
-        String::from("\u{FEFF}操作模块,操作类型,请求方式,操作人员,操作地址,操作状态,操作日期,消耗时间(ms),TraceID\n");
-    for row in &list {
-        let duration = row.duration_ms.or(row.cost_ms).unwrap_or(0);
-        csv.push_str(&format!(
-            "{},{},{},{},{},{},{},{},{}\n",
-            row.module.as_deref().unwrap_or(""),
-            row.action,
-            row.method.as_deref().unwrap_or(""),
-            row.username,
-            row.uri.as_deref().unwrap_or(""),
-            row.status,
-            row.created_at
-                .map(|t| t.format("%Y-%m-%d %H:%M:%S").to_string())
-                .unwrap_or_default(),
-            duration,
-            row.trace_id.as_deref().unwrap_or(""),
-        ));
-    }
-    Ok(csv)
+) -> Result<Vec<OperationLog>> {
+    Ok(log_dao::list_operation_logs_for_export(
+        pool,
+        q.username.as_deref(),
+        q.status,
+        q.start_time.as_deref(),
+        q.end_time.as_deref(),
+        q.trace_id.as_deref(),
+        q.module.as_deref(),
+    )
+    .await?)
+}
+
+pub async fn export_operation_logs_xlsx(
+    pool: &SqlitePool,
+    q: &OperationLogQuery,
+) -> Result<Vec<u8>> {
+    use crate::modules::common::util::excel::{build_xlsx, Sheet};
+    let list = list_operation_logs_for_export(pool, q).await?;
+    let headers = vec![
+        "操作模块".to_string(),
+        "操作类型".to_string(),
+        "请求方式".to_string(),
+        "操作人员".to_string(),
+        "操作地址".to_string(),
+        "操作状态".to_string(),
+        "操作日期".to_string(),
+        "消耗时间(ms)".to_string(),
+        "TraceID".to_string(),
+    ];
+    let rows: Vec<Vec<String>> = list
+        .iter()
+        .map(|row| {
+            let duration = row.duration_ms.or(row.cost_ms).unwrap_or(0);
+            vec![
+                row.module.as_deref().unwrap_or("").to_string(),
+                row.action.clone(),
+                row.method.as_deref().unwrap_or("").to_string(),
+                row.username.clone(),
+                row.uri.as_deref().unwrap_or("").to_string(),
+                row.status.to_string(),
+                row.created_at
+                    .map(|t| t.format("%Y-%m-%d %H:%M:%S").to_string())
+                    .unwrap_or_default(),
+                duration.to_string(),
+                row.trace_id.as_deref().unwrap_or("").to_string(),
+            ]
+        })
+        .collect();
+    let sheet = Sheet { headers, rows };
+    build_xlsx("操作日志", &sheet)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -121,22 +150,46 @@ pub async fn list_login_logs(
     .await?)
 }
 
-pub async fn export_login_logs_csv(pool: &SqlitePool, q: &LoginLogQuery) -> Result<String> {
-    let (list, _) = list_login_logs(pool, q).await?;
-    let mut csv = String::from("\u{FEFF}用户名,IP,操作系统,浏览器,类型,状态,时间\n");
-    for row in &list {
-        csv.push_str(&format!(
-            "{},{},{},{},{},{},{}\n",
-            row.username,
-            row.ip.as_deref().unwrap_or(""),
-            row.os.as_deref().unwrap_or(""),
-            row.browser.as_deref().unwrap_or(""),
-            row.log_type,
-            row.status,
-            row.created_at
-                .map(|t| t.format("%Y-%m-%d %H:%M:%S").to_string())
-                .unwrap_or_default(),
-        ));
-    }
-    Ok(csv)
+pub async fn list_login_logs_for_export(pool: &SqlitePool, q: &LoginLogQuery) -> Result<Vec<LoginLog>> {
+    Ok(log_dao::list_login_logs_for_export(
+        pool,
+        q.username.as_deref(),
+        q.ip.as_deref(),
+        q.status,
+        q.start_time.as_deref(),
+        q.end_time.as_deref(),
+    )
+    .await?)
+}
+
+pub async fn export_login_logs_xlsx(pool: &SqlitePool, q: &LoginLogQuery) -> Result<Vec<u8>> {
+    use crate::modules::common::util::excel::{build_xlsx, Sheet};
+    let list = list_login_logs_for_export(pool, q).await?;
+    let headers = vec![
+        "用户名".to_string(),
+        "IP".to_string(),
+        "操作系统".to_string(),
+        "浏览器".to_string(),
+        "类型".to_string(),
+        "状态".to_string(),
+        "时间".to_string(),
+    ];
+    let rows: Vec<Vec<String>> = list
+        .iter()
+        .map(|row| {
+            vec![
+                row.username.clone(),
+                row.ip.as_deref().unwrap_or("").to_string(),
+                row.os.as_deref().unwrap_or("").to_string(),
+                row.browser.as_deref().unwrap_or("").to_string(),
+                row.log_type.to_string(),
+                row.status.to_string(),
+                row.created_at
+                    .map(|t| t.format("%Y-%m-%d %H:%M:%S").to_string())
+                    .unwrap_or_default(),
+            ]
+        })
+        .collect();
+    let sheet = Sheet { headers, rows };
+    build_xlsx("登录日志", &sheet)
 }

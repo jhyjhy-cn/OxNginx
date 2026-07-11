@@ -32,9 +32,9 @@
         <template #created="{ row }">{{ formatTime(row.created_at) }}</template>
         <template #cost="{ row }">{{ durationMs(row) }}</template>
         <template #toolbar-left>
-          <el-button type="success" @click="doExport">{{
-            $t("common.download")
-          }}</el-button>
+          <el-button type="success" @click="doExport">
+            {{ $t("common.export") }}
+          </el-button>
         </template>
       </OnTable>
     </el-card>
@@ -109,6 +109,7 @@ import OnFormGrid from "@/components/OnForm/OnFormGrid/index.vue";
 import OnDialog from "@/components/OnDialog/index.vue";
 import { useCrud } from "@/hooks";
 import { listOperationLogs } from "@/api/logs";
+import { downloadXlsx } from "@/utils/export";
 import { LogStatus } from "@/consts";
 
 dayjs.extend(utc);
@@ -284,13 +285,19 @@ function handleCommand(command: string | number, row: OpLog) {
   }
 }
 
-function doExport() {
+async function doExport() {
   syncDates();
-  const query = Object.entries(queryParams())
-    .filter(([, v]) => v !== "" && v !== undefined && v !== null)
-    .map(([k, v]) => `${k}=${encodeURIComponent(v as string)}`)
-    .join("&");
-  window.open(`/api/log/operation/export?${query}`, "_blank");
+  const params: Record<string, any> = {
+    page_size: 10000,
+    ...queryParams(),
+  };
+  Object.keys(params).forEach((k) => {
+    if (params[k] === null || params[k] === undefined || params[k] === "") {
+      delete params[k];
+    }
+  });
+  const ts = dayjs().format("YYYY-MM-DD");
+  await downloadXlsx("/api/log/operation/export", params, `operation_logs-${ts}.xlsx`);
 }
 
 onMounted(load);
