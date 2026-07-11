@@ -1,20 +1,14 @@
 <template>
   <div class="log-page h-full">
     <el-card class="h-full">
-      <div class="search-bar">
-        <OnFormGrid
-          :model="searchForm"
-          :fields="searchFields"
-          style="flex: 1"
-        />
-        <el-button type="primary" @click="doSearch">{{
-          $t("common.search")
-        }}</el-button>
-        <el-button @click="doReset">{{ $t("common.reset") }}</el-button>
-        <el-button type="success" @click="doExport">{{
-          $t("common.download")
-        }}</el-button>
-      </div>
+      <OnFormGrid :model="searchForm" :fields="searchFields">
+        <template #append>
+          <el-button type="primary" @click="doSearch">{{
+            $t("common.search")
+          }}</el-button>
+          <el-button @click="doReset">{{ $t("common.reset") }}</el-button>
+        </template>
+      </OnFormGrid>
 
       <OnTable
         :data="dataList"
@@ -37,28 +31,37 @@
         </template>
         <template #created="{ row }">{{ formatTime(row.created_at) }}</template>
         <template #cost="{ row }">{{ durationMs(row) }}</template>
+        <template #toolbar-left>
+          <el-button type="success" @click="doExport">{{
+            $t("common.download")
+          }}</el-button>
+        </template>
       </OnTable>
     </el-card>
 
     <!-- 详情弹窗 -->
-    <OnDialog v-model="showDialog" title="操作详情" width="700px">
+    <OnDialog
+      v-model="showDialog"
+      title="sys.log.operationDetail"
+      width="700px"
+    >
       <el-descriptions :column="1" border size="small">
-        <el-descriptions-item label="操作模块">{{
+        <el-descriptions-item :label="$t('sys.log.module')">{{
           moduleLabel(detail?.module)
         }}</el-descriptions-item>
-        <el-descriptions-item label="操作类型">{{
+        <el-descriptions-item :label="$t('sys.log.action')">{{
           detail?.action
         }}</el-descriptions-item>
-        <el-descriptions-item label="请求方式">{{
+        <el-descriptions-item :label="$t('sys.log.method')">{{
           detail?.method
         }}</el-descriptions-item>
-        <el-descriptions-item label="操作人员">{{
+        <el-descriptions-item :label="$t('sys.log.operator')">{{
           detail?.username
         }}</el-descriptions-item>
-        <el-descriptions-item label="操作地址">{{
+        <el-descriptions-item :label="$t('sys.log.uri')">{{
           detail?.uri
         }}</el-descriptions-item>
-        <el-descriptions-item label="操作状态">
+        <el-descriptions-item :label="$t('sys.log.status')">
           <el-tag
             :type="detail?.status === LogStatus.Success ? 'success' : 'danger'"
             size="small"
@@ -66,10 +69,10 @@
             {{ detail?.status === LogStatus.Success ? "成功" : "失败" }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="操作日期">{{
+        <el-descriptions-item :label="$t('sys.log.createdAt')">{{
           formatTime(detail?.created_at ?? null)
         }}</el-descriptions-item>
-        <el-descriptions-item label="消耗时间">{{
+        <el-descriptions-item :label="$t('sys.log.duration')">{{
           durationMs(detail)
         }}</el-descriptions-item>
         <el-descriptions-item v-if="detail?.trace_id" label="TraceID">
@@ -77,12 +80,15 @@
             detail.trace_id
           }}</span>
         </el-descriptions-item>
-        <el-descriptions-item label="请求参数">
+        <el-descriptions-item :label="$t('sys.log.requestParams')">
           <pre class="detail-pre">{{
             formatJson(detail?.request_body ?? null)
           }}</pre>
         </el-descriptions-item>
-        <el-descriptions-item v-if="detail?.error_msg" label="错误信息">
+        <el-descriptions-item
+          v-if="detail?.error_msg"
+          :label="$t('sys.log.errorMsg')"
+        >
           <span style="color: var(--el-color-danger)">{{
             detail.error_msg
           }}</span>
@@ -138,12 +144,12 @@ const searchFields: FormField[] = [
   { prop: "username", label: "login.username", type: "input", span: 4 },
   {
     prop: "module",
-    label: "操作模块",
+    label: "sys.log.module",
     type: "select",
     span: 4,
     options: MODULE_OPTIONS,
   },
-  { prop: "trace_id", label: "TraceID", type: "input", span: 5 },
+  { prop: "trace_id", label: "TraceID", type: "input", span: 4 },
   {
     prop: "status",
     label: "common.status",
@@ -154,7 +160,7 @@ const searchFields: FormField[] = [
       { label: "失败", value: "failed" },
     ],
   },
-  { prop: "dateRange", label: "操作日期", type: "daterange", span: 7 },
+  { prop: "dateRange", label: "sys.log.createdAt", type: "daterange", span: 4 },
 ];
 
 interface OpLog {
@@ -212,19 +218,19 @@ const {
 const tableColumns: TableColumn[] = [
   {
     prop: "module",
-    label: "操作模块",
+    label: "sys.log.module",
     showOverflowTooltip: true,
     slot: "module",
   },
-  { prop: "action", label: "操作类型", showOverflowTooltip: true },
-  { prop: "method", label: "请求方式" },
+  { prop: "action", label: "sys.log.action", showOverflowTooltip: true },
+  { prop: "method", label: "sys.log.method" },
   { prop: "username", label: "login.username" },
-  { prop: "uri", label: "操作地址", showOverflowTooltip: true },
-  { prop: "status", label: "操作状态", slot: "status", width: 100 },
-  { prop: "created_at", label: "操作日期", slot: "created" },
-  { prop: "cost", label: "耗时", slot: "cost" },
+  { prop: "uri", label: "sys.log.uri", showOverflowTooltip: true },
+  { prop: "status", label: "sys.log.status", slot: "status", width: 100 },
+  { prop: "created_at", label: "sys.log.createdAt", slot: "created" },
+  { prop: "cost", label: "sys.log.duration", slot: "cost" },
   {
-    label: "详情",
+    label: "sys.log.detail",
     width: 100,
     fixed: "right",
     buttons: [
@@ -293,10 +299,9 @@ onMounted(load);
 <style scoped>
 .search-bar {
   display: flex;
+  align-items: flex-start;
   gap: 12px;
-  align-items: center;
   margin-bottom: 12px;
-  flex-wrap: wrap;
 }
 .detail-pre {
   margin: 0;

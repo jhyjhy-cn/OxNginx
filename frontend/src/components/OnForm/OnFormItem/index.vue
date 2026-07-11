@@ -2,7 +2,7 @@
   <el-form-item
     v-if="visible"
     :prop="props.prop"
-    :label="t(label || '')"
+    :label="labelText(label)"
     :label-width="labelWidth"
     :rules="mergedRules"
     v-bind="$attrs"
@@ -108,7 +108,6 @@ const emit = defineEmits<{
   "update:modelValue": [value: any];
 }>();
 
-// 计算组件类型映射
 const componentMap: Record<string, string> = {
   input: "el-input",
   textarea: "el-input",
@@ -128,12 +127,15 @@ const currentComponent = computed(
   () => componentMap[props.type || "input"] || "el-input"
 );
 
-// 判断是否为 i18n key（包含 . 的为 key）
 function isI18nKey(val?: string): boolean {
-  return !!val && val.includes('.');
+  return !!val && val.includes(".");
 }
 
-// 组件属性
+function labelText(val?: string): string {
+  if (!val) return "";
+  return isI18nKey(val) ? t(val) : val;
+}
+
 const componentProps = computed(() => {
   const p: Record<string, any> = {};
   switch (props.type) {
@@ -188,14 +190,13 @@ const componentProps = computed(() => {
   return p;
 });
 
-// 合并校验规则
 const mergedRules = computed(() => {
   const rules: any[] = [];
   if (props.required) {
-    const labelText = t(props.label || props.prop || "");
+    const labelTextValue = labelText(props.label || props.prop || "");
     rules.push({
       required: true,
-      message: `请输入${labelText}`,
+      message: `请输入${labelTextValue}`,
       trigger: "blur",
     });
   }
@@ -217,7 +218,6 @@ const mergedRules = computed(() => {
   return rules.length > 0 ? rules : undefined;
 });
 
-// 标签宽度
 const labelWidth = computed(() => {
   if (
     props.labelWidth === 0 ||
@@ -228,54 +228,40 @@ const labelWidth = computed(() => {
   return props.labelWidth;
 });
 
-// 是否可见
 const visible = computed(() => props.visible !== false);
 
-// 查看模式
 const isViewMode = computed(() => props.viewMode === true);
 
-// 查看值格式化
 const viewValue = computed(() => {
   if (props.viewFormat) {
     return props.viewFormat(props.modelValue, props as FormField);
   }
   if (props.options && props.modelValue !== undefined) {
     const opt = props.options.find((o) => o.value === props.modelValue);
-    return t(opt?.label ?? "") || opt?.label || props.modelValue;
+    return labelText(opt?.label) || opt?.label || props.modelValue;
   }
   if (props.modelValue === null || props.modelValue === undefined) return "-";
   return String(props.modelValue);
 });
 
-// v-model
 const modelValue = computed({
   get: () => props.modelValue,
   set: (val) => emit("update:modelValue", val),
 });
 
-// 是否需要 options slot
 const hasOptionsSlot = computed(() => {
   return ["select", "radio", "checkbox"].includes(props.type || "");
 });
 
-// 占位符：优先用传入值，其次 "请输入" + label
 const computedPlaceholder = computed(() => {
-  if (props.placeholder) return t(props.placeholder);
-  if (props.label) return t("common.input") + t(props.label);
+  if (props.placeholder) return labelText(props.placeholder);
+  if (props.label) return t("common.input") + labelText(props.label);
   return "";
 });
 </script>
 
 <style scoped>
-.el-form-item {
-  margin-bottom: 18px;
-}
-
-.el-input,
-.el-select,
-.el-date-editor,
-.el-time-picker,
-.el-input-number {
-  width: 100%;
+.el-image {
+  border-radius: 4px;
 }
 </style>

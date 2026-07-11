@@ -1,20 +1,14 @@
 <template>
   <div class="log-page h-full">
     <el-card class="h-full">
-      <div class="search-bar">
-        <OnFormGrid
-          :model="searchForm"
-          :fields="searchFields"
-          style="flex: 1"
-        />
-        <el-button type="primary" @click="doSearch">{{
-          $t("common.search")
-        }}</el-button>
-        <el-button @click="doReset">{{ $t("common.reset") }}</el-button>
-        <el-button type="success" @click="doExport">{{
-          $t("common.download")
-        }}</el-button>
-      </div>
+      <OnFormGrid :model="searchForm" :fields="searchFields">
+        <template #append>
+          <el-button type="primary" @click="doSearch">{{
+            $t("common.search")
+          }}</el-button>
+          <el-button @click="doReset">{{ $t("common.reset") }}</el-button>
+        </template>
+      </OnFormGrid>
 
       <OnTable
         :data="dataList"
@@ -50,6 +44,11 @@
           </el-tag>
         </template>
         <template #created="{ row }">{{ formatTime(row.created_at) }}</template>
+        <template #toolbar-left>
+          <el-button type="success" @click="doExport">{{
+            $t("common.download")
+          }}</el-button>
+        </template>
       </OnTable>
     </el-card>
   </div>
@@ -168,9 +167,8 @@ onMounted(load);
 <style scoped>
 .search-bar {
   display: flex;
+  align-items: flex-start;
   gap: 12px;
-  align-items: center;
   margin-bottom: 12px;
-  flex-wrap: wrap;
 }
 </style>

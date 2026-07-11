@@ -3,13 +3,13 @@
   <el-table-column v-if="column.type === 'selection'" type="selection" :width="column.width || 48" :fixed="column.fixed" />
 
   <!-- 索引列 -->
-  <el-table-column v-else-if="column.type === 'index'" type="index" :label="t(column.label || '')" :width="column.width" :fixed="column.fixed" />
+  <el-table-column v-else-if="column.type === 'index'" type="index" :label="labelText(column.label)" :width="column.width" :fixed="column.fixed" />
 
   <!-- 展开列 -->
   <el-table-column v-else-if="column.type === 'expand'" type="expand" :width="column.width" :fixed="column.fixed" />
 
   <!-- 多级表头 -->
-  <el-table-column v-else-if="column.children?.length" :label="t(column.label || '')" :width="column.width" :align="column.align" :fixed="column.fixed">
+  <el-table-column v-else-if="column.children?.length" :label="labelText(column.label)" :width="column.width" :align="column.align" :fixed="column.fixed">
     <OnTableColumn v-for="child in column.children" :key="child.prop" :column="child" />
   </el-table-column>
 
@@ -18,7 +18,7 @@
     <!-- 自定义表头 -->
     <template #header>
       <slot name="header">
-        {{ t(column.label || "") }}
+        <span class="on-table-header-label">{{ labelText(column.label) }}</span>
       </slot>
     </template>
 
@@ -96,11 +96,16 @@ function formatDate(value: any, _format?: string) {
   }
 }
 
+function labelText(label?: string) {
+  if (!label) return "";
+  return label.includes(".") ? t(label) : label;
+}
+
 function tBtn(name: string | { zh: string; en: string }) {
   if (typeof name === "object") {
     return name.zh;
   }
-  return t(name) || name;
+  return labelText(name);
 }
 
 function isBtnDisabled(btn: ColumnButton, row: any) {
@@ -112,6 +117,10 @@ function isBtnDisabled(btn: ColumnButton, row: any) {
 </script>
 
 <style scoped>
+.on-table-header-label {
+  white-space: nowrap;
+}
+
 .el-image {
   border-radius: 4px;
 }

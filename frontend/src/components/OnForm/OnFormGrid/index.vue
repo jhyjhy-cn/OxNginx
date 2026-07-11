@@ -1,6 +1,11 @@
 <template>
   <el-row :gutter="props.gutter" class="on-form-grid">
-    <el-col v-for="field in visibleFields" :key="field.prop" :span="field.span || props.span">
+    <slot name="prepend" />
+    <el-col
+      v-for="field in visibleFields"
+      :key="field.prop"
+      :span="field.span || props.span"
+    >
       <OnFormItem
         v-model="props.model[field.prop]"
         :prop="field.prop"
@@ -25,31 +30,30 @@
         :autocomplete="field.autocomplete"
       />
     </el-col>
+    <slot name="append" />
   </el-row>
 </template>
 
 <script setup lang="ts">
-import { computed, provide, ref } from 'vue'
-import type { OnFormGridProps } from '../types'
-import OnFormItem from '../OnFormItem/index.vue'
+import { computed, provide, ref } from "vue";
+import type { OnFormGridProps } from "../types";
+import OnFormItem from "../OnFormItem/index.vue";
 
-defineOptions({ name: 'OnFormGrid' })
+defineOptions({ name: "OnFormGrid" });
 
 const props = withDefaults(defineProps<OnFormGridProps>(), {
   span: 24,
   gutter: 18,
   viewMode: false,
-})
+});
 
-const formRef = ref()
+const formRef = ref();
 
-// 过滤可见字段
 const visibleFields = computed(() => {
-  return props.fields.filter((f) => f.visible !== false)
-})
+  return props.fields.filter((f) => f.visible !== false);
+});
 
-// 提供给子组件
-provide('onForm', { formRef })
+provide("onForm", { formRef });
 </script>
 
 <style scoped>
