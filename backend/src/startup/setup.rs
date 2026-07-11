@@ -118,12 +118,6 @@ pub fn first_run_setup(exe_dir: &Path) -> anyhow::Result<()> {
 
     // 生成 config.toml
     println!("[setup.rs:first_run_setup] ===> [3/3] 生成配置文件...");
-    // Windows zip 里 nginx.exe 在根目录，Linux 编译的在 sbin/
-    let nginx_bin = if cfg!(windows) {
-        nginx_target.join("nginx.exe")
-    } else {
-        nginx_target.join("sbin").join("nginx")
-    };
     let db_path = base.join("datas").join("data.db");
 
     std::fs::write(
@@ -219,34 +213,6 @@ pub fn generate_default_config(config_path: &str, exe_dir: &Path) -> anyhow::Res
     }
 
     let db_path = exe_dir.join("datas").join("data.db");
-
-    #[cfg(target_os = "windows")]
-    let (nginx_bin, nginx_conf, sites_enabled) = {
-        let nginx_dir = exe_dir.join("server").join("nginx");
-        (
-            nginx_dir
-                .join("nginx.exe")
-                .to_string_lossy()
-                .replace('\\', "/"),
-            nginx_dir
-                .join("conf")
-                .join("nginx.conf")
-                .to_string_lossy()
-                .replace('\\', "/"),
-            nginx_dir
-                .join("conf")
-                .join("sites-enabled")
-                .to_string_lossy()
-                .replace('\\', "/"),
-        )
-    };
-
-    #[cfg(target_os = "linux")]
-    let (nginx_bin, nginx_conf, sites_enabled) = (
-        "/usr/sbin/nginx".to_string(),
-        "/etc/nginx/nginx.conf".to_string(),
-        "/etc/nginx/conf.d".to_string(),
-    );
 
     std::fs::write(
         config_path,
