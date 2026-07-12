@@ -3,8 +3,8 @@ import './utils/monaco-env'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
-import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'
+// ponytail: element-plus 由 unplugin-vue-components 的 ElementPlusResolver 自动按需注册，不在此处 use
+// dark/css-vars.css 提供暗色变量基础（settings.darkMode 切 html.dark 触发）
 import 'element-plus/theme-chalk/dark/css-vars.css'
 import './styles/main.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
@@ -30,7 +30,6 @@ app.use(pinia)
 // 必须在 app.use(router) 之前恢复动态路由——router.install() 内部会立即解析初始路由
 restoreDynamicRoutes()
 app.use(router)
-app.use(ElementPlus)
 app.use(OnIconPlugin)
 app.use(i18n)
 
