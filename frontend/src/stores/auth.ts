@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/api'
-import { mergeI18nMessages } from '@/i18n'
+import { applyMessages } from '@/i18n'
+import { useI18nStore } from '@/stores/i18n'
 import { encryptPassword } from '@/utils/crypto'
 import type { MenuType } from '@/consts'
 
@@ -44,7 +45,6 @@ export const useAuthStore = defineStore('auth', () => {
   const menus = ref<MenuNode[]>(loadJSON<MenuNode[]>(LS.menus, []))
 
   const isAuthenticated = computed(() => !!token.value)
-  let i18nLoaded = false // ponytail: 防止刷新页面时重复拉 i18n
   // ponytail: super_admin 硬编码短路；前端只走 username==='admin' 一条线
   const isSuperAdmin = computed(() => username.value === 'admin' || roles.value.includes('super_admin'))
   const permissionSet = computed(() => new Set(permissions.value))
@@ -100,22 +100,23 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function fetchI18n() {
-    // 从 DB 拉全量翻译（所有语言），合并到 vue-i18n
-    if (!token.value || i18nLoaded) return
+    // 从 DB 拉全量翻译（所有语言），写 store 并合并到 vue-i18n
+    if (!token.value) return
+    const store = useI18nStore()
+    if (!store.isEmpty()) {
+      applyMessages(store.messages)
+      return
+    }
     try {
-      const { data } = await api.get('/api/rbac/i18n') // 不传 locale，返回全量
+      const { data } = await api.get('/api/rbac/i18n')
       if (data.code !== 0 || !data.data) return
-      // 按 locale 分组
       const grouped: Record<string, Record<string, string>> = {}
       for (const e of data.data as { locale: string; key: string; value: string }[]) {
         if (!grouped[e.locale]) grouped[e.locale] = {}
         grouped[e.locale][e.key] = e.value
       }
-      // 逐语言合并
-      for (const [locale, flat] of Object.entries(grouped)) {
-        mergeI18nMessages(locale, flat)
-      }
-      i18nLoaded = true
+      store.setAll(grouped)
+      applyMessages(grouped)
     } catch {}
   }
 
@@ -130,7 +131,7 @@ export const useAuthStore = defineStore('auth', () => {
     roles.value = []
     permissions.value = []
     menus.value = []
-    i18nLoaded = false
+    useI18nStore().clear()
     localStorage.removeItem(LS.token)
     localStorage.removeItem(LS.username)
     localStorage.removeItem(LS.roles)

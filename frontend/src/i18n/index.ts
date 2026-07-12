@@ -2,6 +2,7 @@ import { createI18n } from 'vue-i18n'
 import zhCN from './locales/zh-CN'
 import enUS from './locales/en-US'
 import { useSettingsStore } from '@/stores/settings'
+import { useI18nStore, type LocaleMessages } from '@/stores/i18n'
 
 const i18n = createI18n({
   legacy: false,
@@ -21,6 +22,25 @@ export function restoreLocale() {
       i18n.global.locale.value = settings.locale
     }
   } catch {}
+}
+
+/** 启动时把持久化的 i18n 合并到 vue-i18n；命中则跳过网络拉取 */
+export function restoreI18n() {
+  try {
+    const store = useI18nStore()
+    if (store.isEmpty()) return false
+    applyMessages(store.messages)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** 将 store 形态的 messages 合并进 vue-i18n（DB 覆盖静态） */
+export function applyMessages(grouped: LocaleMessages) {
+  for (const [locale, flat] of Object.entries(grouped)) {
+    mergeI18nMessages(locale, flat)
+  }
 }
 
 /**

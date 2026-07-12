@@ -11,7 +11,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 import App from './App.vue'
 import router, { restoreDynamicRoutes } from './router'
-import i18n, { restoreLocale } from './i18n'
+import i18n, { restoreI18n, restoreLocale } from './i18n'
 import { useSettingsStore } from './stores/settings'
 import OnIconPlugin from './components/OnIcon'
 import { vAuth } from './directives/auth'
@@ -38,6 +38,7 @@ app.use(i18n)
 const settingsStore = useSettingsStore()
 settingsStore.initTheme()
 restoreLocale()
+restoreI18n()
 
 app.directive('auth', vAuth)
 app.mount('#app')
