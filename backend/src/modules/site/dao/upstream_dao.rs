@@ -3,13 +3,13 @@ use sqlx::SqlitePool;
 use crate::modules::site::entity::upstream::{Upstream, UpstreamServer};
 
 pub async fn list_all_upstreams(pool: &SqlitePool) -> sqlx::Result<Vec<Upstream>> {
-    sqlx::query_as::<_, Upstream>("SELECT * FROM sys_upstreams ORDER BY created_at DESC")
+    sqlx::query_as::<_, Upstream>("SELECT * FROM site_upstreams ORDER BY created_at DESC")
         .fetch_all(pool)
         .await
 }
 
 pub async fn find_upstream_by_id(pool: &SqlitePool, id: i64) -> sqlx::Result<Option<Upstream>> {
-    sqlx::query_as::<_, Upstream>("SELECT * FROM sys_upstreams WHERE id = ?")
+    sqlx::query_as::<_, Upstream>("SELECT * FROM site_upstreams WHERE id = ?")
         .bind(id)
         .fetch_optional(pool)
         .await
@@ -20,7 +20,7 @@ pub async fn list_upstream_servers(
     upstream_id: i64,
 ) -> sqlx::Result<Vec<UpstreamServer>> {
     sqlx::query_as::<_, UpstreamServer>(
-        "SELECT * FROM sys_upstream_servers WHERE upstream_id = ? ORDER BY id",
+        "SELECT * FROM site_upstream_servers WHERE upstream_id = ? ORDER BY id",
     )
     .bind(upstream_id)
     .fetch_all(pool)
@@ -35,7 +35,7 @@ pub async fn insert_upstream_returning(
 ) -> sqlx::Result<Upstream> {
     sqlx::query_as::<_, Upstream>(
         r#"
-        INSERT INTO sys_upstreams (name, method, keepalive)
+        INSERT INTO site_upstreams (name, method, keepalive)
         VALUES (?, ?, ?)
         RETURNING *
         "#,
@@ -58,7 +58,7 @@ pub async fn insert_upstream_server_returning(
 ) -> sqlx::Result<UpstreamServer> {
     sqlx::query_as::<_, UpstreamServer>(
         r#"
-        INSERT INTO sys_upstream_servers (upstream_id, address, weight, max_fails, fail_timeout, backup)
+        INSERT INTO site_upstream_servers (upstream_id, address, weight, max_fails, fail_timeout, backup)
         VALUES (?, ?, ?, ?, ?, ?)
         RETURNING *
         "#,
@@ -83,7 +83,7 @@ pub async fn update_upstream_returning(
 ) -> sqlx::Result<Option<Upstream>> {
     sqlx::query_as::<_, Upstream>(
         r#"
-        UPDATE sys_upstreams
+        UPDATE site_upstreams
         SET name = ?, method = ?, keepalive = ?, status = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         RETURNING *
@@ -99,7 +99,7 @@ pub async fn update_upstream_returning(
 }
 
 pub async fn delete_upstream_servers(pool: &SqlitePool, upstream_id: i64) -> sqlx::Result<()> {
-    sqlx::query("DELETE FROM sys_upstream_servers WHERE upstream_id = ?")
+    sqlx::query("DELETE FROM site_upstream_servers WHERE upstream_id = ?")
         .bind(upstream_id)
         .execute(pool)
         .await?;
@@ -107,7 +107,7 @@ pub async fn delete_upstream_servers(pool: &SqlitePool, upstream_id: i64) -> sql
 }
 
 pub async fn delete_upstream(pool: &SqlitePool, id: i64) -> sqlx::Result<u64> {
-    let r = sqlx::query("DELETE FROM sys_upstreams WHERE id = ?")
+    let r = sqlx::query("DELETE FROM site_upstreams WHERE id = ?")
         .bind(id)
         .execute(pool)
         .await?;

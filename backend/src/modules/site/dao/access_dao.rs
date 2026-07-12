@@ -3,13 +3,13 @@ use sqlx::SqlitePool;
 use crate::modules::site::entity::access::AccessRule;
 
 pub async fn list_all_rules(pool: &SqlitePool) -> sqlx::Result<Vec<AccessRule>> {
-    sqlx::query_as::<_, AccessRule>("SELECT * FROM sys_access_rules ORDER BY created_at DESC")
+    sqlx::query_as::<_, AccessRule>("SELECT * FROM site_access_rules ORDER BY created_at DESC")
         .fetch_all(pool)
         .await
 }
 
 pub async fn find_rule_by_id(pool: &SqlitePool, id: i64) -> sqlx::Result<Option<AccessRule>> {
-    sqlx::query_as::<_, AccessRule>("SELECT * FROM sys_access_rules WHERE id = ?")
+    sqlx::query_as::<_, AccessRule>("SELECT * FROM site_access_rules WHERE id = ?")
         .bind(id)
         .fetch_optional(pool)
         .await
@@ -21,7 +21,7 @@ pub async fn insert_rule_returning(
 ) -> sqlx::Result<AccessRule> {
     sqlx::query_as::<_, AccessRule>(
         r#"
-        INSERT INTO sys_access_rules (site_id, rule_type, value, description)
+        INSERT INTO site_access_rules (site_id, rule_type, value, description)
         VALUES (?, ?, ?, ?)
         RETURNING *
         "#,
@@ -45,7 +45,7 @@ pub async fn update_rule_returning(
 ) -> sqlx::Result<Option<AccessRule>> {
     sqlx::query_as::<_, AccessRule>(
         r#"
-        UPDATE sys_access_rules
+        UPDATE site_access_rules
         SET site_id = ?, rule_type = ?, value = ?, description = ?, status = ?
         WHERE id = ?
         RETURNING *
@@ -62,7 +62,7 @@ pub async fn update_rule_returning(
 }
 
 pub async fn delete_rule(pool: &SqlitePool, id: i64) -> sqlx::Result<u64> {
-    let r = sqlx::query("DELETE FROM sys_access_rules WHERE id = ?")
+    let r = sqlx::query("DELETE FROM site_access_rules WHERE id = ?")
         .bind(id)
         .execute(pool)
         .await?;

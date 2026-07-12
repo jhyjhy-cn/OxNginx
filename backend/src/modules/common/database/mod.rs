@@ -95,7 +95,7 @@ impl Database {
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 更新时间
             );
 
-            CREATE TABLE IF NOT EXISTS sys_sites (
+            CREATE TABLE IF NOT EXISTS site_sites (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,      -- 网站ID
                 name TEXT NOT NULL,                       -- 网站名称
                 server_name TEXT NOT NULL,                -- 域名
@@ -118,7 +118,7 @@ impl Database {
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 更新时间
             );
 
-            CREATE TABLE IF NOT EXISTS sys_certificates (
+            CREATE TABLE IF NOT EXISTS site_certificates (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,   -- 证书ID
                 domain TEXT NOT NULL UNIQUE,           -- 域名
                 issuer TEXT,                           -- 颁发者
@@ -129,16 +129,16 @@ impl Database {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 创建时间
             );
 
-            CREATE TABLE IF NOT EXISTS sys_backups (
+            CREATE TABLE IF NOT EXISTS site_backups (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,   -- 备份ID
                 site_id INTEGER,                       -- 网站ID
                 version INTEGER NOT NULL DEFAULT 1,    -- 版本号
                 config TEXT NOT NULL,                  -- 配置内容
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
-                FOREIGN KEY (site_id) REFERENCES sys_sites(id)
+                FOREIGN KEY (site_id) REFERENCES site_sites(id)
             );
 
-            CREATE TABLE IF NOT EXISTS sys_upstreams (
+            CREATE TABLE IF NOT EXISTS site_upstreams (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 负载均衡ID
                 name TEXT NOT NULL UNIQUE,             -- 名称
                 method TEXT NOT NULL DEFAULT 'round_robin', -- 负载均衡算法
@@ -148,7 +148,7 @@ impl Database {
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 更新时间
             );
 
-            CREATE TABLE IF NOT EXISTS sys_upstream_servers (
+            CREATE TABLE IF NOT EXISTS site_upstream_servers (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 服务器ID
                 upstream_id INTEGER NOT NULL,           -- 负载均衡ID
                 address TEXT NOT NULL,                 -- 服务器地址
@@ -157,10 +157,10 @@ impl Database {
                 fail_timeout TEXT DEFAULT '30s',        -- 失败超时
                 backup INTEGER DEFAULT 0,               -- 备用服务器
                 status INTEGER NOT NULL DEFAULT 1,  -- 状态：1=启用 0=禁用
-                FOREIGN KEY (upstream_id) REFERENCES sys_upstreams(id) ON DELETE CASCADE
+                FOREIGN KEY (upstream_id) REFERENCES site_upstreams(id) ON DELETE CASCADE
             );
 
-            CREATE TABLE IF NOT EXISTS sys_access_rules (
+            CREATE TABLE IF NOT EXISTS site_access_rules (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 规则ID
                 site_id INTEGER,                       -- 网站ID
                 rule_type TEXT NOT NULL,               -- 规则类型
@@ -168,10 +168,10 @@ impl Database {
                 description TEXT,                     -- 描述
                 status INTEGER NOT NULL DEFAULT 1,  -- 状态：1=启用 0=禁用
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
-                FOREIGN KEY (site_id) REFERENCES sys_sites(id) ON DELETE CASCADE
+                FOREIGN KEY (site_id) REFERENCES site_sites(id) ON DELETE CASCADE
             );
 
-            CREATE TABLE IF NOT EXISTS sys_templates (
+            CREATE TABLE IF NOT EXISTS site_templates (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 模板ID
                 name TEXT NOT NULL UNIQUE,             -- 模板名称
                 description TEXT,                     -- 描述
@@ -181,13 +181,13 @@ impl Database {
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 更新时间
             );
 
-            CREATE TABLE IF NOT EXISTS sys_file_notes (
+            CREATE TABLE IF NOT EXISTS file_notes (
                 path TEXT PRIMARY KEY,                 -- 文件路径
                 note TEXT NOT NULL,                    -- 备注内容
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP  -- 创建时间
             );
 
-            CREATE TABLE IF NOT EXISTS sys_reverse_proxies (
+            CREATE TABLE IF NOT EXISTS site_reverse_proxies (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 反向代理ID
                 site_id INTEGER NOT NULL,              -- 网站ID
                 name TEXT NOT NULL,                    -- 名称
@@ -197,7 +197,7 @@ impl Database {
                 status INTEGER NOT NULL DEFAULT 1,  -- 状态：1=启用 0=禁用
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 创建时间
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 更新时间
-                FOREIGN KEY (site_id) REFERENCES sys_sites(id) ON DELETE CASCADE
+                FOREIGN KEY (site_id) REFERENCES site_sites(id) ON DELETE CASCADE
             );
 
             -- ===== RBAC =====

@@ -5,13 +5,13 @@ use crate::AppState;
 pub async fn get_dashboard(state: &AppState) -> anyhow::Result<DashboardData> {
     // 获取站点数量
     let site_count: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM sys_sites")
+        sqlx::query_scalar("SELECT COUNT(*) FROM site_sites")
             .fetch_one(state.db.pool())
             .await?;
 
     // 获取证书数量
     let cert_count: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM sys_certificates")
+        sqlx::query_scalar("SELECT COUNT(*) FROM site_certificates")
             .fetch_one(state.db.pool())
             .await?;
 

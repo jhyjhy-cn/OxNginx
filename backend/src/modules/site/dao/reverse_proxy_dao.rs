@@ -4,7 +4,7 @@ use crate::modules::site::entity::reverse_proxy::ReverseProxy;
 
 pub async fn list_proxies_by_site(pool: &SqlitePool, site_id: i64) -> sqlx::Result<Vec<ReverseProxy>> {
     sqlx::query_as::<_, ReverseProxy>(
-        "SELECT * FROM sys_reverse_proxies WHERE site_id = ? ORDER BY id ASC",
+        "SELECT * FROM site_reverse_proxies WHERE site_id = ? ORDER BY id ASC",
     )
     .bind(site_id)
     .fetch_all(pool)
@@ -12,7 +12,7 @@ pub async fn list_proxies_by_site(pool: &SqlitePool, site_id: i64) -> sqlx::Resu
 }
 
 pub async fn find_proxy_by_id(pool: &SqlitePool, id: i64) -> sqlx::Result<Option<ReverseProxy>> {
-    sqlx::query_as::<_, ReverseProxy>("SELECT * FROM sys_reverse_proxies WHERE id = ?")
+    sqlx::query_as::<_, ReverseProxy>("SELECT * FROM site_reverse_proxies WHERE id = ?")
         .bind(id)
         .fetch_optional(pool)
         .await
@@ -28,7 +28,7 @@ pub async fn insert_proxy_returning(
 ) -> sqlx::Result<ReverseProxy> {
     sqlx::query_as::<_, ReverseProxy>(
         r#"
-        INSERT INTO sys_reverse_proxies (site_id, name, proxy_dir, target_url, cache)
+        INSERT INTO site_reverse_proxies (site_id, name, proxy_dir, target_url, cache)
         VALUES (?, ?, ?, ?, ?)
         RETURNING *
         "#,
@@ -53,7 +53,7 @@ pub async fn update_proxy_returning(
 ) -> sqlx::Result<Option<ReverseProxy>> {
     sqlx::query_as::<_, ReverseProxy>(
         r#"
-        UPDATE sys_reverse_proxies
+        UPDATE site_reverse_proxies
         SET name = ?, proxy_dir = ?, target_url = ?, cache = ?, status = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         RETURNING *
@@ -70,7 +70,7 @@ pub async fn update_proxy_returning(
 }
 
 pub async fn delete_proxy(pool: &SqlitePool, id: i64) -> sqlx::Result<u64> {
-    let r = sqlx::query("DELETE FROM sys_reverse_proxies WHERE id = ?")
+    let r = sqlx::query("DELETE FROM site_reverse_proxies WHERE id = ?")
         .bind(id)
         .execute(pool)
         .await?;

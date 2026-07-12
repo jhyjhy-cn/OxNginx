@@ -3,13 +3,13 @@ use sqlx::SqlitePool;
 use crate::modules::site::entity::site::Site;
 
 pub async fn list_all_sites(pool: &SqlitePool) -> sqlx::Result<Vec<Site>> {
-    sqlx::query_as::<_, Site>("SELECT * FROM sys_sites ORDER BY created_at DESC")
+    sqlx::query_as::<_, Site>("SELECT * FROM site_sites ORDER BY created_at DESC")
         .fetch_all(pool)
         .await
 }
 
 pub async fn find_site_by_id(pool: &SqlitePool, id: i64) -> sqlx::Result<Option<Site>> {
-    sqlx::query_as::<_, Site>("SELECT * FROM sys_sites WHERE id = ?")
+    sqlx::query_as::<_, Site>("SELECT * FROM site_sites WHERE id = ?")
         .bind(id)
         .fetch_optional(pool)
         .await
@@ -22,7 +22,7 @@ pub async fn insert_site_returning(
 ) -> sqlx::Result<Site> {
     sqlx::query_as::<_, Site>(
         r#"
-        INSERT INTO sys_sites (name, server_name, listen, ssl, certificate_path, key_path, proxy_pass, root_path, remark, expire_time, rewrite_rules, redirect_rules, hotlink_config, log_access_path, log_error_path)
+        INSERT INTO site_sites (name, server_name, listen, ssl, certificate_path, key_path, proxy_pass, root_path, remark, expire_time, rewrite_rules, redirect_rules, hotlink_config, log_access_path, log_error_path)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING *
         "#,
@@ -68,7 +68,7 @@ pub async fn update_site_returning(
 ) -> sqlx::Result<Option<Site>> {
     sqlx::query_as::<_, Site>(
         r#"
-        UPDATE sys_sites
+        UPDATE site_sites
         SET name = ?, server_name = ?, listen = ?, ssl = ?, certificate_path = ?, key_path = ?, proxy_pass = ?, root_path = ?, remark = ?, expire_time = ?, rewrite_rules = ?, redirect_rules = ?, hotlink_config = ?, log_access_path = ?, log_error_path = ?, status = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         RETURNING *
@@ -96,7 +96,7 @@ pub async fn update_site_returning(
 }
 
 pub async fn delete_site(pool: &SqlitePool, id: i64) -> sqlx::Result<u64> {
-    let r = sqlx::query("DELETE FROM sys_sites WHERE id = ?")
+    let r = sqlx::query("DELETE FROM site_sites WHERE id = ?")
         .bind(id)
         .execute(pool)
         .await?;
