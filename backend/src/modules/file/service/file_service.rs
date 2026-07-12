@@ -309,7 +309,7 @@ fn add_dir_to_zip(
         let path = entry.path();
         let name = path
             .strip_prefix(base)
-            .unwrap()
+            .map_err(|e| anyhow::anyhow!("非法路径 {}: {}", path.display(), e))?
             .to_string_lossy()
             .to_string();
         if path.is_file() {

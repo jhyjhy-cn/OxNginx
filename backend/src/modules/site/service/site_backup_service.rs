@@ -144,7 +144,11 @@ fn add_dir_to_zip(
     for entry in std::fs::read_dir(current)? {
         let entry = entry?;
         let path = entry.path();
-        let name = path.strip_prefix(base).unwrap().to_string_lossy().replace('\\', "/");
+        let name = path
+            .strip_prefix(base)
+            .map_err(|e| anyhow::anyhow!("非法路径 {}: {}", path.display(), e))?
+            .to_string_lossy()
+            .replace('\\', "/");
 
         if path.is_dir() {
             zip.add_directory(format!("{}/", name), options)?;

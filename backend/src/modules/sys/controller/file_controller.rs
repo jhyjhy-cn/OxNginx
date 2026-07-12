@@ -151,7 +151,8 @@ pub async fn download_file(
     }
     builder = builder.header(header::CONTENT_LENGTH, f.size as u64);
 
-    Ok(builder.body(body).unwrap())
+    // ponytail: builder.body(Body::from_stream) 不会失败（Builder 仅当 header 非法才 Err；此处已过滤）
+    Ok(builder.body(body).expect("Response builder 已通过 HeaderValue 校验"))
 }
 
 /// 提取 ASCII 部分做 filename，避免 header 非法字符

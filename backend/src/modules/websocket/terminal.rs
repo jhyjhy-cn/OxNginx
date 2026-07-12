@@ -53,8 +53,9 @@ pub async fn serve(socket: WebSocket, _state: AppState, cols: u16, rows: u16, sh
         }
     };
 
-    let reader = pty.master.try_clone_reader().unwrap();
-    let writer = pty.master.take_writer().unwrap();
+    // ponytail: pty 已 Ok 验证，try_clone_reader/take_writer 不应再失败
+    let reader = pty.master.try_clone_reader().expect("pty reader 不可克隆");
+    let writer = pty.master.take_writer().expect("pty writer 不可获取");
     let (mut ws_sender, mut ws_receiver) = socket.split();
 
     // PTY reader → WS binary（沿用现状，xterm 原生支持）

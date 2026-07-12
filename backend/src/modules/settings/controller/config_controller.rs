@@ -45,23 +45,24 @@ pub async fn list_config_files(
         for entry in entries.flatten() {
             let path = entry.path();
             if path.extension().map_or(false, |ext| ext == "conf") {
-                let name = path.file_name().unwrap().to_string_lossy().to_string();
-                let metadata = std::fs::metadata(&path).ok();
-                let size = metadata.as_ref().map(|m| m.len()).unwrap_or(0);
-                let modified = metadata
-                    .and_then(|m| m.modified().ok())
-                    .and_then(|t| {
-                        let datetime: chrono::DateTime<chrono::Local> = t.into();
-                        Some(datetime.format("%Y-%m-%d %H:%M:%S").to_string())
-                    });
+                if let Some(name) = path.file_name().map(|n| n.to_string_lossy().to_string()) {
+                    let metadata = std::fs::metadata(&path).ok();
+                    let size = metadata.as_ref().map(|m| m.len()).unwrap_or(0);
+                    let modified = metadata
+                        .and_then(|m| m.modified().ok())
+                        .and_then(|t| {
+                            let datetime: chrono::DateTime<chrono::Local> = t.into();
+                            Some(datetime.format("%Y-%m-%d %H:%M:%S").to_string())
+                        });
 
-                files.push(serde_json::json!({
-                    "name": name,
-                    "path": path.to_string_lossy(),
-                    "size": size,
-                    "modified": modified,
-                    "enabled": true,
-                }));
+                    files.push(serde_json::json!({
+                        "name": name,
+                        "path": path.to_string_lossy(),
+                        "size": size,
+                        "modified": modified,
+                        "enabled": true,
+                    }));
+                }
             }
         }
     }

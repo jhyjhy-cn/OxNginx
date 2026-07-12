@@ -94,13 +94,21 @@ pub async fn download_site_backup(
                 ("Content-Type", "application/zip".to_string()),
                 ("Content-Disposition", format!("attachment; filename=\"{}\"", filename)),
             ];
-            (axum::http::HeaderMap::from_iter(
-                headers.iter().map(|(k, v)| (
-                    k.parse::<axum::http::header::HeaderName>().unwrap(),
-                    v.parse().unwrap(),
-                )),
-            ), bytes)
-                .into_response()
+            let mut header_map = axum::http::HeaderMap::new();
+            let mut header_err: Option<String> = None;
+            for (k, v) in headers.iter() {
+                match k.parse::<axum::http::header::HeaderName>() {
+                    Ok(name) => match v.parse::<axum::http::HeaderValue>() {
+                        Ok(value) => { header_map.insert(name, value); }
+                        Err(e) => { header_err = Some(format!("非法 header 值 {}: {}", k, e)); break; }
+                    },
+                    Err(e) => { header_err = Some(format!("非法 header 名 {}: {}", k, e)); break; }
+                }
+            }
+            if let Some(e) = header_err {
+                return Json(json!(ApiResponse::<()>::error(e))).into_response();
+            }
+            (header_map, bytes).into_response()
         }
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("读取文件失败: {}", e)))).into_response(),
     }

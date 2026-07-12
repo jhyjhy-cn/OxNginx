@@ -292,7 +292,7 @@ pub async fn install_nginx(install_dir: &str) -> anyhow::Result<NginxInstallResu
         let zip_path = if cfg!(debug_assertions) {
             let libs_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                 .parent()
-                .unwrap()
+                .expect("CARGO_MANIFEST_DIR 必有父目录")
                 .join("libs")
                 .join("nginx")
                 .join("windows");
@@ -342,7 +342,10 @@ pub async fn install_nginx(install_dir: &str) -> anyhow::Result<NginxInstallResu
             .await??;
         }
 
-        let project_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+        // ponytail: 编译期常量 CARGO_MANIFEST_DIR 一定有 parent（manifest = backend/Cargo.toml）
+        let project_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .expect("CARGO_MANIFEST_DIR 必有父目录");
         if !Path::new(&zip_path).starts_with(project_root) {
             let _ = tokio::fs::remove_file(&zip_path).await;
         }
