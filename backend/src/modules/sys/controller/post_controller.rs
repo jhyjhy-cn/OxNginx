@@ -1,17 +1,20 @@
-use axum::{extract::{Path, State}, Json};
+use axum::{extract::{Extension, Path, State}, Json};
 use serde_json::json;
 
-use ox_nginx_macros::audit_log;
+use ox_nginx_macros::{audit_log, check_permission};
 
 use crate::modules::common::dto::{ApiResponse, PagedResult, PageQuery, UpsertPostRequest};
+use crate::modules::common::middleware::TokenInfo;
 use crate::modules::sys::service::post_service as rbac_service;
 use crate::AppState;
 
 // ============== 岗位管理 =============
 
+#[check_permission("sys:post:query")]
 pub async fn list_posts(
     State(state): State<AppState>,
     axum::extract::Query(q): axum::extract::Query<PageQuery>,
+    token: Extension<TokenInfo>,
 ) -> Json<serde_json::Value> {
     let page = q.page.unwrap_or(1).max(1);
     let page_size = q.page_size.unwrap_or(20).max(1);
@@ -21,8 +24,10 @@ pub async fn list_posts(
     }
 }
 
+#[check_permission("sys:post:add")]
 #[audit_log(module = "rbac", action = "创建岗位", capture = req)]
 pub async fn create_post(
+    token: Extension<TokenInfo>,
     ctx: axum::extract::Extension<crate::modules::common::audit::context::SharedAuditContext>,
     State(state): State<AppState>,
     Json(req): Json<UpsertPostRequest>,
@@ -33,8 +38,10 @@ pub async fn create_post(
     }
 }
 
+#[check_permission("sys:post:edit")]
 #[audit_log(module = "rbac", action = "更新岗位", capture = req)]
 pub async fn update_post(
+    token: Extension<TokenInfo>,
     ctx: axum::extract::Extension<crate::modules::common::audit::context::SharedAuditContext>,
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -46,8 +53,10 @@ pub async fn update_post(
     }
 }
 
+#[check_permission("sys:post:delete")]
 #[audit_log(module = "rbac", action = "删除岗位")]
 pub async fn delete_post(
+    token: Extension<TokenInfo>,
     ctx: axum::extract::Extension<crate::modules::common::audit::context::SharedAuditContext>,
     State(state): State<AppState>,
     Path(id): Path<i64>,

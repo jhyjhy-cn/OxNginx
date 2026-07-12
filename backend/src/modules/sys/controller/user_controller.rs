@@ -2,7 +2,7 @@ use axum::{extract::{Extension, Path, State}, Json};
 use axum::response::Response;
 use serde_json::json;
 
-use ox_nginx_macros::audit_log;
+use ox_nginx_macros::{audit_log, check_permission};
 
 use crate::modules::common::dto::{ApiResponse, PagedResult, ResetPasswordRequest, RbacInfo, UpsertUserRequest, UserQuery};
 use crate::modules::common::middleware::TokenInfo;
@@ -11,9 +11,11 @@ use crate::AppState;
 
 // ============== 用户管理 ==============
 
+#[check_permission("sys:user:query")]
 pub async fn list_users(
     State(state): State<AppState>,
     axum::extract::Query(q): axum::extract::Query<UserQuery>,
+    token: Extension<TokenInfo>,
 ) -> Json<serde_json::Value> {
     match user_service::list_users_paged(&state.db.pool(), &q).await {
         Ok((list, total)) => Json(json!(ApiResponse::success(PagedResult {
@@ -26,9 +28,11 @@ pub async fn list_users(
     }
 }
 
+#[check_permission("sys:user:query")]
 pub async fn get_user(
     State(state): State<AppState>,
     Path(id): Path<i64>,
+    token: Extension<TokenInfo>,
 ) -> Json<serde_json::Value> {
     match user_service::get_user(&state.db.pool(), id).await {
         Ok(Some(user)) => {
@@ -52,8 +56,10 @@ pub async fn get_user(
     }
 }
 
+#[check_permission("sys:user:add")]
 #[audit_log(module = "rbac", action = "创建用户", capture = req)]
 pub async fn create_user(
+    token: Extension<TokenInfo>,
     ctx: axum::extract::Extension<crate::modules::common::audit::context::SharedAuditContext>,
     State(state): State<AppState>,
     Json(req): Json<UpsertUserRequest>,
@@ -81,8 +87,10 @@ pub async fn create_user(
     }
 }
 
+#[check_permission("sys:user:edit")]
 #[audit_log(module = "rbac", action = "更新用户", capture = req)]
 pub async fn update_user(
+    token: Extension<TokenInfo>,
     ctx: axum::extract::Extension<crate::modules::common::audit::context::SharedAuditContext>,
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -115,8 +123,10 @@ pub async fn update_user(
     }
 }
 
+#[check_permission("sys:user:delete")]
 #[audit_log(module = "rbac", action = "删除用户")]
 pub async fn delete_user(
+    token: Extension<TokenInfo>,
     ctx: axum::extract::Extension<crate::modules::common::audit::context::SharedAuditContext>,
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -128,8 +138,10 @@ pub async fn delete_user(
     }
 }
 
+#[check_permission("sys:user:resetPwd")]
 #[audit_log(module = "rbac", action = "重置密码", capture = req)]
 pub async fn reset_password(
+    token: Extension<TokenInfo>,
     ctx: axum::extract::Extension<crate::modules::common::audit::context::SharedAuditContext>,
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -171,8 +183,10 @@ pub struct BatchDisabledRequest {
     pub disabled: i32,
 }
 
+#[check_permission("sys:user:batchResetPwd")]
 #[audit_log(module = "rbac", action = "批量重置密码", capture = req)]
 pub async fn batch_reset_password(
+    token: Extension<TokenInfo>,
     ctx: axum::extract::Extension<crate::modules::common::audit::context::SharedAuditContext>,
     State(state): State<AppState>,
     Json(req): Json<BatchResetPasswordRequest>,
@@ -186,8 +200,10 @@ pub async fn batch_reset_password(
     }
 }
 
+#[check_permission("sys:user:changeStatus")]
 #[audit_log(module = "rbac", action = "批量禁用/启用用户", capture = req)]
 pub async fn batch_set_disabled(
+    token: Extension<TokenInfo>,
     ctx: axum::extract::Extension<crate::modules::common::audit::context::SharedAuditContext>,
     State(state): State<AppState>,
     Json(req): Json<BatchDisabledRequest>,
@@ -207,6 +223,7 @@ pub async fn batch_set_disabled(
 /// 按当前查询条件导出用户为 xlsx
 pub async fn export_users(
     State(state): State<AppState>,
+    _token: Extension<TokenInfo>,
     axum::extract::Query(q): axum::extract::Query<crate::modules::common::dto::UserQuery>,
 ) -> Response {
     use crate::modules::common::util::excel::{build_xlsx, export_error, xlsx_response, Sheet};

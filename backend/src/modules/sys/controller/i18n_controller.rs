@@ -1,24 +1,28 @@
-use axum::{extract::{Path, State}, Json};
+use axum::{extract::{Extension, Path, State}, Json};
 use serde_json::json;
 
-use ox_nginx_macros::audit_log;
+use ox_nginx_macros::{audit_log, check_permission};
 
 use crate::modules::common::dto::{ApiResponse, UpsertI18nRequest};
+use crate::modules::common::middleware::TokenInfo;
 use crate::modules::sys::service::i18n_service;
 use crate::AppState;
 
 // ============== 国际化管理 =============
 
-pub async fn list_i18n_locales(State(state): State<AppState>) -> Json<serde_json::Value> {
+#[check_permission("sys:i18n:query")]
+pub async fn list_i18n_locales(State(state): State<AppState>, token: Extension<TokenInfo>) -> Json<serde_json::Value> {
     match i18n_service::list_i18n_locales(&state.db.pool()).await {
         Ok(data) => Json(json!(ApiResponse::success(data))),
         Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
     }
 }
 
+#[check_permission("sys:i18n:query")]
 pub async fn list_i18n(
     State(state): State<AppState>,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+    token: Extension<TokenInfo>,
 ) -> Json<serde_json::Value> {
     if let Some(page_str) = params.get("page") {
         let page: i64 = page_str.parse().unwrap_or(1);
@@ -42,8 +46,10 @@ pub async fn list_i18n(
     }
 }
 
+#[check_permission("sys:i18n:edit")]
 #[audit_log(module = "rbac", action = "保存国际化", capture = req)]
 pub async fn upsert_i18n(
+    token: Extension<TokenInfo>,
     ctx: axum::extract::Extension<crate::modules::common::audit::context::SharedAuditContext>,
     State(state): State<AppState>,
     Json(req): Json<UpsertI18nRequest>,
@@ -55,8 +61,10 @@ pub async fn upsert_i18n(
     }
 }
 
+#[check_permission("sys:i18n:delete")]
 #[audit_log(module = "rbac", action = "删除国际化")]
 pub async fn delete_i18n(
+    token: Extension<TokenInfo>,
     ctx: axum::extract::Extension<crate::modules::common::audit::context::SharedAuditContext>,
     State(state): State<AppState>,
     Path(id): Path<i64>,

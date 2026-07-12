@@ -1,13 +1,15 @@
 use axum::{
     body::Body,
-    extract::{Multipart, Path, Query, State},
-    Extension, Json,
+    extract::{Extension, Multipart, Path, Query, State},
+    Json,
 };
 use axum::http::{header, HeaderValue, StatusCode};
 use axum::response::Response;
 use serde::Deserialize;
 use serde_json::json;
 use tokio_util::io::ReaderStream;
+
+use ox_nginx_macros::check_permission;
 
 use crate::modules::common::config::get_run_dir;
 use crate::modules::common::dto::{self, ApiResponse, BatchDeleteFilesRequest};
@@ -29,20 +31,23 @@ pub struct PageFilesQuery {
     pub page_size: Option<i64>,
 }
 
+#[check_permission("sys:file:upload")]
 pub async fn upload_file(
     State(state): State<AppState>,
-    Extension(info): Extension<TokenInfo>,
+    Extension(token): Extension<TokenInfo>,
     multipart: Multipart,
 ) -> Json<serde_json::Value> {
-    match svc::upload(&state.db.pool(), multipart, Some(info.user_id)).await {
+    match svc::upload(&state.db.pool(), multipart, Some(token.user_id)).await {
         Ok(r) => Json(json!(ApiResponse::success(r))),
         Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
     }
 }
 
+#[check_permission("sys:file:query")]
 pub async fn page_files(
     State(state): State<AppState>,
     Query(q): Query<PageFilesQuery>,
+    token: Extension<TokenInfo>,
 ) -> Json<serde_json::Value> {
     let page = q.page.unwrap_or(1).max(1);
     let page_size = q.page_size.unwrap_or(20).clamp(1, 200);
@@ -66,9 +71,11 @@ pub async fn page_files(
     }
 }
 
+#[check_permission("sys:file:query")]
 pub async fn get_file(
     State(state): State<AppState>,
     Path(id): Path<i64>,
+    token: Extension<TokenInfo>,
 ) -> Json<serde_json::Value> {
     match svc::get_file(&state.db.pool(), id).await {
         Ok(Some(f)) => Json(json!(ApiResponse::success(f))),
@@ -77,8 +84,10 @@ pub async fn get_file(
     }
 }
 
+#[check_permission("sys:file:delete")]
 pub async fn delete_file(
     State(state): State<AppState>,
+    token: Extension<TokenInfo>,
     Path(id): Path<i64>,
 ) -> Json<serde_json::Value> {
     match svc::delete_file(&state.db.pool(), id).await {
@@ -88,8 +97,10 @@ pub async fn delete_file(
     }
 }
 
+#[check_permission("sys:file:batchDelete")]
 pub async fn batch_delete_files(
     State(state): State<AppState>,
+    token: Extension<TokenInfo>,
     Json(req): Json<BatchDeleteFilesRequest>,
 ) -> Json<serde_json::Value> {
     if req.ids.is_empty() {
@@ -103,6 +114,7 @@ pub async fn batch_delete_files(
 
 pub async fn download_file(
     State(state): State<AppState>,
+    _token: Extension<TokenInfo>,
     Path(id): Path<i64>,
 ) -> Result<Response, (StatusCode, String)> {
     let f = svc::get_file(&state.db.pool(), id)

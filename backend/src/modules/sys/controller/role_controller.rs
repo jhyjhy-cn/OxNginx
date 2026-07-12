@@ -1,17 +1,20 @@
-use axum::{extract::{Path, State}, Json};
+use axum::{extract::{Extension, Path, State}, Json};
 use serde_json::json;
 
-use ox_nginx_macros::audit_log;
+use ox_nginx_macros::{audit_log, check_permission};
 
 use crate::modules::common::dto::{ApiResponse, PagedResult, PageQuery, SetRoleMenusRequest, UpsertRoleRequest};
+use crate::modules::common::middleware::TokenInfo;
 use crate::modules::sys::service::role_service as rbac_service;
 use crate::AppState;
 
 // ============== 角色管理 =============
 
+#[check_permission("sys:role:query")]
 pub async fn list_roles(
     State(state): State<AppState>,
     axum::extract::Query(q): axum::extract::Query<PageQuery>,
+    token: Extension<TokenInfo>,
 ) -> Json<serde_json::Value> {
     let page = q.page.unwrap_or(1).max(1);
     let page_size = q.page_size.unwrap_or(20).max(1);
@@ -21,8 +24,10 @@ pub async fn list_roles(
     }
 }
 
+#[check_permission("sys:role:add")]
 #[audit_log(module = "rbac", action = "创建角色", capture = req)]
 pub async fn create_role(
+    token: Extension<TokenInfo>,
     ctx: axum::extract::Extension<crate::modules::common::audit::context::SharedAuditContext>,
     State(state): State<AppState>,
     Json(req): Json<UpsertRoleRequest>,
@@ -39,8 +44,10 @@ pub async fn create_role(
     }
 }
 
+#[check_permission("sys:role:edit")]
 #[audit_log(module = "rbac", action = "更新角色", capture = req)]
 pub async fn update_role(
+    token: Extension<TokenInfo>,
     ctx: axum::extract::Extension<crate::modules::common::audit::context::SharedAuditContext>,
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -58,8 +65,10 @@ pub async fn update_role(
     }
 }
 
+#[check_permission("sys:role:delete")]
 #[audit_log(module = "rbac", action = "删除角色")]
 pub async fn delete_role(
+    token: Extension<TokenInfo>,
     ctx: axum::extract::Extension<crate::modules::common::audit::context::SharedAuditContext>,
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -71,8 +80,10 @@ pub async fn delete_role(
     }
 }
 
+#[check_permission("sys:role:menuPerm")]
 #[audit_log(module = "rbac", action = "设置角色菜单", capture = req)]
 pub async fn set_role_menus(
+    token: Extension<TokenInfo>,
     ctx: axum::extract::Extension<crate::modules::common::audit::context::SharedAuditContext>,
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -84,9 +95,11 @@ pub async fn set_role_menus(
     }
 }
 
+#[check_permission("sys:role:menuPerm")]
 pub async fn get_role_menus(
     State(state): State<AppState>,
     Path(id): Path<i64>,
+    token: Extension<TokenInfo>,
 ) -> Json<serde_json::Value> {
     match rbac_service::get_role_menus(&state.db.pool(), id).await {
         Ok(ids) => Json(json!(ApiResponse::success(ids))),
@@ -94,8 +107,10 @@ pub async fn get_role_menus(
     }
 }
 
+#[check_permission("sys:role:batchDelete")]
 #[audit_log(module = "rbac", action = "批量删除角色", capture = ids)]
 pub async fn batch_delete_roles(
+    token: Extension<TokenInfo>,
     ctx: axum::extract::Extension<crate::modules::common::audit::context::SharedAuditContext>,
     State(state): State<AppState>,
     Json(ids): Json<Vec<i64>>,

@@ -1,11 +1,14 @@
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Extension, Path, Query, State},
     Json,
 };
 use serde::Deserialize;
 use serde_json::json;
 
+use ox_nginx_macros::check_permission;
+
 use crate::modules::common::dto::{ApiResponse, UpsertParamRequest};
+use crate::modules::common::middleware::TokenInfo;
 use crate::modules::sys::service::param_service as svc;
 use crate::AppState;
 
@@ -19,8 +22,10 @@ pub struct PageParamsQuery {
     pub page_size: Option<i64>,
 }
 
+#[check_permission("sys:param:query")]
 pub async fn page_params(
     State(state): State<AppState>,
+    token: Extension<TokenInfo>,
     Query(q): Query<PageParamsQuery>,
 ) -> Json<serde_json::Value> {
     let page = q.page.unwrap_or(1).max(1);
@@ -44,8 +49,10 @@ pub async fn page_params(
     }
 }
 
+#[check_permission("sys:param:query")]
 pub async fn get_param(
     State(state): State<AppState>,
+    token: Extension<TokenInfo>,
     Path(id): Path<i64>,
 ) -> Json<serde_json::Value> {
     match svc::get_param(&state.db.pool(), id).await {
@@ -55,8 +62,10 @@ pub async fn get_param(
     }
 }
 
+#[check_permission("sys:param:query")]
 pub async fn get_param_by_key(
     State(state): State<AppState>,
+    token: Extension<TokenInfo>,
     Path(key): Path<String>,
 ) -> Json<serde_json::Value> {
     match svc::get_param_by_key(&state.db.pool(), &key).await {
@@ -66,8 +75,10 @@ pub async fn get_param_by_key(
     }
 }
 
+#[check_permission("sys:param:add")]
 pub async fn create_param(
     State(state): State<AppState>,
+    token: Extension<TokenInfo>,
     Json(req): Json<UpsertParamRequest>,
 ) -> Json<serde_json::Value> {
     match svc::create_param(
@@ -86,8 +97,10 @@ pub async fn create_param(
     }
 }
 
+#[check_permission("sys:param:edit")]
 pub async fn update_param(
     State(state): State<AppState>,
+    token: Extension<TokenInfo>,
     Path(id): Path<i64>,
     Json(req): Json<UpsertParamRequest>,
 ) -> Json<serde_json::Value> {
@@ -107,8 +120,10 @@ pub async fn update_param(
     }
 }
 
+#[check_permission("sys:param:delete")]
 pub async fn delete_param(
     State(state): State<AppState>,
+    token: Extension<TokenInfo>,
     Path(id): Path<i64>,
 ) -> Json<serde_json::Value> {
     match svc::delete_param(&state.db.pool(), id).await {
