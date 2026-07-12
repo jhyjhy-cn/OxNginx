@@ -3,5 +3,7 @@ pub mod cert_controller;
 pub mod reverse_proxy_controller;
 pub mod site_backup_controller;
 pub mod site_controller;
+pub mod site_controller_batch;
+pub mod site_controller_ssl;
 pub mod template_controller;
 pub mod upstream_controller;

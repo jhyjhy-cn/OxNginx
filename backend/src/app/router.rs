@@ -38,9 +38,9 @@ pub fn build(state: AppState) -> Router {
         .route("/api/sites/{id}", get(modules::site::controller::site_controller::get_site))
         .route("/api/sites/{id}", put(modules::site::controller::site_controller::update_site))
         .route("/api/sites/{id}", delete(modules::site::controller::site_controller::delete_site))
-        .route("/api/sites/{id}/deploy-ssl", post(modules::site::controller::site_controller::deploy_ssl))
-        .route("/api/sites/batch/enable", post(modules::site::controller::site_controller::batch_enable))
-        .route("/api/sites/batch/disable", post(modules::site::controller::site_controller::batch_disable))
+        .route("/api/sites/{id}/deploy-ssl", post(modules::site::controller::site_controller_ssl::deploy_ssl))
+        .route("/api/sites/batch/enable", post(modules::site::controller::site_controller_batch::batch_enable))
+        .route("/api/sites/batch/disable", post(modules::site::controller::site_controller_batch::batch_disable))
         .route("/api/sites/batch/delete", post(modules::site::controller::site_controller::batch_delete))
         // 反向代理
         .route("/api/sites/{id}/proxies", get(modules::site::controller::reverse_proxy_controller::list_proxies))
