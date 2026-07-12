@@ -4,9 +4,10 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 // ponytail: element-plus 由 unplugin-vue-components 的 ElementPlusResolver 自动按需注册，不在此处 use
-// dark/css-vars.css 提供暗色变量基础（settings.darkMode 切 html.dark 触发）
-import 'element-plus/theme-chalk/dark/css-vars.css'
+// 导入顺序：Tailwind preflight (main.css) → EP 主题变量 → EP 组件 CSS（unplugin 自动注入在末尾）
+// 若 EP 主题变量在 main.css 之前，Tailwind v4 重置可能覆盖 EP 主题变量导致按钮颜色异常
 import './styles/main.css'
+import 'element-plus/theme-chalk/dark/css-vars.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 import App from './App.vue'
