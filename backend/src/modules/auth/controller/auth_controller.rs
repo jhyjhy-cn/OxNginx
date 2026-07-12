@@ -80,18 +80,22 @@ pub async fn login(
 }
 
 /// 登出
-pub async fn logout(State(state): State<AppState>, headers: header::HeaderMap) -> Json<serde_json::Value> {
-    let token = headers
-        .get(header::AUTHORIZATION)
-        .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.strip_prefix("Bearer "));
-
-    if let Some(token) = token {
-        if let Ok(Some(username)) = crate::modules::auth::service::token_service::verify_token(state.db.pool(), token).await {
-            let _ = crate::modules::auth::service::token_service::delete_token(state.db.pool(), token).await;
-            let _ = crate::modules::log::service::log_service::log_login(state.db.pool(), &username, None, None, None, None, LoginLogType::Logout, LogStatus::Success).await;
-        }
-    }
+pub async fn logout(
+    State(state): State<AppState>,
+    Extension(info): Extension<TokenInfo>,
+) -> Json<serde_json::Value> {
+    let _ = crate::modules::auth::service::token_service::delete_user_tokens(state.db.pool(), info.user_id).await;
+    let _ = crate::modules::log::service::log_service::log_login(
+        state.db.pool(),
+        &info.username,
+        None,
+        None,
+        None,
+        None,
+        LoginLogType::Logout,
+        LogStatus::Success,
+    )
+    .await;
 
     Json(json!(ApiResponse::success("ok")))
 }

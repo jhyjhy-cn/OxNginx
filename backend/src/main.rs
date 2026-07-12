@@ -114,6 +114,23 @@ fn main() -> anyhow::Result<()> {
         crate::modules::common::audit::worker::spawn(audit_rx, state.db.pool().clone());
         tracing::info!("[3.5/4] 操作日志 worker 已启动");
 
+        // 启动过期 token 清理任务：先跑一次，再每小时跑一次
+        tracing::info!("[3.6/4] 启动过期 token 清理任务...");
+        let cleanup_pool = state.db.pool().clone();
+        tokio::spawn(async move {
+            use crate::modules::auth::dao::token_dao;
+            let _ = token_dao::cleanup_expired_tokens(&cleanup_pool).await;
+            let mut tick = tokio::time::interval(std::time::Duration::from_secs(3600));
+            tick.tick().await; // 跳过立即 tick（已手动跑过）
+            loop {
+                tick.tick().await;
+                if let Err(e) = token_dao::cleanup_expired_tokens(&cleanup_pool).await {
+                    tracing::warn!(error=%e, "清理过期Token失败!");
+                }
+            }
+        });
+        tracing::info!("[3.6/4] 过期 token 清理任务已启动");
+
         tracing::info!("[4/4] 构建路由...");
         let app = app::router::build(state);
 

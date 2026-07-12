@@ -23,7 +23,6 @@ pub fn build(state: AppState) -> Router {
     // 公开路由（无需认证）
     let public_routes = Router::new()
         .route("/api/login", post(modules::auth::controller::auth_controller::login))
-        .route("/api/logout", post(modules::auth::controller::auth_controller::logout))
         .route("/api/setup", post(modules::auth::controller::auth_controller::setup))
         .route("/api/setup/status", get(modules::auth::controller::auth_controller::setup_status))
         .route("/api/auth/public-key", get(modules::auth::controller::auth_controller::get_public_key))
@@ -53,6 +52,7 @@ pub fn build(state: AppState) -> Router {
         .route("/api/certificate/renew", post(modules::site::controller::cert_controller::renew_certificate))
         .route("/api/change-password", post(modules::auth::controller::auth_controller::change_password))
         .route("/api/change-username", post(modules::auth::controller::auth_controller::change_username))
+        .route("/api/logout", post(modules::auth::controller::auth_controller::logout))
         .route("/api/nginx/test", post(modules::nginx::controller::nginx_controller::test_config))
         .route("/api/nginx/reload", post(modules::nginx::controller::nginx_controller::reload))
         .route("/api/nginx/status", get(modules::nginx::controller::nginx_controller::status))

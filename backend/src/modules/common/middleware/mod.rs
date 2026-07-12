@@ -4,10 +4,22 @@ use axum::{
     middleware::Next,
     response::Response,
 };
+use std::collections::HashMap;
+use std::sync::OnceLock;
 use std::time::Instant;
 use std::net::SocketAddr;
+use tokio::sync::Mutex;
 
 use crate::AppState;
+
+/// Token 续期去抖窗口（5 分钟）。
+/// ponytail: 文件级 Mutex<HashMap<token, Instant>> 单点去抖;锁内不跨 await,try_lock 取不到直接放过。
+const REFRESH_DEBOUNCE: std::time::Duration = std::time::Duration::from_secs(300);
+static LAST_REFRESH: OnceLock<Mutex<HashMap<String, Instant>>> = OnceLock::new();
+
+fn last_refresh_map() -> &'static Mutex<HashMap<String, Instant>> {
+    LAST_REFRESH.get_or_init(|| Mutex::new(HashMap::new()))
+}
 
 /// 请求日志中间件
 pub async fn logging_middleware(request: Request, next: Next) -> Response {
@@ -49,9 +61,27 @@ pub async fn auth_middleware(
     match crate::modules::auth::service::token_service::verify_token_full(state.db.pool(), token_str).await {
         Ok(Some(token)) => {
             let expires_hours = state.get_config().auth.token_expires_hours as i64;
-            let pool = state.db.pool().clone();
-            let tk = token_str.to_string();
-            tokio::spawn(async move { let _ = crate::modules::auth::service::token_service::refresh_token(&pool, &tk, expires_hours).await; });
+            // 续期去抖：5 分钟内同一 token 只更新一次 expires_at
+            let now = Instant::now();
+            let should_refresh = match last_refresh_map().try_lock() {
+                Ok(mut g) => match g.get(token_str) {
+                    Some(prev) if now.duration_since(*prev) < REFRESH_DEBOUNCE => false,
+                    _ => {
+                        g.insert(token_str.to_string(), now);
+                        true
+                    }
+                },
+                Err(_) => true, // 取不到锁让另一个请求去刷新
+            };
+            if should_refresh {
+                let pool = state.db.pool().clone();
+                let tk = token_str.to_string();
+                tokio::spawn(async move {
+                    if let Err(e) = crate::modules::auth::service::token_service::refresh_token(&pool, &tk, expires_hours).await {
+                        tracing::warn!(error=%e, "refresh_token failed");
+                    }
+                });
+            }
             request.extensions_mut().insert(TokenInfo { username: token.username.clone(), user_id: token.user_id });
             // tracing::debug!("[AUTH] Inserted TokenInfo: username={}, ip={:?}", token.username, client_ip);
             Ok(next.run(request).await)

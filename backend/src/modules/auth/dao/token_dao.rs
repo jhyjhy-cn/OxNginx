@@ -91,7 +91,6 @@ pub async fn refresh_token_expires(
     Ok(())
 }
 
-#[allow(dead_code)]
 pub async fn cleanup_expired_tokens(pool: &SqlitePool) -> sqlx::Result<u64> {
     let now = chrono::Utc::now().naive_utc();
     let r = sqlx::query("DELETE FROM sys_tokens WHERE expires_at <= ?")
