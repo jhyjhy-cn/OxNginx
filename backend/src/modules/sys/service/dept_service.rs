@@ -66,9 +66,9 @@ fn build_dept_tree(depts: Vec<Dept>) -> Vec<DeptNode> {
         placed = false;
         let mut i = 0;
         while i < all.len() {
-            let pid = all[i].parent_id.unwrap();
-            if attach_child(&mut roots, pid, to_node(&all[i])) {
-                all.remove(i);
+            // ponytail: 第一轮 (line 55) 已把所有 parent_id=None 抽到 roots，此处必然 Some
+            let pid = all[i].parent_id.expect("第一轮已过滤 None 节点");
+            if attach_child(&mut roots, pid, to_node(&all.remove(i))) {
                 placed = true;
             } else {
                 i += 1;

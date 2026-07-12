@@ -75,7 +75,7 @@ fn build_menu_tree(menus: Vec<Menu>) -> Vec<MenuNode> {
         placed = false;
         let mut i = 0;
         while i < all.len() {
-            let pid = all[i].parent_id.unwrap();
+            let pid = all[i].parent_id.expect("第一轮已过滤 None 节点");
             if attach_child(&mut roots, pid, to_node(&all[i])) {
                 all.remove(i);
                 placed = true;

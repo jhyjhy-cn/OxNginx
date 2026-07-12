@@ -24,7 +24,7 @@ pub async fn insert_token(
     let token_str = generate_token();
     let expires_at = chrono::Utc::now()
         .checked_add_signed(chrono::Duration::hours(expires_hours))
-        .unwrap()
+        .ok_or_else(|| sqlx::Error::Decode(format!("expires_hours {} 溢出时间上限", expires_hours).into()))?
         .naive_utc();
     sqlx::query(
         "INSERT INTO sys_tokens (token, user_id, username, ip, os, browser, user_agent, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -77,7 +77,7 @@ pub async fn refresh_token_expires(
 ) -> sqlx::Result<()> {
     let new_expires = chrono::Utc::now()
         .checked_add_signed(chrono::Duration::hours(expires_hours))
-        .unwrap()
+        .ok_or_else(|| sqlx::Error::Decode(format!("expires_hours {} 溢出时间上限", expires_hours).into()))?
         .naive_utc();
     sqlx::query("UPDATE sys_tokens SET expires_at = ? WHERE token = ?")
         .bind(new_expires)

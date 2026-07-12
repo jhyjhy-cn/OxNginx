@@ -27,11 +27,10 @@ pub async fn update_rule(
     id: i64,
     req: UpdateAccessRuleRequest,
 ) -> anyhow::Result<Option<AccessRule>> {
-    let existing = get_rule(state, id).await?;
-    if existing.is_none() {
-        return Ok(None);
-    }
-    let existing = existing.unwrap();
+    let existing = match get_rule(state, id).await? {
+        Some(e) => e,
+        None => return Ok(None),
+    };
 
     let site_id = req.site_id.or(existing.site_id);
     let rule_type = req.rule_type.unwrap_or(existing.rule_type);

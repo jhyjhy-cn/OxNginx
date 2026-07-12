@@ -49,11 +49,10 @@ pub async fn update_site(
     id: i64,
     req: UpdateSiteRequest,
 ) -> anyhow::Result<Option<Site>> {
-    let existing = get_site(state, id).await?;
-    if existing.is_none() {
-        return Ok(None);
-    }
-    let existing = existing.unwrap();
+    let existing = match get_site(state, id).await? {
+        Some(e) => e,
+        None => return Ok(None),
+    };
 
     let name = req.name.unwrap_or(existing.name);
     let server_name = req.server_name.unwrap_or(existing.server_name);

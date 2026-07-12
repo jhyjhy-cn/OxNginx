@@ -27,11 +27,10 @@ pub async fn update_template(
     id: i64,
     req: UpdateTemplateRequest,
 ) -> anyhow::Result<Option<Template>> {
-    let existing = get_template(state, id).await?;
-    if existing.is_none() {
-        return Ok(None);
-    }
-    let existing = existing.unwrap();
+    let existing = match get_template(state, id).await? {
+        Some(e) => e,
+        None => return Ok(None),
+    };
 
     let name = req.name.unwrap_or(existing.name);
     let remark = req.remark.or(existing.remark);

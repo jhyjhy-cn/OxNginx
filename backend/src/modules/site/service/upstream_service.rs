@@ -64,11 +64,10 @@ pub async fn update_upstream(
     id: i64,
     req: UpdateUpstreamRequest,
 ) -> anyhow::Result<Option<(Upstream, Vec<UpstreamServer>)>> {
-    let existing = get_upstream(state, id).await?;
-    if existing.is_none() {
-        return Ok(None);
-    }
-    let existing = existing.unwrap();
+    let existing = match get_upstream(state, id).await? {
+        Some(e) => e,
+        None => return Ok(None),
+    };
 
     let name = req.name.unwrap_or(existing.name);
     let method = req.method.unwrap_or(existing.method);
