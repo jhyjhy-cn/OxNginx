@@ -1,0 +1,110 @@
+{
+  "_comment": "默认菜单种子（权威源）。字段：parent_name, name, title_i18n, icon, path, type(M=目录/C=菜单/F=按钮), permission, component",
+  "menus": [
+    {"p": "", "n": "仪表盘", "t": "sys.menu.dashboard", "i": "House", "u": "/dashboard", "y": "C", "pm": "sys:dashboard:view", "c": "dashboard/index"},
+    {"p": "", "n": "站点管理", "t": "sys.menu.sites", "i": "Connection", "u": "/sites", "y": "C", "pm": "sys:site:view", "c": "sites/index"},
+    {"p": "", "n": "文件管理", "t": "sys.menu.files", "i": "Folder", "u": "/files", "y": "C", "pm": "sys:file:view", "c": "files/index"},
+    {"p": "", "n": "终端", "t": "sys.menu.terminal", "i": "Monitor", "u": "/terminal", "y": "C", "pm": "sys:terminal:view", "c": "terminal/index"},
+    {"p": "", "n": "设置", "t": "sys.menu.settings", "i": "Setting", "u": "/settings", "y": "C", "pm": "sys:config:view", "c": "settings/index"},
+
+    {"p": "", "n": "日志管理", "t": "sys.menu.logManagement", "i": "DocumentCopy", "u": "", "y": "M", "pm": "", "c": ""},
+    {"p": "日志管理", "n": "Nginx日志", "t": "sys.menu.nginxLogs", "i": "DocumentCopy", "u": "/logs/nginx", "y": "C", "pm": "sys:log:view", "c": "logs/index"},
+    {"p": "日志管理", "n": "操作日志", "t": "sys.menu.operationLogs", "i": "Tickets", "u": "/logs/operation", "y": "C", "pm": "sys:log:view", "c": "logs/operation"},
+    {"p": "日志管理", "n": "登录日志", "t": "sys.menu.loginLogs", "i": "Promotion", "u": "/logs/login", "y": "C", "pm": "sys:log:view", "c": "logs/login"},
+
+    {"p": "站点管理", "n": "新增站点", "t": "sys.menu.siteAdd", "i": "", "u": "", "y": "F", "pm": "sys:site:add", "c": ""},
+    {"p": "站点管理", "n": "编辑站点", "t": "sys.menu.siteEdit", "i": "", "u": "", "y": "F", "pm": "sys:site:edit", "c": ""},
+    {"p": "站点管理", "n": "删除站点", "t": "sys.menu.siteDelete", "i": "", "u": "", "y": "F", "pm": "sys:site:delete", "c": ""},
+
+    {"p": "", "n": "权限管理", "t": "sys.menu.rbacManagement", "i": "UserFilled", "u": "", "y": "M", "pm": "", "c": ""},
+    {"p": "权限管理", "n": "用户管理", "t": "sys.menu.rbacUsers", "i": "UserFilled", "u": "/settings/rbac/users", "y": "C", "pm": "sys:user:manage", "c": "sys/users/index"},
+    {"p": "权限管理", "n": "角色管理", "t": "sys.menu.rbacRoles", "i": "UserFilled", "u": "/settings/rbac/roles", "y": "C", "pm": "sys:role:manage", "c": "sys/roles/index"},
+    {"p": "权限管理", "n": "部门管理", "t": "sys.menu.rbacDepts", "i": "OfficeBuilding", "u": "/settings/rbac/depts", "y": "C", "pm": "sys:user:manage", "c": "sys/depts/index"},
+    {"p": "权限管理", "n": "岗位管理", "t": "sys.menu.rbacPosts", "i": "Postcard", "u": "/settings/rbac/posts", "y": "C", "pm": "sys:user:manage", "c": "sys/posts/index"},
+    {"p": "权限管理", "n": "菜单管理", "t": "sys.menu.rbacMenus", "i": "Menu", "u": "/settings/rbac/menus", "y": "C", "pm": "sys:menu:manage", "c": "sys/menus/index"},
+
+    {"p": "", "n": "系统管理", "t": "sys.menu.systemManagement", "i": "Setting", "u": "", "y": "M", "pm": "", "c": ""},
+    {"p": "系统管理", "n": "系统参数", "t": "sys.menu.rbacParams", "i": "Setting", "u": "/settings/rbac/params", "y": "C", "pm": "sys:config:manage", "c": "sys/params/index"},
+    {"p": "系统管理", "n": "字典管理", "t": "sys.menu.rbacDicts", "i": "Grid", "u": "/settings/rbac/dicts", "y": "C", "pm": "sys:config:view", "c": "sys/dicts/index"},
+    {"p": "系统管理", "n": "系统文件", "t": "sys.menu.rbacFiles", "i": "Folder", "u": "/settings/rbac/files", "y": "C", "pm": "sys:file:manage", "c": "sys/files/index"},
+    {"p": "系统管理", "n": "国际化管理", "t": "sys.menu.rbacI18n", "i": "MapLocation", "u": "/settings/rbac/i18n", "y": "C", "pm": "sys:config:view", "c": "sys/i18n/index"},
+    {"p": "系统管理", "n": "在线用户", "t": "sys.menu.onlineUsers", "i": "User", "u": "/settings/rbac/online", "y": "C", "pm": "sys:online:view", "c": "sys/online/index"},
+
+    {"p": "用户管理", "n": "用户管理新增", "t": "sys.menu.userAdd", "i": "", "u": "", "y": "F", "pm": "sys:user:add", "c": ""},
+    {"p": "用户管理", "n": "用户管理删除", "t": "sys.menu.userDelete", "i": "", "u": "", "y": "F", "pm": "sys:user:delete", "c": ""},
+    {"p": "用户管理", "n": "用户管理批量删除", "t": "sys.menu.userBatchDelete", "i": "", "u": "", "y": "F", "pm": "sys:user:batchDelete", "c": ""},
+    {"p": "用户管理", "n": "用户管理修改", "t": "sys.menu.userEdit", "i": "", "u": "", "y": "F", "pm": "sys:user:edit", "c": ""},
+    {"p": "用户管理", "n": "用户管理查询", "t": "sys.menu.userQuery", "i": "", "u": "", "y": "F", "pm": "sys:user:query", "c": ""},
+    {"p": "用户管理", "n": "用户管理导出", "t": "sys.menu.userExport", "i": "", "u": "", "y": "F", "pm": "sys:user:export", "c": ""},
+    {"p": "用户管理", "n": "用户管理重置密码", "t": "sys.menu.userResetPwd", "i": "", "u": "", "y": "F", "pm": "sys:user:resetPwd", "c": ""},
+    {"p": "用户管理", "n": "用户管理修改状态", "t": "sys.menu.userChangeStatus", "i": "", "u": "", "y": "F", "pm": "sys:user:changeStatus", "c": ""},
+    {"p": "用户管理", "n": "用户管理批量重置密码", "t": "sys.menu.userBatchResetPwd", "i": "", "u": "", "y": "F", "pm": "sys:user:batchResetPwd", "c": ""},
+
+    {"p": "角色管理", "n": "角色管理新增", "t": "sys.menu.roleAdd", "i": "", "u": "", "y": "F", "pm": "sys:role:add", "c": ""},
+    {"p": "角色管理", "n": "角色管理删除", "t": "sys.menu.roleDelete", "i": "", "u": "", "y": "F", "pm": "sys:role:delete", "c": ""},
+    {"p": "角色管理", "n": "角色管理批量删除", "t": "sys.menu.roleBatchDelete", "i": "", "u": "", "y": "F", "pm": "sys:role:batchDelete", "c": ""},
+    {"p": "角色管理", "n": "角色管理修改", "t": "sys.menu.roleEdit", "i": "", "u": "", "y": "F", "pm": "sys:role:edit", "c": ""},
+    {"p": "角色管理", "n": "角色管理查询", "t": "sys.menu.roleQuery", "i": "", "u": "", "y": "F", "pm": "sys:role:query", "c": ""},
+    {"p": "角色管理", "n": "角色管理导出", "t": "sys.menu.roleExport", "i": "", "u": "", "y": "F", "pm": "sys:role:export", "c": ""},
+    {"p": "角色管理", "n": "角色管理菜单权限", "t": "sys.menu.roleMenuPerm", "i": "", "u": "", "y": "F", "pm": "sys:role:menuPerm", "c": ""},
+
+    {"p": "部门管理", "n": "部门管理新增", "t": "sys.menu.deptAdd", "i": "", "u": "", "y": "F", "pm": "sys:dept:add", "c": ""},
+    {"p": "部门管理", "n": "部门管理删除", "t": "sys.menu.deptDelete", "i": "", "u": "", "y": "F", "pm": "sys:dept:delete", "c": ""},
+    {"p": "部门管理", "n": "部门管理批量删除", "t": "sys.menu.deptBatchDelete", "i": "", "u": "", "y": "F", "pm": "sys:dept:batchDelete", "c": ""},
+    {"p": "部门管理", "n": "部门管理修改", "t": "sys.menu.deptEdit", "i": "", "u": "", "y": "F", "pm": "sys:dept:edit", "c": ""},
+    {"p": "部门管理", "n": "部门管理查询", "t": "sys.menu.deptQuery", "i": "", "u": "", "y": "F", "pm": "sys:dept:query", "c": ""},
+    {"p": "部门管理", "n": "部门管理导出", "t": "sys.menu.deptExport", "i": "", "u": "", "y": "F", "pm": "sys:dept:export", "c": ""},
+
+    {"p": "岗位管理", "n": "岗位管理新增", "t": "sys.menu.postAdd", "i": "", "u": "", "y": "F", "pm": "sys:post:add", "c": ""},
+    {"p": "岗位管理", "n": "岗位管理删除", "t": "sys.menu.postDelete", "i": "", "u": "", "y": "F", "pm": "sys:post:delete", "c": ""},
+    {"p": "岗位管理", "n": "岗位管理批量删除", "t": "sys.menu.postBatchDelete", "i": "", "u": "", "y": "F", "pm": "sys:post:batchDelete", "c": ""},
+    {"p": "岗位管理", "n": "岗位管理修改", "t": "sys.menu.postEdit", "i": "", "u": "", "y": "F", "pm": "sys:post:edit", "c": ""},
+    {"p": "岗位管理", "n": "岗位管理查询", "t": "sys.menu.postQuery", "i": "", "u": "", "y": "F", "pm": "sys:post:query", "c": ""},
+    {"p": "岗位管理", "n": "岗位管理导出", "t": "sys.menu.postExport", "i": "", "u": "", "y": "F", "pm": "sys:post:export", "c": ""},
+
+    {"p": "菜单管理", "n": "菜单管理新增", "t": "sys.menu.menuAdd", "i": "", "u": "", "y": "F", "pm": "sys:menu:add", "c": ""},
+    {"p": "菜单管理", "n": "菜单管理删除", "t": "sys.menu.menuDelete", "i": "", "u": "", "y": "F", "pm": "sys:menu:delete", "c": ""},
+    {"p": "菜单管理", "n": "菜单管理批量删除", "t": "sys.menu.menuBatchDelete", "i": "", "u": "", "y": "F", "pm": "sys:menu:batchDelete", "c": ""},
+    {"p": "菜单管理", "n": "菜单管理修改", "t": "sys.menu.menuEdit", "i": "", "u": "", "y": "F", "pm": "sys:menu:edit", "c": ""},
+    {"p": "菜单管理", "n": "菜单管理查询", "t": "sys.menu.menuQuery", "i": "", "u": "", "y": "F", "pm": "sys:menu:query", "c": ""},
+    {"p": "菜单管理", "n": "菜单管理导出", "t": "sys.menu.menuExport", "i": "", "u": "", "y": "F", "pm": "sys:menu:export", "c": ""},
+
+    {"p": "系统参数", "n": "系统参数新增", "t": "sys.menu.paramAdd", "i": "", "u": "", "y": "F", "pm": "sys:param:add", "c": ""},
+    {"p": "系统参数", "n": "系统参数删除", "t": "sys.menu.paramDelete", "i": "", "u": "", "y": "F", "pm": "sys:param:delete", "c": ""},
+    {"p": "系统参数", "n": "系统参数批量删除", "t": "sys.menu.paramBatchDelete", "i": "", "u": "", "y": "F", "pm": "sys:param:batchDelete", "c": ""},
+    {"p": "系统参数", "n": "系统参数修改", "t": "sys.menu.paramEdit", "i": "", "u": "", "y": "F", "pm": "sys:param:edit", "c": ""},
+    {"p": "系统参数", "n": "系统参数查询", "t": "sys.menu.paramQuery", "i": "", "u": "", "y": "F", "pm": "sys:param:query", "c": ""},
+    {"p": "系统参数", "n": "系统参数导出", "t": "sys.menu.paramExport", "i": "", "u": "", "y": "F", "pm": "sys:param:export", "c": ""},
+
+    {"p": "字典管理", "n": "字典管理新增", "t": "sys.menu.dictAdd", "i": "", "u": "", "y": "F", "pm": "sys:dict:add", "c": ""},
+    {"p": "字典管理", "n": "字典管理删除", "t": "sys.menu.dictDelete", "i": "", "u": "", "y": "F", "pm": "sys:dict:delete", "c": ""},
+    {"p": "字典管理", "n": "字典管理批量删除", "t": "sys.menu.dictBatchDelete", "i": "", "u": "", "y": "F", "pm": "sys:dict:batchDelete", "c": ""},
+    {"p": "字典管理", "n": "字典管理修改", "t": "sys.menu.dictEdit", "i": "", "u": "", "y": "F", "pm": "sys:dict:edit", "c": ""},
+    {"p": "字典管理", "n": "字典管理查询", "t": "sys.menu.dictQuery", "i": "", "u": "", "y": "F", "pm": "sys:dict:query", "c": ""},
+    {"p": "字典管理", "n": "字典管理导出", "t": "sys.menu.dictExport", "i": "", "u": "", "y": "F", "pm": "sys:dict:export", "c": ""},
+    {"p": "字典管理", "n": "字典管理字典项", "t": "sys.menu.dictItemManage", "i": "", "u": "", "y": "F", "pm": "sys:dict:dictItemManage", "c": ""},
+
+    {"p": "国际化管理", "n": "国际化新增", "t": "sys.menu.i18nAdd", "i": "", "u": "", "y": "F", "pm": "sys:i18n:add", "c": ""},
+    {"p": "国际化管理", "n": "国际化删除", "t": "sys.menu.i18nDelete", "i": "", "u": "", "y": "F", "pm": "sys:i18n:delete", "c": ""},
+    {"p": "国际化管理", "n": "国际化批量删除", "t": "sys.menu.i18nBatchDelete", "i": "", "u": "", "y": "F", "pm": "sys:i18n:batchDelete", "c": ""},
+    {"p": "国际化管理", "n": "国际化修改", "t": "sys.menu.i18nEdit", "i": "", "u": "", "y": "F", "pm": "sys:i18n:edit", "c": ""},
+    {"p": "国际化管理", "n": "国际化查询", "t": "sys.menu.i18nQuery", "i": "", "u": "", "y": "F", "pm": "sys:i18n:query", "c": ""},
+    {"p": "国际化管理", "n": "国际化导出", "t": "sys.menu.i18nExport", "i": "", "u": "", "y": "F", "pm": "sys:i18n:export", "c": ""},
+    {"p": "国际化管理", "n": "国际化导入", "t": "sys.menu.i18nImport", "i": "", "u": "", "y": "F", "pm": "sys:i18n:import", "c": ""},
+
+    {"p": "操作日志", "n": "操作日志查询", "t": "sys.menu.opLogQuery", "i": "", "u": "", "y": "F", "pm": "sys:opLog:query", "c": ""},
+    {"p": "操作日志", "n": "操作日志导出", "t": "sys.menu.opLogExport", "i": "", "u": "", "y": "F", "pm": "sys:opLog:export", "c": ""},
+
+    {"p": "登录日志", "n": "登录日志查询", "t": "sys.menu.loginLogQuery", "i": "", "u": "", "y": "F", "pm": "sys:loginLog:query", "c": ""},
+    {"p": "登录日志", "n": "登录日志导出", "t": "sys.menu.loginLogExport", "i": "", "u": "", "y": "F", "pm": "sys:loginLog:export", "c": ""},
+
+    {"p": "系统文件", "n": "系统文件上传", "t": "sys.menu.fileUpload", "i": "", "u": "", "y": "F", "pm": "sys:file:upload", "c": ""},
+    {"p": "系统文件", "n": "系统文件下载", "t": "sys.menu.fileDownload", "i": "", "u": "", "y": "F", "pm": "sys:file:download", "c": ""},
+    {"p": "系统文件", "n": "系统文件删除", "t": "sys.menu.fileDelete", "i": "", "u": "", "y": "F", "pm": "sys:file:delete", "c": ""},
+    {"p": "系统文件", "n": "系统文件批量删除", "t": "sys.menu.fileBatchDelete", "i": "", "u": "", "y": "F", "pm": "sys:file:batchDelete", "c": ""},
+    {"p": "系统文件", "n": "系统文件查询", "t": "sys.menu.fileQuery", "i": "", "u": "", "y": "F", "pm": "sys:file:query", "c": ""},
+
+    {"p": "在线用户", "n": "在线用户查询", "t": "sys.menu.onlineQuery", "i": "", "u": "", "y": "F", "pm": "sys:online:query", "c": ""},
+    {"p": "在线用户", "n": "在线用户强退", "t": "sys.menu.onlineKick", "i": "", "u": "", "y": "F", "pm": "sys:online:kick", "c": ""}
+  ]
+}

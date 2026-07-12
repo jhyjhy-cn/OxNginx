@@ -6,6 +6,7 @@ use std::path::Path;
 pub mod seed;
 pub mod seed_i18n;
 pub mod seed_menu;
+pub mod seed_menu_json;
 
 /// 数据库封装
 #[derive(Clone)]
