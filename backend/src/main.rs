@@ -106,7 +106,7 @@ fn main() -> anyhow::Result<()> {
         tracing::info!("[3/4] RSA 密钥对已生成");
 
         let state = AppState::new(db, config.clone(), rsa_private_key, rsa_public_key_b64);
-        modules::dashboard::controller::dashboard_ws::start_push_task(state.clone());
+        modules::websocket::dashboard_push::start_dashboard_push_task(state.clone());
 
         // 启动操作日志后台批量写库 worker
         tracing::info!("[3.5/4] 启动操作日志 worker...");

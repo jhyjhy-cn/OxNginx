@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import api from '@/api'
 import { applyMessages } from '@/i18n'
 import { useI18nStore } from '@/stores/i18n'
+import { useWsStore } from '@/stores/ws'
 import { encryptPassword } from '@/utils/crypto'
 import type { MenuType } from '@/consts'
 
@@ -75,6 +76,14 @@ export const useAuthStore = defineStore('auth', () => {
       // 登录只返回 token，RBAC 信息单独拉取
       await fetchRbacInfo()
       await fetchI18n()
+      // ponytail: 登录成功后建立 ws，监听 kick 自动登出（事件 listener 只注册一次）
+      useWsStore().setEventListener((frame) => {
+        if (frame.cmd !== 'event') return
+        const ev = frame.payload
+        if (ev.type === 'Kick') {
+          logout()
+        }
+      })
       return true
     }
 
@@ -126,6 +135,8 @@ export const useAuthStore = defineStore('auth', () => {
     if (tokenCopy) {
       api.post('/api/logout', null, { headers: { Authorization: `Bearer ${tokenCopy}` } }).catch(() => {})
     }
+    // ponytail: 关 ws，避免重连
+    useWsStore().close()
     token.value = ''
     username.value = ''
     roles.value = []
@@ -137,6 +148,10 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem(LS.roles)
     localStorage.removeItem(LS.perms)
     localStorage.removeItem(LS.menus)
+    // ponytail: 跳登录页（兜底，401 axios 拦截器也会做）
+    if (location.pathname !== '/login') {
+      location.replace('/login')
+    }
   }
 
   function updateUser(newToken: string, newUsername: string) {

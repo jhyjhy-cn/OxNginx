@@ -25,12 +25,12 @@ pub fn build(state: AppState) -> Router {
         .route("/api/login", post(modules::auth::controller::auth_controller::login))
         .route("/api/setup", post(modules::auth::controller::auth_controller::setup))
         .route("/api/setup/status", get(modules::auth::controller::auth_controller::setup_status))
-        .route("/api/auth/public-key", get(modules::auth::controller::auth_controller::get_public_key))
-        .route("/api/terminal/ws", get(modules::system::controller::terminal_controller::terminal_ws))
-        .route("/api/dashboard/ws", get(modules::dashboard::controller::dashboard_ws::dashboard_ws));
+        .route("/api/auth/public-key", get(modules::auth::controller::auth_controller::get_public_key));
 
     // 需要认证的路由
     let protected_routes = Router::new()
+        // ws（按 ?type= 区分 dashboard / terminal / events；走 auth_middleware，token 从 Authorization header 或 query 读取）
+        .route("/api/ws", get(modules::websocket::ws_entry))
         .route("/api/dashboard", get(modules::dashboard::controller::dashboard_controller::get_dashboard))
         .route("/api/sites", get(modules::site::controller::site_controller::list_sites))
         .route("/api/sites/with-certs", get(modules::site::controller::site_controller::list_sites_with_certs))
@@ -149,6 +149,9 @@ pub fn build(state: AppState) -> Router {
         .route("/api/rbac/i18n/locales", get(modules::sys::controller::i18n_controller::list_i18n_locales))
         .route("/api/rbac/i18n", post(modules::sys::controller::i18n_controller::upsert_i18n))  // 写，仅管理员
         .route("/api/rbac/i18n/{id}", delete(modules::sys::controller::i18n_controller::delete_i18n))
+        // 在线用户
+        .route("/api/sys/online", get(modules::sys::controller::online_controller::list_online))
+        .route("/api/sys/online/{id}", delete(modules::sys::controller::online_controller::kick_online))
         // 字典
         .route("/api/rbac/dicts", get(modules::sys::controller::dict_controller::list_dicts).post(modules::sys::controller::dict_controller::create_dict))
         .route("/api/rbac/dicts/{id}", get(modules::sys::controller::dict_controller::get_dict).put(modules::sys::controller::dict_controller::update_dict).delete(modules::sys::controller::dict_controller::delete_dict))

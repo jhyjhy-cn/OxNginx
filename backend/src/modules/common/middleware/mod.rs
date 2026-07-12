@@ -37,6 +37,8 @@ pub struct TokenInfo {
     pub username: String,
     #[allow(dead_code)]
     pub user_id: i64,
+    #[allow(dead_code)]
+    pub token_id: i64,
 }
 
 /// 客户端 IP 信息
@@ -56,7 +58,11 @@ pub async fn auth_middleware(
     let auth_header = request.headers().get(header::AUTHORIZATION).and_then(|v| v.to_str().ok());
     let token_str = match auth_header {
         Some(h) if h.starts_with("Bearer ") => &h[7..],
-        _ => return Err(StatusCode::UNAUTHORIZED),
+        // ponytail: WebSocket 客户端无法设 header，query 兜底；只在 /api/ws 路径生效
+        _ => match request.uri().path() {
+            "/api/ws" => extract_token_from_query(request.uri().query()),
+            _ => return Err(StatusCode::UNAUTHORIZED),
+        },
     };
     match crate::modules::auth::service::token_service::verify_token_full(state.db.pool(), token_str).await {
         Ok(Some(token)) => {
@@ -82,7 +88,7 @@ pub async fn auth_middleware(
                     }
                 });
             }
-            request.extensions_mut().insert(TokenInfo { username: token.username.clone(), user_id: token.user_id });
+            request.extensions_mut().insert(TokenInfo { username: token.username.clone(), user_id: token.user_id, token_id: token.id });
             // tracing::debug!("[AUTH] Inserted TokenInfo: username={}, ip={:?}", token.username, client_ip);
             Ok(next.run(request).await)
         }
@@ -91,7 +97,17 @@ pub async fn auth_middleware(
     }
 }
 
-/// 获取客户端 IP
+/// 从 query 字符串里抠 token=...（手切，不引入 url 依赖）
+fn extract_token_from_query(q: Option<&str>) -> &str {
+    let Some(q) = q else { return "" };
+    for pair in q.split('&') {
+        if let Some(v) = pair.strip_prefix("token=") {
+            // ponytail: ws 客户端构造 URL 时不 url-encode token（hex 字符串无特殊字符），无需解码
+            return v;
+        }
+    }
+    ""
+}
 fn get_client_ip(request: &Request) -> Option<String> {
     // 优先从 x-forwarded-for 获取
     if let Some(ip) = request.headers().get("x-forwarded-for")

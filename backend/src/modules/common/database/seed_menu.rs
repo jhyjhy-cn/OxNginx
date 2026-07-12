@@ -239,6 +239,16 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
         "sys:config:view",
         "sys/i18n/index",
     ),
+    (
+        "系统管理",
+        "在线用户",
+        "sys.menu.onlineUsers",
+        "User",
+        "/settings/rbac/online",
+        "C",
+        "sys:online:view",
+        "sys/online/index",
+    ),
     // ========== 按钮权限 ==========
     // 用户管理按钮
     ("用户管理", "用户管理新增", "sys.menu.userAdd", "", "", "F", "sys:user:add", ""),
@@ -314,6 +324,9 @@ const DEFAULT_MENUS: &[(&str, &str, &str, &str, &str, &str, &str, &str)] = &[
     ("系统文件", "系统文件删除", "sys.menu.fileDelete", "", "", "F", "sys:file:delete", ""),
     ("系统文件", "系统文件批量删除", "sys.menu.fileBatchDelete", "", "", "F", "sys:file:batchDelete", ""),
     ("系统文件", "系统文件查询", "sys.menu.fileQuery", "", "", "F", "sys:file:query", ""),
+    // 在线用户按钮
+    ("在线用户", "在线用户查询", "sys.menu.onlineQuery", "", "", "F", "sys:online:query", ""),
+    ("在线用户", "在线用户强退", "sys.menu.onlineKick", "", "", "F", "sys:online:kick", ""),
 ];
 
 /// 启动种子：菜单 + super_admin 角色 + 默认部门/岗位

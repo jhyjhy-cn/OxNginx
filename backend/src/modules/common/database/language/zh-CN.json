@@ -601,5 +601,18 @@
   "sys.menu.fileDownload": "下载文件",
   "sys.menu.fileDelete": "删除文件",
   "sys.menu.fileBatchDelete": "批量删除文件",
-  "sys.menu.fileQuery": "查询文件"
+  "sys.menu.fileQuery": "查询文件",
+  "sys.menu.onlineUsers": "在线用户",
+  "sys.menu.onlineQuery": "查询在线用户",
+  "sys.menu.onlineKick": "强退会话",
+  "sys.online.searchKeyword": "用户名/IP",
+  "sys.online.colToken": "会话标识",
+  "sys.online.colUsername": "用户名",
+  "sys.online.colDept": "所属部门",
+  "sys.online.colIp": "登录地址",
+  "sys.online.colOs": "操作系统",
+  "sys.online.colBrowser": "浏览器",
+  "sys.online.colLoginAt": "登录时间",
+  "sys.online.kick": "强退",
+  "sys.online.confirmKick": "确定要强退该会话吗？"
 }

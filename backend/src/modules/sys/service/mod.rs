@@ -3,6 +3,7 @@ pub mod dict_service;
 pub mod file_service;
 pub mod i18n_service;
 pub mod menu_service;
+pub mod online_service;
 pub mod param_service;
 pub mod post_service;
 pub mod role_service;

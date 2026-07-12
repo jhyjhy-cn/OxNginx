@@ -1,6 +1,7 @@
 import { MenuType } from '@/consts'
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore, type MenuNode } from '@/stores/auth'
+import { useWsStore } from '@/stores/ws'
 
 // 自动扫描所有 views 下的 .vue 文件, key 格式: ../views/dashboard/index.vue
 const modules = import.meta.glob('../views/**/*.vue')
@@ -86,6 +87,13 @@ router.beforeEach(async (to) => {
       await authStore.fetchRbacInfo()
     }
     setupDynamicRoutes()
+    // ponytail: 已登录态刷新页面也要建立 ws，监听 kick
+    useWsStore().setEventListener((frame) => {
+      if (frame.cmd !== 'event') return
+      if (frame.payload.type === 'Kick') {
+        useAuthStore().logout()
+      }
+    })
   }
 
   await authStore.fetchI18n()

@@ -64,6 +64,10 @@ pub async fn login(
         state.db.pool(),
         user.id,
         &user.username,
+        Some(&ip),
+        Some(&os),
+        Some(&browser),
+        Some(&ua),
         expires_hours,
     )
     .await

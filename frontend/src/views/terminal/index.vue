@@ -65,10 +65,10 @@ import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { WebLinksAddon } from '@xterm/addon-web-links'
 import '@xterm/xterm/css/xterm.css'
-import { useAuthStore } from '@/stores/auth'
+import { useWsStore } from '@/stores/ws'
 
 const { t } = useI18n()
-const authStore = useAuthStore()
+const wsStore = useWsStore()
 const terminalRef = ref<HTMLElement>()
 const currentShell = ref('powershell')
 
@@ -93,8 +93,8 @@ function ctxCopy() {
 
 async function ctxPaste() {
   const text = await navigator.clipboard.readText()
-  if (text && ws?.readyState === WebSocket.OPEN) {
-    ws.send(text)
+  if (text) {
+    wsStore.send({ cmd: 'terminal.in', data: text })
   }
   terminal?.focus()
 }
@@ -132,56 +132,37 @@ function removeCommand(index: number) {
 }
 
 function runCommand(cmd: string) {
-  if (ws?.readyState === WebSocket.OPEN) {
-    ws.send(cmd + '\r')
-    terminal?.focus()
-  }
+  wsStore.send({ cmd: 'terminal.in', data: cmd + '\r' })
+  terminal?.focus()
 }
 
 // 终端
 let terminal: Terminal | null = null
 let fitAddon: FitAddon | null = null
-let ws: WebSocket | null = null
+let termUnsub: (() => void) | null = null
 let resizeObserver: ResizeObserver | null = null
 
 function sendResize() {
-  if (ws?.readyState === WebSocket.OPEN && terminal) {
-    ws.send('\x01' + JSON.stringify({ cols: terminal.cols, rows: terminal.rows }))
+  if (terminal) {
+    wsStore.send({ cmd: 'terminal.resize', cols: terminal.cols, rows: terminal.rows })
   }
 }
 
-function connect() {
-  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const token = authStore.token
+function connectTerm() {
   const cols = terminal?.cols ?? 80
   const rows = terminal?.rows ?? 24
-  const url = `${protocol}//${location.host}/api/terminal/ws?token=${token}&cols=${cols}&rows=${rows}&shell=${currentShell.value}`
-  ws = new WebSocket(url)
-
-  ws.onopen = () => {
-    terminal?.focus()
-  }
-  ws.onmessage = (e) => {
-    if (e.data instanceof Blob) {
-      e.data.arrayBuffer().then((buf) => {
-        terminal?.write(new Uint8Array(buf))
-      })
-    } else {
-      terminal?.write(e.data)
-    }
-  }
-  ws.onclose = () => {
-    terminal?.writeln('\r\n\x1b[31m' + t('sys.terminal.disconnected') + '\x1b[0m')
-  }
-  ws.onerror = () => {
-    terminal?.writeln('\r\n\x1b[31m' + t('sys.terminal.error') + '\x1b[0m')
-  }
+  termUnsub = wsStore.subscribeTerminal(
+    (data) => {
+      terminal?.write(data)
+    },
+    { cols, rows, shell: currentShell.value }
+  )
 }
 
 function reconnect() {
-  ws?.close()
   terminal?.clear()
-  setTimeout(() => connect(), 100)
+  termUnsub?.()
+  setTimeout(() => connectTerm(), 100)
 }
 
 onMounted(async () => {
@@ -207,7 +188,7 @@ onMounted(async () => {
   fitAddon.fit()
 
   terminal.onData((data) => {
-    if (ws?.readyState === WebSocket.OPEN) ws.send(data)
+    wsStore.send({ cmd: 'terminal.in', data: data })
   })
 
   resizeObserver = new ResizeObserver(() => {
@@ -215,12 +196,12 @@ onMounted(async () => {
     sendResize()
   })
   resizeObserver.observe(terminalRef.value)
-  connect()
+  connectTerm()
 })
 
 onBeforeUnmount(() => {
   resizeObserver?.disconnect()
-  ws?.close()
+  termUnsub?.()
   terminal?.dispose()
 })
 </script>

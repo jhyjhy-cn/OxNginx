@@ -18,11 +18,11 @@ pub async fn list_i18n_locales(State(state): State<AppState>, token: Extension<T
     }
 }
 
-#[check_permission("sys:i18n:query")]
+// ponytail: 任意登录用户可用；前端 fetchI18n 启动/刷新都拉，没有理由卡权限
 pub async fn list_i18n(
     State(state): State<AppState>,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
-    token: Extension<TokenInfo>,
+    _token: Extension<TokenInfo>,
 ) -> Json<serde_json::Value> {
     if let Some(page_str) = params.get("page") {
         let page: i64 = page_str.parse().unwrap_or(1);

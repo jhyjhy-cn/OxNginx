@@ -601,5 +601,18 @@
   "sys.menu.fileDownload": "Download File",
   "sys.menu.fileDelete": "Delete File",
   "sys.menu.fileBatchDelete": "Batch Delete Files",
-  "sys.menu.fileQuery": "Query Files"
+  "sys.menu.fileQuery": "Query Files",
+  "sys.menu.onlineUsers": "Online Users",
+  "sys.menu.onlineQuery": "Query Online",
+  "sys.menu.onlineKick": "Kick Session",
+  "sys.online.searchKeyword": "Username/IP",
+  "sys.online.colToken": "Session",
+  "sys.online.colUsername": "Username",
+  "sys.online.colDept": "Department",
+  "sys.online.colIp": "IP Address",
+  "sys.online.colOs": "OS",
+  "sys.online.colBrowser": "Browser",
+  "sys.online.colLoginAt": "Login Time",
+  "sys.online.kick": "Kick",
+  "sys.online.confirmKick": "Are you sure to kick this session?"
 }

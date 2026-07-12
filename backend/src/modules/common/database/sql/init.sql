@@ -37,6 +37,10 @@ CREATE TABLE IF NOT EXISTS sys_tokens (
     token TEXT NOT NULL UNIQUE,                           -- Token 字符串
     user_id INTEGER NOT NULL,                             -- 所属用户 ID
     username TEXT NOT NULL,                               -- 冗余用户名（便于审计）
+    ip TEXT,                                              -- 登录 IP
+    os TEXT,                                              -- 操作系统
+    browser TEXT,                                         -- 浏览器
+    user_agent TEXT,                                      -- 原始 UA
     expires_at DATETIME NOT NULL,                         -- 过期时间
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,        -- 创建时间
     FOREIGN KEY (user_id) REFERENCES sys_users(id) ON DELETE CASCADE

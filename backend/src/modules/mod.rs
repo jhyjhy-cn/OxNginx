@@ -9,3 +9,4 @@ pub mod settings;
 pub mod site;
 pub mod sys;
 pub mod system;
+pub mod websocket;

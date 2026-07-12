@@ -1,1 +1,1 @@
-pub mod terminal_controller;
+// ponytail: system 模块原 terminal_controller.rs 已迁至 modules::websocket，保留目录占位

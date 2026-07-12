@@ -42,7 +42,7 @@ pub async fn reload(
         Ok(false) => Err("Nginx重载失败".to_string()),
         Err(e) => Err(format!("Nginx重载失败: {}", e)),
     };
-    crate::modules::dashboard::controller::dashboard_ws::trigger_push(&state).await;
+    crate::modules::websocket::dashboard_push::trigger_dashboard_push(&state).await;
     match result {
         Ok(r) => Json(json!(ApiResponse::success(r))),
         Err(e) => Json(json!(ApiResponse::<()>::error(e))),
@@ -81,7 +81,7 @@ pub async fn start(
         Err(e) => return Json(json!(ApiResponse::<()>::error(format!("读取配置失败: {}", e)))),
     };
     match crate::modules::common::nginx::start_nginx(&nginx_bin, &nginx_config).await {
-        Ok(true) => { crate::modules::dashboard::controller::dashboard_ws::trigger_push(&state).await; Json(json!(ApiResponse::success("Nginx已启动"))) }
+        Ok(true) => { crate::modules::websocket::dashboard_push::trigger_dashboard_push(&state).await; Json(json!(ApiResponse::success("Nginx已启动"))) }
         Ok(false) => Json(json!(ApiResponse::<()>::error("Nginx启动失败"))),
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("Nginx启动失败: {}", e)))),
     }
@@ -101,7 +101,7 @@ pub async fn stop(
         Err(e) => return Json(json!(ApiResponse::<()>::error(format!("读取配置失败: {}", e)))),
     };
     match crate::modules::common::nginx::stop_nginx(&nginx_bin).await {
-        Ok(true) => { crate::modules::dashboard::controller::dashboard_ws::trigger_push(&state).await; Json(json!(ApiResponse::success("Nginx已停止"))) }
+        Ok(true) => { crate::modules::websocket::dashboard_push::trigger_dashboard_push(&state).await; Json(json!(ApiResponse::success("Nginx已停止"))) }
         Ok(false) => Json(json!(ApiResponse::<()>::error("Nginx停止失败"))),
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("Nginx停止失败: {}", e)))),
     }
@@ -128,7 +128,7 @@ pub async fn restart(
         Err(e) => return Json(json!(ApiResponse::<()>::error(format!("读取配置失败: {}", e)))),
     };
     match crate::modules::common::nginx::restart_nginx(&nginx_bin, &nginx_config).await {
-        Ok(true) => { crate::modules::dashboard::controller::dashboard_ws::trigger_push(&state).await; Json(json!(ApiResponse::success("Nginx已重启"))) }
+        Ok(true) => { crate::modules::websocket::dashboard_push::trigger_dashboard_push(&state).await; Json(json!(ApiResponse::success("Nginx已重启"))) }
         Ok(false) => Json(json!(ApiResponse::<()>::error("Nginx重启失败"))),
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("Nginx重启失败: {}", e)))),
     }
@@ -189,7 +189,7 @@ pub async fn install(
             if let Err(e) = write_nginx_params_to_db(state.db.pool(), &result).await {
                 tracing::error!("写入nginx系统参数失败: {}", e);
             }
-            crate::modules::dashboard::controller::dashboard_ws::trigger_push(&state).await;
+            crate::modules::websocket::dashboard_push::trigger_dashboard_push(&state).await;
             Json(json!(ApiResponse::success("Nginx安装成功")))
         }
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("安装失败: {}", e)))),

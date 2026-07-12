@@ -195,7 +195,7 @@ import {
   Setting,
   Download,
 } from '@element-plus/icons-vue'
-import { useAuthStore } from '@/stores/auth'
+import { useWsStore } from '@/stores/ws'
 import {
   startNginx,
   stopNginx,
@@ -207,7 +207,7 @@ import {
 import { getSettings } from '@/api/settings'
 
 const { t } = useI18n()
-const authStore = useAuthStore()
+const wsStore = useWsStore()
 
 const nginxStatus = ref({
   running: false,
@@ -248,9 +248,7 @@ const loading = reactive({
   install: false,
 })
 
-let ws: WebSocket | null = null
-let reconnectTimer: ReturnType<typeof setTimeout> | null = null
-let reconnectDelay = 1000
+let wsUnsubscribe: (() => void) | null = null
 
 onMounted(() => {
   fetchSystemInfo()
@@ -258,35 +256,17 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (reconnectTimer) {
-    clearTimeout(reconnectTimer)
-    reconnectTimer = null
-  }
-  ws?.close()
+  wsUnsubscribe?.()
+  wsUnsubscribe = null
 })
 
 function connectWs() {
-  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const token = authStore.token
-  ws = new WebSocket(`${protocol}//${location.host}/api/dashboard/ws?token=${token}`)
-
-  ws.onmessage = (e) => {
-    try {
-      const msg = JSON.parse(e.data)
-      if (msg.nginx) nginxStatus.value = msg.nginx
-      if (msg.stats) stats.value = { ...stats.value, ...msg.stats }
-      reconnectDelay = 1000
-    } catch (err) {
-      console.error('Dashboard WS 解析失败:', err)
-    }
-  }
-
-  ws.onclose = () => {
-    reconnectTimer = setTimeout(connectWs, reconnectDelay)
-    reconnectDelay = Math.min(reconnectDelay * 2, 30000)
-  }
-
-  ws.onerror = () => ws?.close()
+  wsUnsubscribe = wsStore.subscribe('dashboard', (frame) => {
+    if (frame.cmd !== 'dashboard') return
+    const msg = frame.payload as { nginx?: typeof nginxStatus.value; stats?: Record<string, number> }
+    if (msg.nginx) nginxStatus.value = msg.nginx
+    if (msg.stats) stats.value = { ...stats.value, ...msg.stats }
+  })
 }
 
 async function fetchSystemInfo() {

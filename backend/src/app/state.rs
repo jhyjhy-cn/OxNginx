@@ -10,6 +10,7 @@ pub struct AppState {
     pub sys: Arc<Mutex<System>>,
     pub pid: Pid,
     pub dashboard_tx: broadcast::Sender<String>,
+    pub event_tx: broadcast::Sender<crate::modules::websocket::protocol::ServerEvent>,
     pub rsa_private_key: Arc<rsa::RsaPrivateKey>,
     pub rsa_public_key_b64: String,
 }
@@ -22,6 +23,7 @@ impl Clone for AppState {
             sys: Arc::clone(&self.sys),
             pid: self.pid,
             dashboard_tx: self.dashboard_tx.clone(),
+            event_tx: self.event_tx.clone(),
             rsa_private_key: Arc::clone(&self.rsa_private_key),
             rsa_public_key_b64: self.rsa_public_key_b64.clone(),
         }
@@ -40,12 +42,14 @@ impl AppState {
 
     pub fn new(db: Database, config: AppConfig, rsa_private_key: rsa::RsaPrivateKey, rsa_public_key_b64: String) -> Self {
         let (dashboard_tx, _) = broadcast::channel(16);
+        let (event_tx, _) = broadcast::channel(64);
         AppState {
             db,
             config: Arc::new(Mutex::new(config)),
             sys: Arc::new(Mutex::new(System::new())),
             pid: Pid::from_u32(std::process::id()),
             dashboard_tx,
+            event_tx,
             rsa_private_key: Arc::new(rsa_private_key),
             rsa_public_key_b64,
         }
