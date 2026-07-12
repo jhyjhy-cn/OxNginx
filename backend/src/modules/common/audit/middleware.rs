@@ -38,7 +38,7 @@ pub async fn audit_middleware(
 
     let trace_id = Uuid::new_v4().to_string();
 
-    let ctx: SharedAuditContext = std::sync::Arc::new(std::sync::Mutex::new(AuditContext::default()));
+    let ctx: SharedAuditContext = std::sync::Arc::new(parking_lot::Mutex::new(AuditContext::default()));
     request.extensions_mut().insert(ctx.clone());
 
     // 从 auth_middleware 注入的 ClientIp 获取
@@ -85,7 +85,7 @@ pub async fn audit_middleware(
     let response = next.run(request).await;
     let duration_ms = start.elapsed().as_millis() as i64;
 
-    let ctx_data = ctx.lock().unwrap().clone();
+    let ctx_data = ctx.lock().clone();
 
     let status_code = response.status().as_u16();
 

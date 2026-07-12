@@ -1,7 +1,7 @@
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::{SinkExt, StreamExt};
 use std::collections::HashSet;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::Instant;
 
@@ -17,6 +17,9 @@ pub struct ConnState {
     /// ponytail: 第一次订阅 dashboard 后立即推过快照，避免等 10s tick
     pub dashboard_pushed: bool,
 }
+
+/// ponytail: parking_lot::Mutex 无 poison、无 unwrap；conn 仅在 select 分支里读 snapshot
+type SharedConn = Arc<parking_lot::Mutex<ConnState>>;
 
 /// 解析客户端文本帧为结构化指令
 fn parse_client(text: &str) -> Option<ClientFrame> {
@@ -35,7 +38,7 @@ fn event_frame(ev: &ServerEvent) -> String {
 /// 单入口 ws 处理器（dashboard + events 共用一条连接）
 pub async fn serve(socket: WebSocket, state: AppState, token_id: i64) {
     let (mut sender, mut receiver) = socket.split();
-    let conn = Arc::new(Mutex::new(ConnState::default()));
+    let conn: SharedConn = Arc::new(parking_lot::Mutex::new(ConnState::default()));
 
     // ponytail: 一条连接两个上游 channel（dashboard + events），各订阅一份
     let mut dashboard_rx = state.dashboard_tx.subscribe();
@@ -73,13 +76,13 @@ pub async fn serve(socket: WebSocket, state: AppState, token_id: i64) {
                 }
             }
             data = dashboard_rx.recv() => {
-                let channels = conn.lock().unwrap().channels.clone();
+                let channels = conn.lock().channels.clone();
                 // tracing::debug!(target: "ws", "dashboard_rx recv channels={:?}", channels);
                 if !channels.contains(&Channel::Dashboard) { continue; }
                 if push_dashboard_payload(&data, &mut sender).await.is_err() { break; }
             }
             ev = event_rx.recv() => {
-                let channels = conn.lock().unwrap().channels.clone();
+                let channels = conn.lock().channels.clone();
                 if !channels.contains(&Channel::Events) { continue; }
                 match ev {
                     Ok(ServerEvent::Kick { token_id: kicked, .. }) => {
@@ -119,7 +122,7 @@ async fn push_dashboard_payload(
 async fn handle_client_text(
     text: &str,
     state: &AppState,
-    conn: &Arc<Mutex<ConnState>>,
+    conn: &SharedConn,
     sender: &mut futures_util::stream::SplitSink<WebSocket, Message>,
 ) {
     // ponytail: 调试日志（trace 链路用）
@@ -137,7 +140,7 @@ async fn handle_client_text(
         ClientFrame::Subscribe { channels, .. } => {
             // ponytail: 标记新增的 dashboard 订阅，立即推一次快照
             let newly_subscribed_dashboard = {
-                let mut g = conn.lock().unwrap();
+                let mut g = conn.lock();
                 let mut added = false;
                 for c in &channels {
                     if let Some(ch) = Channel::parse(c) {
@@ -156,7 +159,7 @@ async fn handle_client_text(
                 let s = frame_to_text(&ServerFrame::Dashboard(&snap));
                 // tracing::debug!("[ws-hub] push dashboard frame ({} bytes)", s.len());
                 if sender.send(Message::Text(s.into())).await.is_ok() {
-                    conn.lock().unwrap().dashboard_pushed = true;
+                    conn.lock().dashboard_pushed = true;
                     // tracing::debug!("[ws-hub] dashboard_pushed=true");
                 } else {
                     tracing::warn!("[ws] send dashboard snapshot failed");
@@ -164,7 +167,7 @@ async fn handle_client_text(
             }
         }
         ClientFrame::Unsubscribe { channels, .. } => {
-            let mut g = conn.lock().unwrap();
+            let mut g = conn.lock();
             for c in channels {
                 if let Some(ch) = Channel::parse(&c) {
                     if ch == Channel::Dashboard {

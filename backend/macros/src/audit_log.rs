@@ -34,7 +34,7 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
         #(#attrs)*
         #vis #sig {
             {
-                let mut __ctx = ctx.0.lock().unwrap();
+                let mut __ctx = ctx.0.lock();
                 __ctx.module = Some(#module.to_string());
                 __ctx.action = Some(#action.to_string());
                 #capture_stmt

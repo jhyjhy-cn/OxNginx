@@ -1474,6 +1474,7 @@ dependencies = [
  "md5",
  "num_cpus",
  "ox-nginx-macros",
+ "parking_lot",
  "portable-pty",
  "rand 0.8.6",
  "rsa",

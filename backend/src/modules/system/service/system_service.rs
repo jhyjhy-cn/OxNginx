@@ -31,7 +31,8 @@ pub async fn get_system_info(state: &AppState) -> anyhow::Result<SystemInfo> {
     let hostname = get_hostname().unwrap_or_else(|_| "unknown".to_string());
 
     // 刷新进程列表，获取本程序内存占用
-    let mut sys = state.sys.lock().unwrap();
+    // ponytail: parking_lot RwLock 无 poison；refresh 持写锁期间串行化但不再 panic
+    let mut sys = state.sys.write();
     sys.refresh_cpu_all();
     sys.refresh_memory();
     sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);

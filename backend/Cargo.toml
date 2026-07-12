@@ -80,6 +80,9 @@ rust_xlsxwriter = "0.96"
 flate2 = "1"
 tar = "0.4"
 
+# 高性能锁（无 poison，编译期更小）
+parking_lot = "0.12"
+
 # Linux 用户/组名解析
 [target.'cfg(unix)'.dependencies]
 uzers = "0.12"

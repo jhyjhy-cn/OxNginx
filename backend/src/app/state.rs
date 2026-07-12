@@ -1,13 +1,15 @@
 use crate::modules::common::config::AppConfig;
 use crate::modules::common::database::Database;
-use std::sync::{Arc, Mutex};
-use sysinfo::{System, Pid};
+use parking_lot::RwLock;
+use std::sync::Arc;
+use sysinfo::{Pid, System};
 use tokio::sync::broadcast;
 
 pub struct AppState {
     pub db: Database,
-    pub config: Arc<Mutex<AppConfig>>,
-    pub sys: Arc<Mutex<System>>,
+    // ponytail: RwLock 替换 Mutex，配置读多写少；parking_lot 无 poison
+    pub config: Arc<RwLock<AppConfig>>,
+    pub sys: Arc<RwLock<System>>,
     pub pid: Pid,
     pub dashboard_tx: broadcast::Sender<String>,
     pub event_tx: broadcast::Sender<crate::modules::websocket::protocol::ServerEvent>,
@@ -31,13 +33,13 @@ impl Clone for AppState {
 }
 
 impl AppState {
+    /// ponytail: parking_lot RwLock 读锁不返回 Result，调用方更轻
     pub fn get_config(&self) -> AppConfig {
-        self.config.lock().unwrap().clone()
+        self.config.read().clone()
     }
 
     pub fn update_config(&self, new_config: AppConfig) {
-        let mut config = self.config.lock().unwrap();
-        *config = new_config;
+        *self.config.write() = new_config;
     }
 
     pub fn new(db: Database, config: AppConfig, rsa_private_key: rsa::RsaPrivateKey, rsa_public_key_b64: String) -> Self {
@@ -45,8 +47,8 @@ impl AppState {
         let (event_tx, _) = broadcast::channel(64);
         AppState {
             db,
-            config: Arc::new(Mutex::new(config)),
-            sys: Arc::new(Mutex::new(System::new())),
+            config: Arc::new(RwLock::new(config)),
+            sys: Arc::new(RwLock::new(System::new())),
             pid: Pid::from_u32(std::process::id()),
             dashboard_tx,
             event_tx,

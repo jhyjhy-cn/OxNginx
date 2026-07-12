@@ -1,6 +1,6 @@
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 // ========== 按大小轮转的日志文件 ==========
@@ -33,9 +33,10 @@ impl SizeBasedAppenderInner {
 }
 
 /// 按文件大小自动轮转（线程安全）
+/// ponytail: parking_lot::Mutex 无 poison；append 失败退化为 NUL 文件而不是 panic
 struct SizeBasedAppender {
-    inner: Mutex<SizeBasedAppenderInner>,
-    written: Arc<Mutex<u64>>,
+    inner: parking_lot::Mutex<SizeBasedAppenderInner>,
+    written: Arc<parking_lot::Mutex<u64>>,
 }
 
 impl SizeBasedAppender {
@@ -43,25 +44,25 @@ impl SizeBasedAppender {
         let current_path = dir.join(base_name);
         let current_bytes = std::fs::metadata(&current_path).map(|m| m.len()).unwrap_or(0);
         SizeBasedAppender {
-            inner: Mutex::new(SizeBasedAppenderInner {
+            inner: parking_lot::Mutex::new(SizeBasedAppenderInner {
                 dir,
                 base_name: base_name.to_string(),
                 max_bytes: max_mb * 1024 * 1024,
             }),
-            written: Arc::new(Mutex::new(current_bytes)),
+            written: Arc::new(parking_lot::Mutex::new(current_bytes)),
         }
     }
 }
 
 struct CountingFile {
     inner: std::fs::File,
-    written: Arc<Mutex<u64>>,
+    written: Arc<parking_lot::Mutex<u64>>,
 }
 
 impl std::io::Write for CountingFile {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         let n = self.inner.write(buf)?;
-        if let Ok(mut w) = self.written.lock() { *w += n as u64; }
+        *self.written.lock() += n as u64;
         Ok(n)
     }
     fn flush(&mut self) -> std::io::Result<()> { self.inner.flush() }
@@ -74,14 +75,21 @@ impl Drop for CountingFile {
 impl<'a> tracing_subscriber::fmt::MakeWriter<'a> for SizeBasedAppender {
     type Writer = CountingFile;
     fn make_writer(&'a self) -> Self::Writer {
-        let mut inner = self.inner.lock().unwrap_or_else(|e| e.into_inner());
-        if *self.written.lock().unwrap_or_else(|e| e.into_inner()) >= inner.max_bytes {
+        let mut inner = self.inner.lock();
+        if *self.written.lock() >= inner.max_bytes {
             if let Err(e) = inner.rotate() { eprintln!("日志轮转失败: {}", e); }
-            *self.written.lock().unwrap_or_else(|e| e.into_inner()) = 0;
+            *self.written.lock() = 0;
         }
-        let file = std::fs::OpenOptions::new().create(true).append(true)
+        let file = match std::fs::OpenOptions::new().create(true).append(true)
             .open(inner.current_path())
-            .unwrap_or_else(|e| { eprintln!("无法打开日志文件: {}", e); std::fs::File::create("NUL").unwrap() });
+        {
+            Ok(f) => f,
+            Err(e) => {
+                eprintln!("无法打开日志文件: {}", e);
+                // ponytail: 退到 NUL 静默丢弃，避免 panic 拖死进程
+                std::fs::File::create("NUL").unwrap_or_else(|_| std::fs::File::create("/dev/null").expect("NUL/dev/null 都开不了"))
+            }
+        };
         CountingFile { inner: file, written: Arc::clone(&self.written) }
     }
 }
