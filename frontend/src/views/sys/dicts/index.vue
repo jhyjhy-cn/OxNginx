@@ -100,7 +100,7 @@ const { confirm } = useMessage()
 const saving = ref(false)
 const showForm = ref(false)
 const formRef = ref<InstanceType<typeof OnForm>>()
-const form = reactive<Dict>({ name: '', code: '', description: '', status: 'enabled' })
+const form = reactive<Dict>({ name: '', code: '', remark: '', status: 'enabled' })
 
 // ponytail: 字典接口返回整表，无分页
 const { loading, dataList, load } = useCrud({
@@ -111,7 +111,7 @@ const { loading, dataList, load } = useCrud({
 const dictColumns: TableColumn[] = [
   { prop: 'name', label: 'sys.dict.colName', minWidth: 160 },
   { prop: 'code', label: 'sys.dict.colCode', minWidth: 160 },
-  { prop: 'description', label: 'sys.dict.colDesc', minWidth: 200 },
+  { prop: 'remark', label: 'sys.dict.colDesc', minWidth: 200 },
   { prop: 'status', label: 'common.status', width: 100, slot: 'status' },
   {
     label: 'common.action',
@@ -128,7 +128,7 @@ const dictColumns: TableColumn[] = [
 const dictFields = computed<FormField[]>(() => [
   { prop: 'name', label: 'sys.dict.colName', type: 'input', required: true },
   { prop: 'code', label: 'sys.dict.colCode', type: 'input', required: true, disabled: !!form.id },
-  { prop: 'description', label: 'sys.dict.colDesc', type: 'textarea', rows: 2 },
+  { prop: 'remark', label: 'sys.dict.colDesc', type: 'textarea', rows: 2 },
 ])
 
 function handleDictCommand(command: string | number, row: Dict) {
@@ -138,12 +138,12 @@ function handleDictCommand(command: string | number, row: Dict) {
 }
 
 function openAdd() {
-  Object.assign(form, { id: undefined, name: '', code: '', description: '', status: 'enabled' })
+  Object.assign(form, { id: undefined, name: '', code: '', remark: '', status: 'enabled' })
   showForm.value = true
 }
 
 function openEdit(row: Dict) {
-  Object.assign(form, { id: row.id, name: row.name, code: row.code, description: row.description, status: row.status })
+  Object.assign(form, { id: row.id, name: row.name, code: row.code, remark: row.remark, status: row.status })
   showForm.value = true
 }
 
@@ -157,9 +157,9 @@ async function save() {
   saving.value = true
   try {
     if (form.id) {
-      await updateDict(form.id, { name: form.name, code: form.code, description: form.description, status: form.status })
+      await updateDict(form.id, { name: form.name, code: form.code, remark: form.remark, status: form.status })
     } else {
-      await createDict({ name: form.name, code: form.code, description: form.description })
+      await createDict({ name: form.name, code: form.code, remark: form.remark })
     }
     ElMessage.success(t('common.success'))
     showForm.value = false

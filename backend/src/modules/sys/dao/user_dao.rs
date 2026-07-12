@@ -52,7 +52,7 @@ pub async fn list_user_permissions(pool: &SqlitePool, username: &str) -> sqlx::R
 /// 列出所有启用的菜单（admin 用）
 pub async fn list_all_enabled_menus(pool: &SqlitePool) -> sqlx::Result<Vec<Menu>> {
     sqlx::query_as::<_, Menu>(
-        "SELECT id, parent_id, name, title, icon, path, component, type, permission, sort, status, created_at, updated_at
+        "SELECT id, parent_id, name, title, icon, path, component, type, permission, sort, status, version, created_by, updated_by, remark, created_at, updated_at
          FROM sys_menus WHERE status=? ORDER BY sort, id",
     )
     .bind(LogStatus::Success.as_i32())
@@ -63,7 +63,7 @@ pub async fn list_all_enabled_menus(pool: &SqlitePool) -> sqlx::Result<Vec<Menu>
 /// 列出用户可见的菜单
 pub async fn list_user_menus(pool: &SqlitePool, username: &str) -> sqlx::Result<Vec<Menu>> {
     sqlx::query_as::<_, Menu>(
-        "SELECT DISTINCT m.id, m.parent_id, m.name, m.title, m.icon, m.path, m.component, m.type, m.permission, m.sort, m.status, m.created_at, m.updated_at
+        "SELECT DISTINCT m.id, m.parent_id, m.name, m.title, m.icon, m.path, m.component, m.type, m.permission, m.sort, m.status, m.version, m.created_by, m.updated_by, m.remark, m.created_at, m.updated_at
          FROM sys_menus m
          JOIN sys_role_menus rm ON m.id = rm.menu_id
          JOIN sys_user_roles ur ON rm.role_id = ur.role_id

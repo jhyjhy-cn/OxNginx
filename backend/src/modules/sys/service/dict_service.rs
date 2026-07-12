@@ -14,19 +14,19 @@ pub async fn create_dict(
     pool: &SqlitePool,
     name: &str,
     code: &str,
-    description: Option<&str>,
+    remark: Option<&str>,
 ) -> Result<i64> {
-    Ok(dict_dao::insert_dict_returning_id(pool, name, code, description).await?)
+    Ok(dict_dao::insert_dict_returning_id(pool, name, code, remark).await?)
 }
 
 pub async fn update_dict(
     pool: &SqlitePool,
     id: i64,
     name: Option<&str>,
-    description: Option<&str>,
+    remark: Option<&str>,
     status: Option<i32>,
 ) -> Result<()> {
-    Ok(dict_dao::update_dict_fields(pool, id, name, description, status).await?)
+    Ok(dict_dao::update_dict_fields(pool, id, name, remark, status).await?)
 }
 
 pub async fn delete_dict(pool: &SqlitePool, id: i64) -> Result<bool> {
@@ -43,7 +43,7 @@ pub async fn get_dict_with_items(pool: &SqlitePool, id: i64) -> Result<Option<Di
                 id: d.id,
                 name: d.name,
                 code: d.code,
-                description: d.description,
+                remark: d.remark,
                 status: d.status,
                 items,
             }))

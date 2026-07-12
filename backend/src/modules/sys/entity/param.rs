@@ -13,6 +13,7 @@ pub struct Param {
     pub group_code: String,
     pub remark: Option<String>,
     pub sort: i32,
+    pub version: i32,
     #[serde(with = "option_naive_datetime")]
     pub created_at: Option<NaiveDateTime>,
     #[serde(with = "option_naive_datetime")]

@@ -36,7 +36,7 @@ pub async fn update_rule(
     let site_id = req.site_id.or(existing.site_id);
     let rule_type = req.rule_type.unwrap_or(existing.rule_type);
     let value = req.value.unwrap_or(existing.value);
-    let description = req.description.or(existing.description);
+    let remark = req.remark.or(existing.remark);
     let status = req.status.unwrap_or(existing.status);
 
     Ok(access_dao::update_rule_returning(
@@ -45,7 +45,7 @@ pub async fn update_rule(
         site_id,
         &rule_type,
         &value,
-        description.as_ref(),
+        remark.as_ref(),
         status,
     )
     .await?)

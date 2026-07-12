@@ -34,7 +34,7 @@ pub async fn update_template(
     let existing = existing.unwrap();
 
     let name = req.name.unwrap_or(existing.name);
-    let description = req.description.or(existing.description);
+    let remark = req.remark.or(existing.remark);
     let config = req.config.unwrap_or(existing.config);
     let variables = req.variables.or(existing.variables);
 
@@ -42,7 +42,7 @@ pub async fn update_template(
         state.db.pool(),
         id,
         &name,
-        description.as_ref(),
+        remark.as_ref(),
         &config,
         variables.as_ref(),
     )

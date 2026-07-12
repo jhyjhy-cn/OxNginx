@@ -35,7 +35,7 @@ pub async fn create_dict(
     State(state): State<AppState>,
     Json(req): Json<UpsertDictRequest>,
 ) -> Json<serde_json::Value> {
-    match rbac_service::create_dict(&state.db.pool(), &req.name, &req.code, req.description.as_deref()).await {
+    match rbac_service::create_dict(&state.db.pool(), &req.name, &req.code, req.remark.as_deref()).await {
         Ok(id) => Json(json!(ApiResponse::success(id))),
         Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
     }
@@ -50,7 +50,7 @@ pub async fn update_dict(
     Path(id): Path<i64>,
     Json(req): Json<UpsertDictRequest>,
 ) -> Json<serde_json::Value> {
-    match rbac_service::update_dict(&state.db.pool(), id, Some(&req.name), req.description.as_deref(), None).await {
+    match rbac_service::update_dict(&state.db.pool(), id, Some(&req.name), req.remark.as_deref(), None).await {
         Ok(_) => Json(json!(ApiResponse::success("ok"))),
         Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
     }

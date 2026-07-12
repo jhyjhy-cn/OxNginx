@@ -9,8 +9,13 @@ pub struct Post {
     pub id: i64,
     pub code: String,
     pub name: String,
+    pub dept_id: Option<i64>,
     pub sort: i32,
     pub status: i32, // 1=启用 0=禁用
+    pub version: i32,
+    pub created_by: Option<i64>,
+    pub updated_by: Option<i64>,
+    pub remark: Option<String>,
     #[serde(with = "option_naive_datetime")]
     pub created_at: Option<NaiveDateTime>,
     #[serde(with = "option_naive_datetime")]

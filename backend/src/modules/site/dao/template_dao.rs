@@ -21,13 +21,13 @@ pub async fn insert_template_returning(
 ) -> sqlx::Result<Template> {
     sqlx::query_as::<_, Template>(
         r#"
-        INSERT INTO site_templates (name, description, config, variables)
+        INSERT INTO site_templates (name, remark, config, variables)
         VALUES (?, ?, ?, ?)
         RETURNING *
         "#,
     )
     .bind(&req.name)
-    .bind(&req.description)
+    .bind(&req.remark)
     .bind(&req.config)
     .bind(&req.variables)
     .fetch_one(pool)
@@ -38,20 +38,20 @@ pub async fn update_template_returning(
     pool: &SqlitePool,
     id: i64,
     name: &str,
-    description: Option<&String>,
+    remark: Option<&String>,
     config: &str,
     variables: Option<&String>,
 ) -> sqlx::Result<Option<Template>> {
     sqlx::query_as::<_, Template>(
         r#"
         UPDATE site_templates
-        SET name = ?, description = ?, config = ?, variables = ?, updated_at = CURRENT_TIMESTAMP
+        SET name = ?, remark = ?, config = ?, variables = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         RETURNING *
         "#,
     )
     .bind(name)
-    .bind(description)
+    .bind(remark)
     .bind(config)
     .bind(variables)
     .bind(id)

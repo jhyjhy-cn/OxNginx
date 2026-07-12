@@ -109,7 +109,7 @@ pub async fn delete_files(pool: &SqlitePool, ids: &[i64]) -> sqlx::Result<Vec<cr
     }
     // 先查记录以便删文件
     let placeholders = std::iter::repeat("?").take(ids.len()).collect::<Vec<_>>().join(",");
-    let sql_select = format!("SELECT id, name, original_name, suffix, size, mime_type, md5, path, provider, dept_id, created_at, updated_at, created_by, updated_by FROM sys_files WHERE id IN ({})", placeholders);
+    let sql_select = format!("SELECT id, name, original_name, suffix, size, mime_type, md5, path, provider, dept_id, remark, version, created_at, updated_at, created_by, updated_by FROM sys_files WHERE id IN ({})", placeholders);
     let mut q = sqlx::query_as::<_, crate::modules::sys::entity::file::File>(&sql_select);
     for id in ids {
         q = q.bind(id);

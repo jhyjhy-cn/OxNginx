@@ -21,7 +21,7 @@ pub async fn insert_rule_returning(
 ) -> sqlx::Result<AccessRule> {
     sqlx::query_as::<_, AccessRule>(
         r#"
-        INSERT INTO site_access_rules (site_id, rule_type, value, description)
+        INSERT INTO site_access_rules (site_id, rule_type, value, remark)
         VALUES (?, ?, ?, ?)
         RETURNING *
         "#,
@@ -29,7 +29,7 @@ pub async fn insert_rule_returning(
     .bind(req.site_id)
     .bind(&req.rule_type)
     .bind(&req.value)
-    .bind(&req.description)
+    .bind(&req.remark)
     .fetch_one(pool)
     .await
 }
@@ -40,13 +40,13 @@ pub async fn update_rule_returning(
     site_id: Option<i64>,
     rule_type: &str,
     value: &str,
-    description: Option<&String>,
+    remark: Option<&String>,
     status: i32,
 ) -> sqlx::Result<Option<AccessRule>> {
     sqlx::query_as::<_, AccessRule>(
         r#"
         UPDATE site_access_rules
-        SET site_id = ?, rule_type = ?, value = ?, description = ?, status = ?
+        SET site_id = ?, rule_type = ?, value = ?, remark = ?, status = ?
         WHERE id = ?
         RETURNING *
         "#,
@@ -54,7 +54,7 @@ pub async fn update_rule_returning(
     .bind(site_id)
     .bind(rule_type)
     .bind(value)
-    .bind(description)
+    .bind(remark)
     .bind(status)
     .bind(id)
     .fetch_optional(pool)

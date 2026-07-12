@@ -2,7 +2,7 @@ export interface Dict {
   id?: number
   name: string
   code: string
-  description?: string
+  remark?: string
   status: string
   items?: DictItem[]
 }

@@ -5,10 +5,10 @@ export const listDicts = () => getData<Dict[]>('/api/rbac/dicts')
 
 export const getDict = (id: number) => getData<Dict>(`/api/rbac/dicts/${id}`)
 
-export const createDict = (payload: { name: string; code: string; description?: string }) =>
+export const createDict = (payload: { name: string; code: string; remark?: string }) =>
   postData<Dict>('/api/rbac/dicts', payload)
 
-export const updateDict = (id: number, payload: { name: string; code: string; description?: string; status?: string }) =>
+export const updateDict = (id: number, payload: { name: string; code: string; remark?: string; status?: string }) =>
   putData(`/api/rbac/dicts/${id}`, payload)
 
 export const deleteDict = (id: number) => deleteData(`/api/rbac/dicts/${id}`)

@@ -1,4 +1,4 @@
-import { postData, deleteData } from '@/api/http'
+import { getData, postData, deleteData } from '@/api/http'
 import type {
   FileEntry,
   ReadFileResult,
@@ -10,7 +10,7 @@ import type {
 export const listFiles = (params: { path: string; show_hidden?: boolean }) =>
   postData<FileEntry[]>('/api/files/list', params)
 
-export const listRoots = () => postData<string[]>('/api/files/roots')
+export const listRoots = () => getData<string[]>('/api/files/roots')
 
 export const readFile = (path: string) =>
   postData<ReadFileResult>('/api/files/read', { path })

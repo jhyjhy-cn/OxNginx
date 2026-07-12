@@ -240,7 +240,7 @@ pub struct CreateAccessRuleRequest {
     pub site_id: Option<i64>,
     pub rule_type: String,
     pub value: String,
-    pub description: Option<String>,
+    pub remark: Option<String>,
 }
 
 /// 更新访问控制规则请求
@@ -249,7 +249,7 @@ pub struct UpdateAccessRuleRequest {
     pub site_id: Option<i64>,
     pub rule_type: Option<String>,
     pub value: Option<String>,
-    pub description: Option<String>,
+    pub remark: Option<String>,
     pub status: Option<i32>,
 }
 
@@ -257,7 +257,7 @@ pub struct UpdateAccessRuleRequest {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CreateTemplateRequest {
     pub name: String,
-    pub description: Option<String>,
+    pub remark: Option<String>,
     pub config: String,
     pub variables: Option<String>,
 }
@@ -266,7 +266,7 @@ pub struct CreateTemplateRequest {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct UpdateTemplateRequest {
     pub name: Option<String>,
-    pub description: Option<String>,
+    pub remark: Option<String>,
     pub config: Option<String>,
     pub variables: Option<String>,
 }
@@ -460,7 +460,7 @@ pub struct UpsertI18nRequest {
 pub struct UpsertDictRequest {
     pub name: String,
     pub code: String,
-    pub description: Option<String>,
+    pub remark: Option<String>,
 }
 
 /// 创建/更新字典项
@@ -478,7 +478,7 @@ pub struct DictWithItems {
     pub id: i64,
     pub name: String,
     pub code: String,
-    pub description: Option<String>,
+    pub remark: Option<String>,
     pub status: i32, // 1=启用 0=禁用
     pub items: Vec<crate::modules::sys::entity::dict::DictItem>,
 }

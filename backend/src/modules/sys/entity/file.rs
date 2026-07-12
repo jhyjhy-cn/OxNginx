@@ -17,6 +17,8 @@ pub struct File {
     pub path: String,
     pub provider: String,
     pub dept_id: Option<i64>,
+    pub remark: Option<String>,
+    pub version: i32,
     #[serde(with = "option_naive_datetime")]
     pub created_at: Option<NaiveDateTime>,
     #[serde(with = "option_naive_datetime")]

@@ -524,7 +524,7 @@ async fn seed_default_dicts(pool: &SqlitePool) -> Result<()> {
         ),
     ];
 
-    for (code, name, description, items) in DICTS {
+    for (code, name, remark, items) in DICTS {
         // 幂等：已有字典不动
         let exists: i64 =
             sqlx::query_scalar("SELECT COUNT(*) FROM sys_dict WHERE code=?")
@@ -532,10 +532,10 @@ async fn seed_default_dicts(pool: &SqlitePool) -> Result<()> {
                 .fetch_one(pool)
                 .await?;
         if exists == 0 {
-            sqlx::query("INSERT INTO sys_dict (code, name, description) VALUES (?, ?, ?)")
+            sqlx::query("INSERT INTO sys_dict (code, name, remark) VALUES (?, ?, ?)")
                 .bind(code)
                 .bind(name)
-                .bind(description)
+                .bind(remark)
                 .execute(pool)
                 .await?;
         }

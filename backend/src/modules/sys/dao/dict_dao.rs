@@ -19,14 +19,14 @@ pub async fn insert_dict_returning_id(
     pool: &SqlitePool,
     name: &str,
     code: &str,
-    description: Option<&str>,
+    remark: Option<&str>,
 ) -> sqlx::Result<i64> {
     sqlx::query_scalar::<_, i64>(
-        "INSERT INTO sys_dict (name, code, description) VALUES (?, ?, ?) RETURNING id",
+        "INSERT INTO sys_dict (name, code, remark) VALUES (?, ?, ?) RETURNING id",
     )
     .bind(name)
     .bind(code)
-    .bind(description)
+    .bind(remark)
     .fetch_one(pool)
     .await
 }
@@ -35,15 +35,15 @@ pub async fn update_dict_fields(
     pool: &SqlitePool,
     id: i64,
     name: Option<&str>,
-    description: Option<&str>,
+    remark: Option<&str>,
     status: Option<i32>,
 ) -> sqlx::Result<()> {
     if let Some(n) = name {
         sqlx::query("UPDATE sys_dict SET name=? WHERE id=?")
             .bind(n).bind(id).execute(pool).await?;
     }
-    if let Some(d) = description {
-        sqlx::query("UPDATE sys_dict SET description=? WHERE id=?")
+    if let Some(d) = remark {
+        sqlx::query("UPDATE sys_dict SET remark=? WHERE id=?")
             .bind(d).bind(id).execute(pool).await?;
     }
     if let Some(s) = status {
