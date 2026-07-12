@@ -102,7 +102,15 @@ pub fn list_backups(site_name: &str, page: u32, page_size: u32) -> anyhow::Resul
 }
 
 /// 创建站点备份（压缩 root_path 到 zip）
-pub fn create_backup(site_name: &str, root_path: &str) -> anyhow::Result<BackupFileInfo> {
+/// ponytail: 同步 zip IO 在 spawn_blocking 里跑，避免阻塞 single-thread runtime
+pub async fn create_backup(site_name: &str, root_path: &str) -> anyhow::Result<BackupFileInfo> {
+    let site_name = site_name.to_string();
+    let root_path = root_path.to_string();
+    tokio::task::spawn_blocking(move || create_backup_sync(&site_name, &root_path))
+        .await?
+}
+
+fn create_backup_sync(site_name: &str, root_path: &str) -> anyhow::Result<BackupFileInfo> {
     let dir = get_backup_dir(site_name)?;
     std::fs::create_dir_all(&dir)?;
 

@@ -67,7 +67,7 @@ pub async fn create_site_backup(
         _ => return Json(json!(ApiResponse::<()>::error("站点未配置根目录"))),
     };
 
-    match site_backup_service::create_backup(&site.name, root_path) {
+    match site_backup_service::create_backup(&site.name, root_path).await {
         Ok(info) => Json(json!(ApiResponse::success(info))),
         Err(e) => Json(json!(ApiResponse::<()>::error(format!("创建备份失败: {}", e)))),
     }
