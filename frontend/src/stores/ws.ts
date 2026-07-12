@@ -70,17 +70,18 @@ export const useWsStore = defineStore('ws', () => {
 
   /** 同步当前所有订阅者到 server */
   function syncSubscriptions() {
+    // ponytail: 调试日志（trace 链路用）
+    // console.log('[ws] syncSubscriptions: socket not open', textSocket?.readyState)
     if (textSocket?.readyState !== WebSocket.OPEN) {
-      console.log('[ws] syncSubscriptions: socket not open', textSocket?.readyState)
       return
     }
     const channels: Channel[] = []
     for (const [k, set] of textListeners) if (set.size > 0) channels.push(k)
     if (channels.length === 0) {
-      console.log('[ws] syncSubscriptions: no channels, unsubscribe all')
+      // console.log('[ws] syncSubscriptions: no channels, unsubscribe all')
       textSocket.send(encodeClient({ cmd: IMCmd.UNSUBSCRIBE, channels: ['dashboard', 'events'] }))
     } else {
-      console.log('[ws] syncSubscriptions: sending', channels)
+      // console.log('[ws] syncSubscriptions: sending', channels)
       textSocket.send(encodeClient({ cmd: IMCmd.SUBSCRIBE, channels }))
     }
   }
@@ -110,7 +111,8 @@ export const useWsStore = defineStore('ws', () => {
     }
 
     textSocket.onmessage = (e) => {
-      console.log('[ws] recv', e.data)
+      // ponytail: 调试日志（trace 链路用）
+      // console.log('[ws] recv', e.data)
       if (typeof e.data !== 'string') return
       const frame = decodeServer(e.data)
       if (!frame) return
