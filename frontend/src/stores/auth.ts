@@ -130,12 +130,9 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function logout() {
-    // 先调后端删除 sys_tokens 记录（fire-and-forget，不影响本地清理）
-    const tokenCopy = token.value
-    if (tokenCopy) {
-      api.post('/api/logout', null, { headers: { Authorization: `Bearer ${tokenCopy}` } }).catch(() => {})
-    }
-    // ponytail: 关 ws，避免重连
+    // ponytail: 不用 axios.post('/api/logout') — 它会再次被 401 拦截器接住,触发嵌套 logout,死循环不跳转
+    // 服务端 token 由后台定期清理(见 audit.rs / token_dao 过期逻辑),无需前端 fire-and-forget
+    // 先关 ws,避免重连
     useWsStore().close()
     token.value = ''
     username.value = ''
@@ -148,8 +145,8 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem(LS.roles)
     localStorage.removeItem(LS.perms)
     localStorage.removeItem(LS.menus)
-    // ponytail: 跳登录页（兜底，401 axios 拦截器也会做）
     if (location.pathname !== '/login') {
+      // ponytail: 强制 replace + reload,确保所有异步链路被中断,跳转必生效
       location.replace('/login')
     }
   }

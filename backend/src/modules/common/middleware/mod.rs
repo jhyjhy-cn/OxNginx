@@ -1,4 +1,5 @@
 use axum::{
+    body::to_bytes,
     extract::Request,
     http::{header, StatusCode},
     middleware::Next,
@@ -21,14 +22,35 @@ fn last_refresh_map() -> &'static Mutex<HashMap<String, Instant>> {
     LAST_REFRESH.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
-/// 请求日志中间件
+/// 请求日志中间件:4xx/5xx 自动打 ERROR(含 body 摘要),正常 2xx/3xx 走 INFO
 pub async fn logging_middleware(request: Request, next: Next) -> Response {
     let method = request.method().clone();
     let uri = request.uri().clone();
     let start = Instant::now();
     let response = next.run(request).await;
-    tracing::info!("{} {} - {} ({:.1}ms)", method, uri, response.status(), start.elapsed().as_secs_f64() * 1000.0);
-    response
+    let elapsed_ms = start.elapsed().as_secs_f64() * 1000.0;
+    let status = response.status();
+    if status.is_client_error() || status.is_server_error() {
+        // ponytail: 尝试读 body 拿错误详情(限 4KB,避免大 body 撑爆日志)
+        let ct = response
+            .headers()
+            .get(header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("");
+        if ct.starts_with("application/json") || ct.starts_with("text/") {
+            let (parts, body) = response.into_parts();
+            let bytes = to_bytes(body, 4 * 1024).await.unwrap_or_default();
+            let s = String::from_utf8_lossy(&bytes).chars().take(2000).collect::<String>();
+            tracing::error!(target: "http", "{} {} -> {} ({:.1}ms) body={}", method, uri, status, elapsed_ms, s);
+            Response::from_parts(parts, axum::body::Body::from(bytes))
+        } else {
+            tracing::error!(target: "http", "{} {} -> {} ({:.1}ms)", method, uri, status, elapsed_ms);
+            response
+        }
+    } else {
+        tracing::info!("{} {} - {} ({:.1}ms)", method, uri, status, elapsed_ms);
+        response
+    }
 }
 
 /// Token 信息

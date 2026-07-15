@@ -25,6 +25,7 @@ api.interceptors.request.use(
 )
 
 // 响应拦截器
+let isRedirectingToLogin = false
 api.interceptors.response.use(
   (response) => {
     return response
@@ -36,9 +37,17 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       const authStore = useAuthStore()
       authStore.logout()
-      router.push('/login')
+      // ponytail: replace 而非 push,避免后退又回死页面;且防止并发 401 触发多次跳转
+      if (!isRedirectingToLogin && router.currentRoute.value.path !== '/login') {
+        isRedirectingToLogin = true
+        router.replace('/login').finally(() => {
+          isRedirectingToLogin = false
+        })
+      }
     } else if (error.response?.status === 403) {
-      router.push('/403')
+      if (router.currentRoute.value.path !== '/403') {
+        router.replace('/403')
+      }
     }
     return Promise.reject(error)
   }

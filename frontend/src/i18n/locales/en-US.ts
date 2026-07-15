@@ -2,6 +2,8 @@ export default {
   // sys.* 在运行时由后端 sys_i18n 表动态注入，这里只占位让 vue-tsc 通过类型校验
   sys: {} as Record<string, any>,
   common: {
+    name: 'Name',
+    type: 'Type',
     add: 'Add',
     edit: 'Edit',
     delete: 'Delete',

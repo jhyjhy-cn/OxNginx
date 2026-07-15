@@ -33,6 +33,9 @@ export const putData = <T>(url: string, body?: unknown) =>
 export const deleteData = <T = null>(url: string, body?: unknown) =>
   api.delete<ApiResponse<T>>(url, body ? { data: body } : undefined).then(unwrap<T>)
 
+export const deleteDataWithParams = <T = null>(url: string, params?: Record<string, unknown>) =>
+  api.delete<ApiResponse<T>>(url, { params }).then(unwrap<T>)
+
 export const postForm = <T>(url: string, form: FormData) =>
   api
     .post<ApiResponse<T>>(url, form, {

@@ -42,14 +42,31 @@ export function useMessage() {
     ElMessage.info({ message: msg, duration })
   }
 
-  async function confirm(opts: { message: string; title?: string; type?: MsgType; params?: Record<string, any> }): Promise<boolean> {
+  async function confirm(opts: {
+    message: string
+    title?: string
+    type?: MsgType
+    params?: Record<string, any>
+    confirmText?: string
+    cancelText?: string
+    checkbox?: { label: string; checked?: boolean }
+  }): Promise<{ ok: boolean; checkboxChecked: boolean }> {
     const msg = i18n(opts.message, opts.params)
     const title = opts.title ? i18n(opts.title) : t('common.tip')
+    // ponytail: el-message-box showCheckbox 仅在 2.13+ 运行时支持,types 还未声明
+    const options: any = { type: opts.type || 'warning' }
+    if (opts.confirmText) options.confirmButtonText = i18n(opts.confirmText)
+    if (opts.cancelText) options.cancelButtonText = i18n(opts.cancelText)
+    if (opts.checkbox) {
+      options.showCheckbox = true
+      options.checkboxLabel = i18n(opts.checkbox.label)
+      options.checkboxChecked = !!opts.checkbox.checked
+    }
     try {
-      await ElMessageBox.confirm(msg, title, { type: opts.type || 'warning' })
-      return true
+      const res = await ElMessageBox.confirm(msg, title, options)
+      return { ok: true, checkboxChecked: (res as any)?.checkboxChecked === true }
     } catch {
-      return false
+      return { ok: false, checkboxChecked: false }
     }
   }
 

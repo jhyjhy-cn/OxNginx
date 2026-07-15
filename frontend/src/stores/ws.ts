@@ -141,7 +141,10 @@ export const useWsStore = defineStore('ws', () => {
     if (termReconnect) { window.clearTimeout(termReconnect); termReconnect = undefined }
     if (termHeartbeat) { window.clearInterval(termHeartbeat); termHeartbeat = undefined }
     if (termSocket) { termSocket.onclose = null; termSocket.close(); termSocket = null }
-    if (eventSubUnsub) { eventSubUnsub(); eventSubUnsub = null }
+    // ponytail: 先把引用置 null 再调,避免 unsubscribe 内部 close() 再次进入,栈溢出
+    const unsub = eventSubUnsub
+    eventSubUnsub = null
+    if (unsub) unsub()
     status.value = 'closed'
   }
 
