@@ -3,6 +3,13 @@
   "menus": [
     {"p": "", "n": "仪表盘", "t": "sys.menu.dashboard", "i": "House", "u": "/dashboard", "y": "C", "pm": "sys:dashboard:view", "c": "dashboard/index"},
     {"p": "", "n": "站点管理", "t": "sys.menu.sites", "i": "Connection", "u": "/sites", "y": "C", "pm": "sys:site:view", "c": "sites/index"},
+    {"p": "", "n": "数据库管理", "t": "dbm.menu.databases", "i": "Coin", "u": "", "y": "M", "pm": "", "c": ""},
+    {"p": "数据库管理", "n": "Redis", "t": "dbm.menu.redis", "i": "", "u": "/databases/redis", "y": "C", "pm": "dbm:view", "c": "databases/redis/index"},
+    {"p": "数据库管理", "n": "SQLite", "t": "dbm.menu.sqlite", "i": "", "u": "/databases/sqlite", "y": "C", "pm": "dbm:view", "c": "databases/sqlite/index"},
+    {"p": "SQLite", "n": "SQLite 新增", "t": "dbm.menu.dbAdd", "i": "", "u": "", "y": "F", "pm": "dbm:add", "c": ""},
+    {"p": "SQLite", "n": "SQLite 编辑", "t": "dbm.menu.dbEdit", "i": "", "u": "", "y": "F", "pm": "dbm:edit", "c": ""},
+    {"p": "SQLite", "n": "SQLite 删除", "t": "dbm.menu.dbDelete", "i": "", "u": "", "y": "F", "pm": "dbm:delete", "c": ""},
+    {"p": "SQLite", "n": "SQLite 测试", "t": "dbm.menu.dbTest", "i": "", "u": "", "y": "F", "pm": "dbm:test", "c": ""},
     {"p": "", "n": "文件管理", "t": "sys.menu.files", "i": "Folder", "u": "/files", "y": "C", "pm": "sys:file:view", "c": "files/index"},
     {"p": "", "n": "终端", "t": "sys.menu.terminal", "i": "Monitor", "u": "/terminal", "y": "C", "pm": "sys:terminal:view", "c": "terminal/index"},
     {"p": "", "n": "设置", "t": "sys.menu.settings", "i": "Setting", "u": "/settings", "y": "C", "pm": "sys:config:view", "c": "settings/index"},

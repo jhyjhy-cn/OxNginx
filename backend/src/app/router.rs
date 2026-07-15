@@ -23,6 +23,7 @@ pub fn build(state: AppState) -> Router {
     // 公开路由（无需认证）
     let public_routes = Router::new()
         .route("/api/login", post(modules::auth::controller::auth_controller::login))
+        .route("/api/logout", post(modules::auth::controller::auth_controller::logout))
         .route("/api/setup", post(modules::auth::controller::auth_controller::setup))
         .route("/api/setup/status", get(modules::auth::controller::auth_controller::setup_status))
         .route("/api/auth/public-key", get(modules::auth::controller::auth_controller::get_public_key));
@@ -52,7 +53,6 @@ pub fn build(state: AppState) -> Router {
         .route("/api/certificate/renew", post(modules::site::controller::cert_controller::renew_certificate))
         .route("/api/change-password", post(modules::auth::controller::auth_controller::change_password))
         .route("/api/change-username", post(modules::auth::controller::auth_controller::change_username))
-        .route("/api/logout", post(modules::auth::controller::auth_controller::logout))
         .route("/api/nginx/test", post(modules::nginx::controller::nginx_controller::test_config))
         .route("/api/nginx/reload", post(modules::nginx::controller::nginx_controller::reload))
         .route("/api/nginx/status", get(modules::nginx::controller::nginx_controller::status))
@@ -161,6 +161,24 @@ pub fn build(state: AppState) -> Router {
         .route("/api/rbac/params", get(modules::sys::controller::param_controller::page_params).post(modules::sys::controller::param_controller::create_param))
         .route("/api/rbac/params/key/{key}", get(modules::sys::controller::param_controller::get_param_by_key))
         .route("/api/rbac/params/{id}", get(modules::sys::controller::param_controller::get_param).put(modules::sys::controller::param_controller::update_param).delete(modules::sys::controller::param_controller::delete_param))
+        // 数据库管理
+        .route("/api/databases", get(modules::database::controller::database_controller::list_databases).post(modules::database::controller::database_controller::create_database))
+        .route("/api/databases/{id}", get(modules::database::controller::database_controller::get_database).put(modules::database::controller::database_controller::update_database).delete(modules::database::controller::database_controller::delete_database))
+        .route("/api/databases/{id}/test", post(modules::database::controller::database_controller::test_database))
+        .route("/api/databases/{id}/toggle", post(modules::database::controller::database_controller::toggle_database))
+        // SQLite 表/数据/查询
+        .route("/api/databases/sqlite/list-tables", post(modules::database::controller::sqlite_controller::list_tables))
+        .route("/api/databases/sqlite/table-data", post(modules::database::controller::sqlite_controller::table_data))
+        .route("/api/databases/sqlite/row-insert", post(modules::database::controller::sqlite_controller::row_insert))
+        .route("/api/databases/sqlite/row-update", post(modules::database::controller::sqlite_controller::row_update))
+        .route("/api/databases/sqlite/row-delete", post(modules::database::controller::sqlite_controller::row_delete))
+        .route("/api/databases/sqlite/exec", post(modules::database::controller::sqlite_controller::exec_sql))
+        .route("/api/databases/sqlite/create-table", post(modules::database::controller::sqlite_controller::create_table))
+        .route("/api/databases/sqlite/rename-table", post(modules::database::controller::sqlite_controller::rename_table))
+        .route("/api/databases/sqlite/drop-table", post(modules::database::controller::sqlite_controller::drop_table))
+        .route("/api/databases/sqlite/add-column", post(modules::database::controller::sqlite_controller::add_column))
+        .route("/api/databases/sqlite/rename-column", post(modules::database::controller::sqlite_controller::rename_column))
+        .route("/api/databases/sqlite/drop-column", post(modules::database::controller::sqlite_controller::drop_column))
         // 系统文件
         .route("/api/rbac/files/upload", post(modules::sys::controller::file_controller::upload_file))
         .route("/api/rbac/files/page", get(modules::sys::controller::file_controller::page_files))
@@ -195,7 +213,7 @@ pub fn build(state: AppState) -> Router {
         .merge(api_with_fallback)
         // ponytail: 文件上传默认 body limit 是 2MB，调到 50MB；超大文件再换 streaming
         .layer(DefaultBodyLimit::max(50 * 1024 * 1024))
-        .layer(axum::middleware::from_fn(middleware::logging_middleware))              // 全局耗时
+        .layer(axum::middleware::from_fn(middleware::logging_middleware))              // 全局耗时 + 4xx/5xx 自动 ERROR
         .layer(CorsLayer::permissive())
         .fallback_service(spa_service)
         .with_state(state)

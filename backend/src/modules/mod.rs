@@ -2,6 +2,7 @@ pub mod auth;
 pub mod backup;
 pub mod common;
 pub mod dashboard;
+pub mod database;
 pub mod file;
 pub mod log;
 pub mod nginx;

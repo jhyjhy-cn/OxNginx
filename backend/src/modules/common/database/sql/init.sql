@@ -439,3 +439,29 @@ CREATE TABLE IF NOT EXISTS sys_login_logs (
     status INTEGER NOT NULL DEFAULT 1,                    -- 结果：1=成功 0=失败
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP         -- 创建时间
 );
+
+-- =====================================================================
+-- 数据库管理（外部数据库连接元数据 + 状态探测）
+-- =====================================================================
+
+-- 数据库连接：用户配置的外部数据源,运行时探测用
+CREATE TABLE IF NOT EXISTS dbm_databases (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,                 -- 主键
+    type TEXT NOT NULL,                                   -- 类型：redis / sqlite
+    name TEXT NOT NULL UNIQUE,                            -- 展示名,唯一
+    host TEXT,                                            -- redis 主机
+    port INTEGER,                                         -- redis 端口
+    username TEXT,                                        -- redis ACL 用户(可选)
+    password TEXT,                                        -- redis 密码(明文,service 层返回前 mask)
+    db_name TEXT,                                         -- sqlite 文件名 / redis db index
+    db_path TEXT,                                         -- sqlite 绝对路径(可选,默认走项目 db)
+    enabled INTEGER NOT NULL DEFAULT 1,                   -- 启用：1=是 0=否
+    sort INTEGER NOT NULL DEFAULT 0,                      -- 排序
+    remark TEXT,                                          -- 备注
+    version INTEGER NOT NULL DEFAULT 0,                   -- 乐观锁版本号
+    created_by INTEGER,                                   -- 创建人 user_id
+    updated_by INTEGER,                                   -- 修改人 user_id
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,        -- 创建时间
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP         -- 更新时间
+);
+CREATE INDEX IF NOT EXISTS idx_dbm_databases_type ON dbm_databases(type);
