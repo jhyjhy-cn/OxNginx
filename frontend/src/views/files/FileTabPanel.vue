@@ -63,8 +63,8 @@
       </div>
     </Teleport>
 
-    <!-- 操作栏 -->
-    <div class="fm-actionbar">
+    <!-- 操作栏:picker 模式下隐藏 -->
+    <div v-if="!picker" class="fm-actionbar">
       <div class="actionbar-left">
         <el-dropdown @command="fm.handleCreate" trigger="click">
           <el-button size="small" type="primary">
@@ -132,37 +132,41 @@
     <div class="fm-content" v-loading="fm.loading.value">
       <FileListView
         v-if="fm.viewMode.value === 'list'"
-        :files="fm.filteredPagedFiles.value"
+        :files="pickerFilteredFiles"
         :get-file-icon="fm.getFileIcon"
         :format-size="fm.formatSize"
         :hover-note-path="fm.hoverNotePath.value"
         :editing-note="fm.editingNote.value"
-        @contextmenu="fm.handleContextMenu"
-        @dblclick="fm.handleDblClick"
-        @selection-change="fm.handleSelectionChange"
+        :no-selection="!picker"
+        :radio-mode="!!picker"
+        :disable-dirs="picker?.mode === 'file'"
+        @contextmenu="onContextMenu"
+        @dblclick="onDblClick"
+        @selection-change="onSelectionChange"
         @calc-size="fm.calcFileSize"
         @note-enter="fm.handleNoteEnter"
         @note-leave="fm.handleNoteLeave"
-        @note-update="(v) => (fm.editingNote.value = v)"
+        @note-update="(v: string) => (fm.editingNote.value = v)"
         @note-save="fm.saveInlineNote"
         @rename="fm.handleRename"
         @delete="fm.handleDelete"
       />
       <FileGridView
         v-else
-        :files="fm.filteredPagedFiles.value"
+        :files="pickerFilteredFiles"
         :get-file-icon="fm.getFileIcon"
         :format-size="fm.formatSize"
         :empty-text="t('sys.files.emptyDir')"
-        @dblclick="fm.handleDblClick"
-        @contextmenu="(row, e) => fm.handleContextMenu(row, e)"
+        @dblclick="onDblClick"
+        @contextmenu="onContextMenu"
         @calc-size="fm.calcFileSize"
       />
     </div>
 
-    <!-- 分页栏 -->
+    <!-- 分页栏 / picker 操作栏 共用一条 footer -->
     <div class="fm-pagination">
-      <div class="pagination-left">
+      <!-- picker 模式隐藏左侧统计 -->
+      <div v-if="!picker" class="pagination-left">
         <span>{{ t('sys.files.totalItems', { n: fm.total.value }) }}</span>
         <span class="stat-sep">|</span>
         <span>{{ fm.dirCount.value }} 个目录</span>
@@ -177,19 +181,36 @@
           </el-button>
         </span>
       </div>
+
+      <!-- 普通模式显示 el-pagination;picker 模式显示为 slot footer -->
       <el-pagination
+        v-if="!picker"
         v-model:current-page="fm.currentPage.value"
         v-model:page-size="fm.pageSize.value"
         :page-sizes="[100, 500, 1000, 1500, 2000]"
         :total="fm.total.value"
         layout="sizes, prev, pager, next, jumper"
         background
-        small
+        size="small"
       />
+      <div v-else class="pagination-picker">
+        <el-pagination
+          v-model:current-page="fm.currentPage.value"
+          v-model:page-size="fm.pageSize.value"
+          :page-sizes="[100, 500, 1000, 1500, 2000]"
+          :total="fm.total.value"
+          layout="sizes, prev, pager, next, jumper"
+          background
+          size="small"
+          class="picker-page"
+        />
+        <slot name="picker-footer" />
+      </div>
     </div>
 
-    <!-- 右键菜单 -->
+    <!-- 右键菜单：picker 模式禁用 -->
     <FileContextMenu
+      v-if="!picker"
       :visible="fm.contextMenu.visible"
       :x="fm.contextMenu.x"
       :y="fm.contextMenu.y"
@@ -231,6 +252,7 @@
 </template>
 
 <script setup lang="ts">
+import { watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   Back,
@@ -253,9 +275,75 @@ import FileGridView from './FileGridView.vue'
 import FileContextMenu from './FileContextMenu.vue'
 import FileDialogs from './FileDialogs.vue'
 
-const props = defineProps<{ tabId: string; initialPath: string }>()
+const props = defineProps<{
+  tabId: string
+  initialPath: string
+  /** 选取模式:单/双击走 picker 语义,操作栏/分页/右键菜单全部隐藏 */
+  picker?: { mode: 'folder' | 'file'; accept?: string[]; multiple?: boolean }
+}>()
 const { t } = useI18n()
 const fm = useFileManager(props.initialPath, props.tabId)
+
+const emit = defineEmits<{
+  /** picker 模式:确认时回传路径(folder 模式单字符串,file 模式字符串数组) */
+  pick: [paths: string[]]
+  /** picker 模式:用户导航到新目录时回显,父组件可显示"当前目录" */
+  pickerPath: [path: string]
+}>()
+
+// ponytail: picker 模式下根据 mode + accept 过滤表格 —— 更干净
+// folder 模式:只显示目录(用户用"选择当前文件夹"按钮或 dblclick 目录进入)
+// file 模式:   显示目录(供 dblclick 进入) + 接受扩展名内的文件
+const pickerFilteredFiles = computed(() => {
+  if (!props.picker) return fm.filteredPagedFiles.value
+  const all = fm.filteredPagedFiles.value
+  if (props.picker.mode === 'folder') return all.filter((f) => f.is_dir)
+  const accept = props.picker.accept
+  if (!accept || accept.length === 0) return all
+  const exts = accept.map((s) => s.toLowerCase().replace(/^\./, ''))
+  return all.filter((f) => f.is_dir || exts.includes(extOf(f.name)))
+})// ponytail: picker 模式阻断右键/批量/操作,只暴露双击 + 复选语义
+function extOf(name: string): string {
+  const i = name.lastIndexOf('.')
+  return i >= 0 ? name.slice(i + 1).toLowerCase() : ''
+}
+
+function onDblClick(row: any) {
+  if (props.picker) {
+    if (row.is_dir) {
+      fm.enterDir(row)
+      return
+    }
+    if (props.picker.mode === 'file') {
+      // file 模式双击文件: 直接多选确认(单文件直接成数组)
+      emit('pick', [row.path])
+    }
+    return
+  }
+  fm.handleDblClick(row)
+}
+
+function onContextMenu(row: any, col?: any, e?: MouseEvent) {
+  if (props.picker) return
+  fm.handleContextMenu(row, col, e)
+}
+
+function onSelectionChange(rows: any[]) {
+  if (props.picker) {
+    // ponytail: picker 模式下不分 file/folder,直接 emit 当前 radio 选中的 path 数组
+    emit('pick', rows.map((r) => r.path))
+    return
+  }
+  fm.handleSelectionChange(rows)
+}
+
+// ponytail: picker 模式把目录导航实时回传出去,父组件 footer 能展示"当前目录"
+watch(
+  () => fm.currentPath.value,
+  (p: string) => {
+    if (props.picker && p) emit('pickerPath', p)
+  }
+)
 </script>
 
 <style scoped>
@@ -264,6 +352,7 @@ const fm = useFileManager(props.initialPath, props.tabId)
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  min-height: 0;
 }
 
 .fm-pathbar {
@@ -342,6 +431,17 @@ const fm = useFileManager(props.initialPath, props.tabId)
   padding: 8px 16px;
   background: var(--el-bg-color);
   border-top: 1px solid var(--el-border-color-lighter);
+  flex-shrink: 0;
+  gap: 12px;
+}
+.pagination-picker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+.picker-page {
   flex-shrink: 0;
 }
 .pagination-left {

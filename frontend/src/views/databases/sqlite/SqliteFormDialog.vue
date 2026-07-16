@@ -1,5 +1,5 @@
 <template>
-  <el-dialog
+  <OnDialog
     v-model="visible"
     :title="$t('dbm.menu.dbAdd')"
     width="560px"
@@ -31,12 +31,20 @@
       <el-button @click="visible = false">{{ $t('common.cancel') }}</el-button>
       <el-button type="primary" :loading="submitting" @click="onSubmit">{{ $t('common.confirm') }}</el-button>
     </template>
-  </el-dialog>
+  </OnDialog>
 
-  <!-- 浏览文件:复用 /api/files/list 展示当前路径下子项,点击选择 -->
-  <el-dialog v-model="browseVisible" :title="$t('dbm.browse')" width="640px">
-    <FileBrowser v-model:path="browsePath" @pick="onPick" />
-  </el-dialog>
+  <!--
+    ponytail: 新建模式(macro='new')让用户选目标目录(folder picker),
+    添加现有模式让用户选 .db 文件(file picker)。
+  -->
+  <OnFilePicker
+    v-model="pickerVisible"
+    :mode="mode === 'new' ? 'folder' : 'file'"
+    :title="mode === 'new' ? t('dbm.picker.chooseDirectory') : ''"
+    :initial-path="form.path"
+    :accept-extensions="['db', 'sqlite', 'sqlite3']"
+    @pick="onPick"
+  />
 </template>
 
 <script setup lang="ts">
@@ -44,7 +52,8 @@ import { computed, reactive, ref } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { createDatabase } from '@/api/databases'
-import FileBrowser from './FileBrowser.vue'
+import OnDialog from '@/components/OnDialog/index.vue'
+import OnFilePicker from '@/components/OnFilePicker/index.vue'
 
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [v: boolean]; saved: [] }>()
@@ -74,17 +83,22 @@ function onOpen() {
   mode.value = 'existing'
 }
 
-const browseVisible = ref(false)
-const browsePath = ref('')
+const pickerVisible = ref(false)
 
 function onBrowse() {
-  browsePath.value = form.path || ''
-  browseVisible.value = true
+  pickerVisible.value = true
 }
 
-function onPick(file: string) {
-  form.path = file
-  browseVisible.value = false
+function onPick(files: string[]) {
+  // sqlite 添加只取第一个文件;folder picker 也只取第一个目录
+  const p = files[0] || ''
+  form.path = p
+  // ponytail: file picker 选中现有 db 时,name 自动同步为去掉扩展名的 basename(data.db -> data)
+  if (p && mode.value === 'existing' && !form.name) {
+    const base = p.replace(/\\/g, '/').split('/').pop() || ''
+    form.name = base.replace(/\.[^.]+$/, '')
+  }
+  pickerVisible.value = false
 }
 
 async function onSubmit() {

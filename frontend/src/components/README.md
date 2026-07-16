@@ -84,4 +84,5 @@ import HasPermission from '@/components/HasPermission/index.vue'
 | `OnIcon` | 统一图标 (Element Plus / SVG / Sprite) | `name, svgName, svg, size, color, className, style, prefix` |
 | `OnUpload` | 统一上传 (el-upload，drag/button 双模式、v-model 接 URL 或 URL 数组) | `url, modelValue, accept, limit, drag, showFileList` |
 | `OnDictSelect` | 字典下拉 (按 code 拉 sys_dicts.items,前端过滤) | `code, vModel, multiple, clearable, disabled, placeholder` |
+| `OnFilePicker` | 远程选取文件夹/文件（调 `/api/files/list` + `/api/files/roots`，`v-model` + `@pick` 回填路径） | `modelValue, mode('folder'\|'file'), title, initialPath, acceptExtensions` |
 | `HasPermission` | 权限码包装 slot | `code` |

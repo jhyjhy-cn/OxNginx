@@ -676,5 +676,10 @@
   "dbm.constraint": "Constraint",
   "dbm.notnull": "NOT NULL",
   "dbm.pk": "PK",
-  "dbm.addRow": "Add Row"
+  "dbm.addRow": "Add Row",
+  "dbm.picker.chooseDirectory": "Choose Database Directory",
+  "dbm.picker.pickedN": "{n} selected",
+  "dbm.picker.pickFileHint": "Check files then click Select",
+  "dbm.picker.pickFolderHint": "Please choose a directory",
+  "dbm.picker.curDir": "Current: {path}"
 }

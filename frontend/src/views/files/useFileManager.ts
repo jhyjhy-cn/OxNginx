@@ -165,12 +165,14 @@ export function useFileManager(initialPath?: string, tabId?: string) {
         page: currentPage.value,
         page_size: pageSize.value,
       } as any)
-      files.value = data.items
+      const norm = (p: string) => (p ?? '').replace(/\\\\\?\\/g, '').replace(/\\/g, '/')
+      const raw: any[] = data.items || []
+      files.value = raw.map((it) => ({ ...it, path: norm(it.path) }))
       total.value = data.total
       dirCount.value = data.dir_count
       fileCount.value = data.file_count
-      currentPath.value = data.path.replace(/\\\\\?\\/, '').replace(/\\/g, '/')
-      currentParent.value = data.parent ? data.parent.replace(/\\\\\?\\/, '').replace(/\\/g, '/') : null
+      currentPath.value = norm(data.path)
+      currentParent.value = data.parent ? norm(data.parent) : null
       filesStore.lastPath = currentPath.value
       if (tabId) filesStore.updateTabPath(tabId, currentPath.value)
     } catch (e: any) {
@@ -184,7 +186,10 @@ export function useFileManager(initialPath?: string, tabId?: string) {
     if (drivesLoaded) return
     drivesLoaded = true
     try {
-      sharedDrives.value = (await listRoots()) || []
+      const roots = (await listRoots()) || []
+      // ponytail: 后端 windows 返回 \\?\D:\,前端消费处假设裸路径,这里就地归一化
+      const normPath = (p: string) => (p ?? '').replace(/\\\\\?\\/g, '').replace(/\\/g, '/')
+      sharedDrives.value = roots.map((r) => normPath(r) + (normPath(r).endsWith('/') ? '' : '/'))
     } catch {
       drivesLoaded = false
     }
