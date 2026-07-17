@@ -314,9 +314,9 @@ CREATE TABLE IF NOT EXISTS sys_role_menus (
 );
 
 -- =====================================================================
--- 国际化与字典
+-- ponytail: 暂不使用的国际化建表（改前端 ts 兜底）。需要恢复时取消注释 + 启用路由/seed。
 -- =====================================================================
-
+/*
 -- 国际化翻译条目：(locale, key) 唯一
 CREATE TABLE IF NOT EXISTS sys_i18n (
     id INTEGER PRIMARY KEY AUTOINCREMENT,                 -- 主键
@@ -332,8 +332,11 @@ CREATE TABLE IF NOT EXISTS sys_i18n (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,        -- 更新时间
     UNIQUE(locale, key)
 );
+*/
 
--- 字典：分类字典（如通用状态、菜单类型）
+-- =====================================================================
+-- 字典
+-- =====================================================================
 CREATE TABLE IF NOT EXISTS sys_dict (
     id INTEGER PRIMARY KEY AUTOINCREMENT,                 -- 主键
     name TEXT NOT NULL,                                   -- 字典名称（中文友好）

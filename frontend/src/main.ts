@@ -12,7 +12,8 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 import App from './App.vue'
 import router, { restoreDynamicRoutes } from './router'
-import i18n, { restoreI18n, restoreLocale } from './i18n'
+// ponytail: 国际化已迁回前端 ts,无需再 restore
+import i18n, { restoreLocale } from './i18n'
 import { useSettingsStore } from './stores/settings'
 import OnIconPlugin from './components/OnIcon'
 import { vAuth } from './directives/auth'
@@ -38,7 +39,7 @@ app.use(i18n)
 const settingsStore = useSettingsStore()
 settingsStore.initTheme()
 restoreLocale()
-restoreI18n()
+// restoreI18n()
 
 app.directive('auth', vAuth)
 app.mount('#app')

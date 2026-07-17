@@ -4,9 +4,10 @@ use sqlx::sqlite::{SqliteConnectOptions, SqlitePool, SqlitePoolOptions};
 use std::path::Path;
 
 pub mod seed;
-pub mod seed_i18n;
 pub mod seed_menu;
 pub mod seed_menu_json;
+// ponytail: i18n 启动 seed 暂不使用，需要时取消下一行注释并启用 init.sql 建表。
+// pub mod seed_i18n;
 
 /// 数据库封装
 #[derive(Clone)]

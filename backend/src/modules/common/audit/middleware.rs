@@ -194,7 +194,8 @@ fn is_query_uri(uri: &str) -> bool {
         || uri.contains("/files/roots")
         || uri.contains("/log/")
         || uri.contains("/rbac/me")
-        || uri.contains("/i18n/messages")
+        // ponytail: i18n 路由已下线；恢复时取消下一行注释
+        // || uri.contains("/i18n/messages")
         || uri.contains("/preview")
         || uri.contains("/diff")
         || uri.contains("/setup/status")

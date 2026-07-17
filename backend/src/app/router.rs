@@ -119,8 +119,11 @@ pub fn build(state: AppState) -> Router {
         .route("/api/files/download", get(modules::file::controller::file_controller::download_file))
         // RBAC me（任意登录用户可用）
         .route("/api/rbac/me", get(modules::sys::controller::user_controller::me))
+        // ponytail: 国际化路由暂不使用（改前端 ts 兜底）；恢复时取消下方注释并同步启用 DAO/service/controller/seed_i18n。
+        /*
         .route("/api/rbac/i18n/messages", get(modules::sys::controller::i18n_controller::get_i18n_messages))
         .route("/api/rbac/i18n", get(modules::sys::controller::i18n_controller::list_i18n))  // 读，全局可用
+        */
         // 用户
         .route("/api/rbac/users", get(modules::sys::controller::user_controller::list_users).post(modules::sys::controller::user_controller::create_user))
         .route("/api/rbac/users/{id}", get(modules::sys::controller::user_controller::get_user).put(modules::sys::controller::user_controller::update_user).delete(modules::sys::controller::user_controller::delete_user))
@@ -145,10 +148,12 @@ pub fn build(state: AppState) -> Router {
         .route("/api/rbac/menus", get(modules::sys::controller::menu_controller::list_menus).post(modules::sys::controller::menu_controller::create_menu))
         .route("/api/rbac/menus/batch-delete", post(modules::sys::controller::menu_controller::batch_delete_menus))
         .route("/api/rbac/menus/{id}", put(modules::sys::controller::menu_controller::update_menu).delete(modules::sys::controller::menu_controller::delete_menu))
-        // 国际化
+        // ponytail: 国际化写路由暂不使用，恢复时取消下方注释。
+        /*
         .route("/api/rbac/i18n/locales", get(modules::sys::controller::i18n_controller::list_i18n_locales))
         .route("/api/rbac/i18n", post(modules::sys::controller::i18n_controller::upsert_i18n))  // 写，仅管理员
         .route("/api/rbac/i18n/{id}", delete(modules::sys::controller::i18n_controller::delete_i18n))
+        */
         // 在线用户
         .route("/api/sys/online", get(modules::sys::controller::online_controller::list_online))
         .route("/api/sys/online/{id}", delete(modules::sys::controller::online_controller::kick_online))

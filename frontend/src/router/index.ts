@@ -96,7 +96,7 @@ router.beforeEach(async (to) => {
     })
   }
 
-  await authStore.fetchI18n()
+  // ponytail: 国际化已迁回前端 ts，无需再拉 DB
 
   if (authStore.isSuperAdmin) return true
   const need = to.meta?.permission as string | undefined

@@ -1,5 +1,5 @@
 {
-  "_comment": "默认菜单种子（权威源）。字段：parent_name, name, title_i18n, icon, path, type(M=目录/C=菜单/F=按钮), permission, component",
+  "_comment": "默认菜单种子（权威源）。字段：parent_name, name, title_i18n, icon, path, type(M=目录/C=菜单/F=按钮), permission, component。ponytail: 国际化管理菜单及其 7 个按钮权限已下线（改前端 ts 兜底），需要恢复时按 git 历史回填对应 8 行。",
   "menus": [
     {"p": "", "n": "仪表盘", "t": "sys.menu.dashboard", "i": "House", "u": "/dashboard", "y": "C", "pm": "sys:dashboard:view", "c": "dashboard/index"},
     {"p": "", "n": "站点管理", "t": "sys.menu.sites", "i": "Connection", "u": "/sites", "y": "C", "pm": "sys:site:view", "c": "sites/index"},
@@ -34,7 +34,6 @@
     {"p": "系统管理", "n": "系统参数", "t": "sys.menu.rbacParams", "i": "Setting", "u": "/settings/rbac/params", "y": "C", "pm": "sys:config:manage", "c": "sys/params/index"},
     {"p": "系统管理", "n": "字典管理", "t": "sys.menu.rbacDicts", "i": "Grid", "u": "/settings/rbac/dicts", "y": "C", "pm": "sys:config:view", "c": "sys/dicts/index"},
     {"p": "系统管理", "n": "系统文件", "t": "sys.menu.rbacFiles", "i": "Folder", "u": "/settings/rbac/files", "y": "C", "pm": "sys:file:manage", "c": "sys/files/index"},
-    {"p": "系统管理", "n": "国际化管理", "t": "sys.menu.rbacI18n", "i": "MapLocation", "u": "/settings/rbac/i18n", "y": "C", "pm": "sys:config:view", "c": "sys/i18n/index"},
     {"p": "系统管理", "n": "在线用户", "t": "sys.menu.onlineUsers", "i": "User", "u": "/settings/rbac/online", "y": "C", "pm": "sys:online:view", "c": "sys/online/index"},
 
     {"p": "用户管理", "n": "用户管理新增", "t": "sys.menu.userAdd", "i": "", "u": "", "y": "F", "pm": "sys:user:add", "c": ""},
@@ -90,14 +89,6 @@
     {"p": "字典管理", "n": "字典管理查询", "t": "sys.menu.dictQuery", "i": "", "u": "", "y": "F", "pm": "sys:dict:query", "c": ""},
     {"p": "字典管理", "n": "字典管理导出", "t": "sys.menu.dictExport", "i": "", "u": "", "y": "F", "pm": "sys:dict:export", "c": ""},
     {"p": "字典管理", "n": "字典管理字典项", "t": "sys.menu.dictItemManage", "i": "", "u": "", "y": "F", "pm": "sys:dict:dictItemManage", "c": ""},
-
-    {"p": "国际化管理", "n": "国际化新增", "t": "sys.menu.i18nAdd", "i": "", "u": "", "y": "F", "pm": "sys:i18n:add", "c": ""},
-    {"p": "国际化管理", "n": "国际化删除", "t": "sys.menu.i18nDelete", "i": "", "u": "", "y": "F", "pm": "sys:i18n:delete", "c": ""},
-    {"p": "国际化管理", "n": "国际化批量删除", "t": "sys.menu.i18nBatchDelete", "i": "", "u": "", "y": "F", "pm": "sys:i18n:batchDelete", "c": ""},
-    {"p": "国际化管理", "n": "国际化修改", "t": "sys.menu.i18nEdit", "i": "", "u": "", "y": "F", "pm": "sys:i18n:edit", "c": ""},
-    {"p": "国际化管理", "n": "国际化查询", "t": "sys.menu.i18nQuery", "i": "", "u": "", "y": "F", "pm": "sys:i18n:query", "c": ""},
-    {"p": "国际化管理", "n": "国际化导出", "t": "sys.menu.i18nExport", "i": "", "u": "", "y": "F", "pm": "sys:i18n:export", "c": ""},
-    {"p": "国际化管理", "n": "国际化导入", "t": "sys.menu.i18nImport", "i": "", "u": "", "y": "F", "pm": "sys:i18n:import", "c": ""},
 
     {"p": "操作日志", "n": "操作日志查询", "t": "sys.menu.opLogQuery", "i": "", "u": "", "y": "F", "pm": "sys:opLog:query", "c": ""},
     {"p": "操作日志", "n": "操作日志导出", "t": "sys.menu.opLogExport", "i": "", "u": "", "y": "F", "pm": "sys:opLog:export", "c": ""},

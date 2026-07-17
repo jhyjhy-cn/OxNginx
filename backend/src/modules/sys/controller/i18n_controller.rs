@@ -1,3 +1,7 @@
+// ============================================================================
+// 暂不使用: i18n Controller (改用前端 ts 兜底)
+// ============================================================================
+/*
 use axum::{extract::{Extension, Path, State}, Json};
 use serde_json::json;
 
@@ -87,3 +91,4 @@ pub async fn get_i18n_messages(
         Err(e) => Json(json!(ApiResponse::<()>::error(e.to_string()))),
     }
 }
+*/

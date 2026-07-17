@@ -1,3 +1,7 @@
+// ============================================================================
+// 暂不使用: i18n DAO (改用前端 ts 兜底)
+// ============================================================================
+/*
 use sqlx::SqlitePool;
 
 use crate::modules::sys::entity::i18n::I18nEntry;
@@ -87,3 +91,4 @@ pub async fn delete_i18n(pool: &SqlitePool, id: i64) -> sqlx::Result<u64> {
         .await?;
     Ok(r.rows_affected())
 }
+*/

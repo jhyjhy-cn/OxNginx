@@ -1,10 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/api'
-import { applyMessages } from '@/i18n'
-import { useI18nStore } from '@/stores/i18n'
-import { useWsStore } from '@/stores/ws'
 import { encryptPassword } from '@/utils/crypto'
+import { useWsStore } from '@/stores/ws'
 import type { MenuType } from '@/consts'
 
 export interface MenuNode {
@@ -75,7 +73,8 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem(LS.username, username.value)
       // 登录只返回 token，RBAC 信息单独拉取
       await fetchRbacInfo()
-      await fetchI18n()
+      // ponytail: 国际化已迁回前端 ts,不再拉 DB 翻译
+      // await fetchI18n()
       // ponytail: 登录成功后建立 ws，监听 kick 自动登出（事件 listener 只注册一次）
       useWsStore().setEventListener((frame) => {
         if (frame.cmd !== 'event') return
@@ -108,6 +107,8 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // ponytail: 国际化已迁回前端 ts,fetchI18n 不再使用;需要恢复时取消下方块注释并启用 i18n store + API。
+  /*
   async function fetchI18n() {
     // 从 DB 拉全量翻译（所有语言），写 store 并合并到 vue-i18n
     if (!token.value) return
@@ -128,6 +129,7 @@ export const useAuthStore = defineStore('auth', () => {
       applyMessages(grouped)
     } catch {}
   }
+  */
 
   function logout() {
     // ponytail: 不用 axios.post('/api/logout') — 它会再次被 401 拦截器接住,触发嵌套 logout,死循环不跳转
@@ -139,7 +141,8 @@ export const useAuthStore = defineStore('auth', () => {
     roles.value = []
     permissions.value = []
     menus.value = []
-    useI18nStore().clear()
+    // ponytail: i18n store 已删除,无需 clear
+    // useI18nStore().clear()
     localStorage.removeItem(LS.token)
     localStorage.removeItem(LS.username)
     localStorage.removeItem(LS.roles)
@@ -172,7 +175,8 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     updateUser,
     fetchRbacInfo,
-    fetchI18n,
+    // ponytail: fetchI18n 已停用,需要时取消下一行注释。
+    // fetchI18n,
     persistRbac,
   }
 })

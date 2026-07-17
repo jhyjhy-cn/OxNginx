@@ -1,3 +1,8 @@
+// ============================================================================
+// 暂不使用: i18n 启动 seed (改用前端 ts 兜底,seed_i18n.rs 不再被 seed.rs 调用)
+// 保留此处仅为方便后续恢复；恢复时取消下方块注释并启用 init.sql 的 sys_i18n 建表。
+// ============================================================================
+/*
 use anyhow::Result;
 use sqlx::SqlitePool;
 use std::collections::BTreeMap;
@@ -24,3 +29,4 @@ pub async fn seed_i18n(pool: &SqlitePool) -> Result<()> {
     tx.commit().await?;
     Ok(())
 }
+*/

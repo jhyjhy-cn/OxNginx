@@ -437,8 +437,8 @@ pub struct SetRoleMenusRequest {
     pub menu_ids: Vec<i64>,
 }
 
-// ============== 国际化 DTOs ==============
-
+// ponytail: i18n DTO 暂不使用（改前端 ts 兜底），需要时取消下一行注释。
+/*
 /// i18n 翻译条目（响应用）
 #[derive(Debug, Serialize, Deserialize)]
 pub struct I18nKv {
@@ -452,6 +452,7 @@ pub struct UpsertI18nRequest {
     pub locale: String,
     pub entries: Vec<I18nKv>,
 }
+*/
 
 // ============== 字典 DTOs ==============
 
