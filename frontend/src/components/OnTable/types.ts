@@ -44,6 +44,12 @@ export interface TableColumn {
   // 排序
   sortable?: boolean | "custom";
 
+  // 客户端排序方法（透传 el-table-column 的 sort-method，v-bind="column" 自动带入）
+  sortMethod?: (a: any, b: any) => number;
+
+  // 自定义表头插槽名（OnTable 透传给 OnTableColumn 的 #header）
+  headerSlot?: string;
+
   // 多级表头
   children?: TableColumn[];
 

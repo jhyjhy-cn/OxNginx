@@ -37,6 +37,10 @@
       <!-- 遍历列 -->
       <template v-for="col in visibleColumns" :key="col.prop">
         <OnTableColumn :column="col" @command="(cmd, row) => emit('command', cmd, row)">
+          <!-- 自定义表头透传 -->
+          <template v-if="col.headerSlot && $slots[col.headerSlot]" #header>
+            <slot :name="col.headerSlot" />
+          </template>
           <!-- 自定义插槽透传 -->
           <template v-if="col.slot && $slots[col.slot]" #[col.slot]="scope">
             <slot :name="col.slot" v-bind="scope" />

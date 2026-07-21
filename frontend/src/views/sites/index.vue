@@ -32,6 +32,7 @@
         @selection-change="(val: Site[]) => (selectedSites = val)"
         @open-file-manager="openFileManager"
         @update:traffic-metric="(v: string) => (trafficMetric = v as any)"
+        @reload="fetchSites"
       />
     </el-card>
 
