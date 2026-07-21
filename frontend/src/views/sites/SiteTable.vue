@@ -50,7 +50,7 @@
       <template #header>
         <el-dropdown @command="(cmd: string) => emit('update:trafficMetric', cmd)" trigger="click">
           <span class="traffic-header">
-            {{ $t(`sites.traffic.${trafficMetric}`) }}
+            {{ $t(`sys.sites.traffic.${trafficMetric}`) }}
             <el-icon><ArrowDown /></el-icon>
           </span>
           <template #dropdown>

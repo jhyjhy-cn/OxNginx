@@ -61,7 +61,7 @@ backend-gui/    # Tauri 包装（托盘 + GitHub Releases 自动更新）
 frontend/       # Vue3 SPA
 libs/nginx/     # 捆绑的 nginx 二进制（Windows zip，Linux 源码）
 scripts/        # build-win.ps1, deploy.sh, build-linux.ps1
-VERSION         # 版本号唯一来源（需手动同步 Cargo.toml 和 tauri.conf.json）
+VERSION         # 版本号唯一来源（用 scripts/version.ps1 同步到各处，见下）
 ```
 
 ## 后端架构（SpringBoot 风格 modules）
@@ -75,14 +75,16 @@ backend/src/
     ├── auth/      # 认证
     ├── backup/    # 备份管理
     ├── common/    # 公共（config, database, auth, middleware, DTO, audit, nginx 辅助）
-    ├── dashboard/ # Dashboard 数据与 WebSocket 推送
+    ├── dashboard/ # Dashboard 数据
+    ├── database/  # 数据库管理（SQLite 连接 + 在线查询）
     ├── file/      # 文件管理
     ├── log/       # 日志查看
     ├── nginx/     # Nginx 操作（test, reload）
     ├── settings/  # 系统设置
     ├── site/      # 站点管理
     ├── sys/       # 系统信息
-    └── system/    # 系统配置
+    ├── system/    # 系统配置
+    └── websocket/ # WebSocket 中枢（dashboard_push 推送 + terminal 终端）
 ```
 
 ### 关键架构约束
@@ -168,7 +170,7 @@ frontend/src/
 - Tauri GUI (`backend-gui/`) 包装同一个后端二进制，增加托盘 + 自动更新（GitHub Releases）。
 - Windows NSIS 安装包双语（SimpChinese + English），每台机器安装模式。
 - Linux 部署脚本创建 `on` 命令到 `/usr/local/bin/on`，用于服务管理菜单。
-- 版本号唯一来源是根目录 `VERSION`，`scripts/build-win.ps1` 读取它；`Cargo.toml` 和 `tauri.conf.json` 需手动同步。
+- 版本号唯一来源是根目录 `VERSION`，`scripts/build-win.ps1` 读取它。改版本用 `.\scripts\version.ps1 <版本> [-DryRun]`，它会同步 `VERSION`、`tauri.conf.json`、两个 `Cargo.toml`、`frontend/package.json` 和 `deploy.sh`，不要手动逐个改。
 
 ## 配置
 

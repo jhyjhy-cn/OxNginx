@@ -15,48 +15,101 @@
     </template>
 
     <!-- 编辑模式 -->
+    <!--
+      ponytail: 曾经用 <component :is="currentComponent"> 按类型字符串动态渲染,
+      但 element-plus 走 unplugin 按需注册(非全局),动态字符串解析不到组件,输入框整个不渲染。
+      改为静态标签逐个分支,unplugin 才能静态解析 + 自动注入样式。
+    -->
     <template v-else>
       <slot>
-        <component
-          :is="currentComponent"
+        <!-- input / textarea / password 都是 el-input -->
+        <el-input
+          v-if="inputLike"
           v-model="modelValue"
-          v-bind="componentProps"
+          :type="inputType"
+          :rows="props.type === 'textarea' ? props.rows || 3 : undefined"
+          :show-password="props.type === 'password' ? props.showPassword !== false : undefined"
+          :autocomplete="props.autocomplete"
           :disabled="props.disabled || props.readonly"
           :placeholder="computedPlaceholder"
           :clearable="props.clearable"
+        />
+        <el-select
+          v-else-if="props.type === 'select'"
+          v-model="modelValue"
+          filterable
           :multiple="props.multiple"
+          :disabled="props.disabled || props.readonly"
+          :placeholder="computedPlaceholder"
+          :clearable="props.clearable"
         >
-          <template v-if="props.options && hasOptionsSlot">
-            <template v-if="props.type === 'select'">
-              <component
-                :is="'el-option'"
-                v-for="opt in props.options"
-                :key="opt.value"
-                :label="isI18nKey(opt.label) ? t(opt.label) : opt.label"
-                :value="opt.value"
-                :disabled="opt.disabled"
-              />
-            </template>
-            <template v-else-if="props.type === 'radio'">
-              <component
-                :is="'el-radio'"
-                v-for="opt in props.options"
-                :key="opt.value"
-                :value="opt.value"
-                :disabled="opt.disabled"
-              >{{ isI18nKey(opt.label) ? t(opt.label) : opt.label }}</component>
-            </template>
-            <template v-else-if="props.type === 'checkbox'">
-              <component
-                :is="'el-checkbox'"
-                v-for="opt in props.options"
-                :key="opt.value"
-                :label="opt.value"
-                :disabled="opt.disabled"
-              >{{ isI18nKey(opt.label) ? t(opt.label) : opt.label }}</component>
-            </template>
-          </template>
-        </component>
+          <el-option
+            v-for="opt in props.options"
+            :key="opt.value"
+            :label="labelText(opt.label)"
+            :value="opt.value"
+            :disabled="opt.disabled"
+          />
+        </el-select>
+        <el-radio-group
+          v-else-if="props.type === 'radio'"
+          v-model="modelValue"
+          :disabled="props.disabled || props.readonly"
+        >
+          <el-radio v-for="opt in props.options" :key="opt.value" :value="opt.value" :disabled="opt.disabled">{{
+            labelText(opt.label)
+          }}</el-radio>
+        </el-radio-group>
+        <el-checkbox-group
+          v-else-if="props.type === 'checkbox'"
+          v-model="modelValue"
+          :disabled="props.disabled || props.readonly"
+        >
+          <el-checkbox v-for="opt in props.options" :key="opt.value" :label="opt.value" :disabled="opt.disabled">{{
+            labelText(opt.label)
+          }}</el-checkbox>
+        </el-checkbox-group>
+        <el-switch
+          v-else-if="props.type === 'switch'"
+          v-model="modelValue"
+          :active-value="1"
+          :inactive-value="0"
+          :disabled="props.disabled || props.readonly"
+        />
+        <el-date-picker
+          v-else-if="datePickerType"
+          v-model="modelValue"
+          :type="datePickerType"
+          :format="dateFormat"
+          :value-format="dateFormat"
+          :disabled="props.disabled || props.readonly"
+          :placeholder="computedPlaceholder"
+          :clearable="props.clearable"
+        />
+        <el-time-picker
+          v-else-if="props.type === 'time'"
+          v-model="modelValue"
+          format="HH:mm:ss"
+          value-format="HH:mm:ss"
+          :disabled="props.disabled || props.readonly"
+          :placeholder="computedPlaceholder"
+          :clearable="props.clearable"
+        />
+        <el-input-number
+          v-else-if="props.type === 'number'"
+          v-model="modelValue"
+          :min="props.min"
+          :max="props.max"
+          :precision="0"
+          :disabled="props.disabled || props.readonly"
+        />
+        <el-input
+          v-else
+          v-model="modelValue"
+          :disabled="props.disabled || props.readonly"
+          :placeholder="computedPlaceholder"
+          :clearable="props.clearable"
+        />
       </slot>
     </template>
   </el-form-item>
@@ -108,24 +161,26 @@ const emit = defineEmits<{
   "update:modelValue": [value: any];
 }>();
 
-const componentMap: Record<string, string> = {
-  input: "el-input",
-  textarea: "el-input",
-  password: "el-input",
-  select: "el-select",
-  radio: "el-radio-group",
-  checkbox: "el-checkbox-group",
-  switch: "el-switch",
-  date: "el-date-picker",
-  daterange: "el-date-picker",
-  datetime: "el-date-picker",
-  time: "el-time-picker",
-  number: "el-input-number",
-};
+// ---- 控件分支计算（模板用静态标签，见上方注释）----
+// input / textarea / password 统一是 el-input
+const inputLike = computed(() => ["input", "textarea", "password"].includes(props.type || "input"))
 
-const currentComponent = computed(
-  () => componentMap[props.type || "input"] || "el-input"
-);
+const inputType = computed(() => {
+  if (props.type === "textarea") return "textarea"
+  if (props.type === "password") return "password"
+  return undefined
+})
+
+// date / daterange / datetime 统一是 el-date-picker
+const datePickerType = computed(() => {
+  if (props.type === "date" || props.type === "daterange" || props.type === "datetime") return props.type
+  return ""
+})
+
+const dateFormat = computed(() => {
+  if (props.format) return props.format
+  return props.type === "datetime" ? "YYYY-MM-DD HH:mm:ss" : "YYYY-MM-DD"
+})
 
 function isI18nKey(val?: string): boolean {
   return !!val && val.includes(".");
@@ -135,60 +190,6 @@ function labelText(val?: string): string {
   if (!val) return "";
   return isI18nKey(val) ? t(val) : val;
 }
-
-const componentProps = computed(() => {
-  const p: Record<string, any> = {};
-  switch (props.type) {
-    case "textarea":
-      p.type = "textarea";
-      p.rows = props.rows || 3;
-      break;
-    case "password":
-      p.type = "password";
-      p.showPassword = props.showPassword !== false;
-      break;
-    case "select":
-      p.filterable = true;
-      break;
-    case "radio":
-    case "checkbox":
-      p.placeholder = undefined;
-      break;
-    case "switch":
-      p.placeholder = undefined;
-      p["active-value"] = 1;
-      p["inactive-value"] = 0;
-      break;
-    case "date":
-      p.type = "date";
-      p.format = props.format || "YYYY-MM-DD";
-      p.valueFormat = "YYYY-MM-DD";
-      break;
-    case "daterange":
-      p.type = "daterange";
-      p.format = props.format || "YYYY-MM-DD";
-      p.valueFormat = "YYYY-MM-DD";
-      break;
-    case "datetime":
-      p.type = "datetime";
-      p.format = props.format || "YYYY-MM-DD HH:mm:ss";
-      p.valueFormat = "YYYY-MM-DD HH:mm:ss";
-      break;
-    case "time":
-      p.format = props.format || "HH:mm:ss";
-      p.valueFormat = "HH:mm:ss";
-      break;
-    case "number":
-      p.min = props.min;
-      p.max = props.max;
-      p.precision = 0;
-      break;
-  }
-  if (props.autocomplete && (props.type === "input" || props.type === "textarea" || props.type === "password")) {
-    p.autocomplete = props.autocomplete;
-  }
-  return p;
-});
 
 const mergedRules = computed(() => {
   const rules: any[] = [];
@@ -247,10 +248,6 @@ const viewValue = computed(() => {
 const modelValue = computed({
   get: () => props.modelValue,
   set: (val) => emit("update:modelValue", val),
-});
-
-const hasOptionsSlot = computed(() => {
-  return ["select", "radio", "checkbox"].includes(props.type || "");
 });
 
 const computedPlaceholder = computed(() => {
