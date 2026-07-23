@@ -9,8 +9,7 @@ pub fn start_dashboard_push_task(state: AppState) {
         loop {
             interval.tick().await;
             let data = collect_dashboard_data(&state).await;
-            // 没有订阅者时 send 会返回 Err，忽略即可
-            let _ = state.dashboard_tx.send(data);
+            publish(&state, data);
         }
     });
 }
@@ -18,6 +17,16 @@ pub fn start_dashboard_push_task(state: AppState) {
 /// 操作 Nginx 后手动触发立即推送
 pub async fn trigger_dashboard_push(state: &AppState) {
     let data = collect_dashboard_data(state).await;
+    publish(state, data);
+}
+
+/// 写缓存 + 广播:后台任务与手动触发共用。
+/// 缓存供客户端订阅时即时回传,广播负责把新数据推给已订阅的连接
+fn publish(state: &AppState, data: String) {
+    if let Ok(v) = serde_json::from_str(&data) {
+        *state.dashboard_cache.write() = v;
+    }
+    // 没有订阅者时 send 会返回 Err，忽略即可
     let _ = state.dashboard_tx.send(data);
 }
 

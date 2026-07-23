@@ -45,6 +45,16 @@ fn get_nginx_dir(nginx_bin: &str) -> Option<std::path::PathBuf> {
     std::path::Path::new(nginx_bin).parent().map(|p| p.to_path_buf())
 }
 
+/// 从 `nginx -v` 输出行 "nginx version: nginx/1.30.3" 中提取版本号 "1.30.3"
+fn parse_nginx_version(line: &str) -> String {
+    let line = line.trim();
+    // 只保留最后一个 '/' 之后的版本号;无 '/' 时原样返回
+    match line.rsplit('/').next() {
+        Some(v) if !v.trim().is_empty() => v.trim().to_string(),
+        _ => line.to_string(),
+    }
+}
+
 /// 获取 Nginx 运行状态
 pub async fn get_nginx_status(nginx_bin: &str) -> NginxStatus {
     use std::env::consts::OS;
@@ -68,7 +78,7 @@ pub async fn get_nginx_status(nginx_bin: &str) -> NginxStatus {
             let stderr = String::from_utf8_lossy(&out.stderr);
             stderr.lines()
                 .find(|l| l.contains("version"))
-                .map(|l| l.trim().to_string())
+                .map(parse_nginx_version)
         }
         _ => None,
     };
@@ -407,5 +417,18 @@ pub async fn install_nginx(install_dir: &str) -> anyhow::Result<NginxInstallResu
             config: nginx_conf,
             sites_enabled,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_nginx_version() {
+        // 标准 nginx -v 输出 → 只取版本号
+        assert_eq!(parse_nginx_version("nginx version: nginx/1.30.3"), "1.30.3");
+        // 无 '/' 时原样返回(兜底)
+        assert_eq!(parse_nginx_version("1.30.3"), "1.30.3");
     }
 }

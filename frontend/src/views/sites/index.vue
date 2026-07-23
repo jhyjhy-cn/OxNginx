@@ -29,6 +29,7 @@
             <el-icon><Plus /></el-icon>
             {{ $t('sys.sites.addSite') }}
           </el-button>
+          <NginxStatusButton />
         </template>
       </SiteTable>
     </el-card>
@@ -60,6 +61,7 @@ import type { Site } from './types'
 import { deploySsl } from '@/api/sites'
 import { useMessage } from '@/hooks'
 import SiteTable from './SiteTable.vue'
+import NginxStatusButton from './NginxStatusButton.vue'
 import SiteAddDialog from './SiteAddDialog.vue'
 import SiteEditDialog from './SiteEditDialog.vue'
 import SiteDeleteDialog from './SiteDeleteDialog.vue'

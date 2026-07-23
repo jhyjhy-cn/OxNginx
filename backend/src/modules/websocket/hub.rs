@@ -14,8 +14,6 @@ use super::protocol::{cmd as Cmd, Channel, ClientFrame, ServerEvent, ServerFrame
 pub struct ConnState {
     /// 客户端声明订阅的通道集合
     pub channels: HashSet<Channel>,
-    /// ponytail: 第一次订阅 dashboard 后立即推过快照，避免等 10s tick
-    pub dashboard_pushed: bool,
 }
 
 /// ponytail: parking_lot::Mutex 无 poison、无 unwrap；conn 仅在 select 分支里读 snapshot
@@ -138,41 +136,35 @@ async fn handle_client_text(
             let _ = sender.send(Message::Text(pong.into())).await;
         }
         ClientFrame::Subscribe { channels, .. } => {
-            // ponytail: 标记新增的 dashboard 订阅，立即推一次快照
-            let newly_subscribed_dashboard = {
+            let mut wants_dashboard = false;
+            {
                 let mut g = conn.lock();
-                let mut added = false;
                 for c in &channels {
                     if let Some(ch) = Channel::parse(c) {
-                        if ch == Channel::Dashboard && !g.channels.contains(&Channel::Dashboard) {
-                            added = true;
+                        if ch == Channel::Dashboard {
+                            wants_dashboard = true;
                         }
                         g.channels.insert(ch);
                     }
                 }
-                // tracing::debug!("[ws-hub] subscribe channels={:?} added_dashboard={}", channels, added);
-                added && g.dashboard_pushed == false
-            };
-            if newly_subscribed_dashboard {
-                // tracing::debug!("[ws-hub] collecting dashboard snapshot");
-                let snap = dashboard_push::collect_dashboard_data_now(state).await;
-                let s = frame_to_text(&ServerFrame::Dashboard(&snap));
-                // tracing::debug!("[ws-hub] push dashboard frame ({} bytes)", s.len());
-                if sender.send(Message::Text(s.into())).await.is_ok() {
-                    conn.lock().dashboard_pushed = true;
-                    // tracing::debug!("[ws-hub] dashboard_pushed=true");
-                } else {
-                    tracing::warn!("[ws] send dashboard snapshot failed");
+            }
+            // 订阅 dashboard:立即回最近缓存快照(后台 10s 刷新、nginx 操作后即时刷新),
+            // 不再现场采集(wmic/磁盘查询要数秒)。修复原先"每连接只推一次"导致
+            // 页面切换后重新订阅要干等 10s tick 的问题
+            if wants_dashboard {
+                let mut snap = state.dashboard_cache.read().clone();
+                if snap.is_null() {
+                    // 少见:启动后 10s 内缓存还没生成,兜底同步采集一次
+                    snap = dashboard_push::collect_dashboard_data_now(state).await;
                 }
+                let s = frame_to_text(&ServerFrame::Dashboard(&snap));
+                let _ = sender.send(Message::Text(s.into())).await;
             }
         }
         ClientFrame::Unsubscribe { channels, .. } => {
             let mut g = conn.lock();
             for c in channels {
                 if let Some(ch) = Channel::parse(&c) {
-                    if ch == Channel::Dashboard {
-                        g.dashboard_pushed = false;
-                    }
                     g.channels.remove(&ch);
                 }
             }
