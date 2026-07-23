@@ -43,12 +43,14 @@ const size = computed({
   set: (v) => emit('update:pageSize', v),
 })
 
-function onCurrentChange() {
-  emit('change', page.value, size.value)
+// ponytail: 取 el-pagination 事件回传的新值。不能读 page.value/size.value ——
+// 它们是 prop 的 computed,父级(OnTable)不走 v-model 回写时读到的永远是旧页码
+function onCurrentChange(val: number) {
+  emit('change', val, size.value)
 }
 
-function onSizeChange() {
-  emit('change', 1, size.value)
+function onSizeChange(val: number) {
+  emit('change', 1, val)
 }
 </script>
 

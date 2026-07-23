@@ -1,29 +1,12 @@
 <template>
-  <div class="sites">
-    <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>{{ $t('sys.sites.title') }}</span>
-          <div>
-            <el-button-group v-if="selectedSites.length > 0" style="margin-right: 12px">
-              <el-button size="small" @click="batchEnable">{{ $t('sys.sites.batchEnable') }} ({{ selectedSites.length }})</el-button>
-              <el-button size="small" @click="batchDisable">{{ $t('sys.sites.batchDisable') }} ({{ selectedSites.length }})</el-button>
-              <el-button size="small" type="danger" @click="batchDelete">
-                {{ $t('sys.sites.batchDelete') }} ({{ selectedSites.length }})
-              </el-button>
-            </el-button-group>
-            <el-button type="primary" @click="addVisible = true">
-              <el-icon><Plus /></el-icon>
-              {{ $t('sys.sites.addSite') }}
-            </el-button>
-          </div>
-        </div>
-      </template>
-
+  <div class="sites h-full">
+    <el-card class="h-full">
       <SiteTable
-        :sites="sites"
+        :sites="pagedSites"
         :loading="loading"
         :traffic-metric="trafficMetric"
+        :pagination="{ total: sites.length, currentPage: page, pageSize }"
+        @page-change="onPageChange"
         @edit="onEdit"
         @open-backup="onOpenBackup"
         @toggle="toggleSite"
@@ -33,7 +16,21 @@
         @open-file-manager="openFileManager"
         @update:traffic-metric="(v: string) => (trafficMetric = v as any)"
         @reload="fetchSites"
-      />
+      >
+        <template #toolbar-left>
+          <el-button-group v-if="selectedSites.length > 0">
+            <el-button size="small" @click="batchEnable">{{ $t('sys.sites.batchEnable') }} ({{ selectedSites.length }})</el-button>
+            <el-button size="small" @click="batchDisable">{{ $t('sys.sites.batchDisable') }} ({{ selectedSites.length }})</el-button>
+            <el-button size="small" type="danger" @click="batchDelete">
+              {{ $t('sys.sites.batchDelete') }} ({{ selectedSites.length }})
+            </el-button>
+          </el-button-group>
+          <el-button type="primary" @click="addVisible = true">
+            <el-icon><Plus /></el-icon>
+            {{ $t('sys.sites.addSite') }}
+          </el-button>
+        </template>
+      </SiteTable>
     </el-card>
 
     <SiteAddDialog v-model:visible="addVisible" @created="fetchSites" />
@@ -72,7 +69,7 @@ const { t } = useI18n()
 const { confirm } = useMessage()
 const router = useRouter()
 
-const { sites, selectedSites, loading, trafficMetric, fetchSites, toggleSite, batchEnable, batchDisable, batchDelete } = useSites()
+const { sites, pagedSites, page, pageSize, onPageChange, selectedSites, loading, trafficMetric, fetchSites, toggleSite, batchEnable, batchDisable, batchDelete } = useSites()
 
 // ---- 弹窗状态 ----
 const addVisible = ref(false)
@@ -136,14 +133,6 @@ onMounted(() => {
   fetchSites()
 })
 </script>
-
-<style scoped>
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-</style>
 
 <style>
 .el-dropdown-menu__item.active {

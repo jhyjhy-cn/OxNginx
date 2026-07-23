@@ -7,12 +7,18 @@
     :data="sites"
     :columns="columns"
     :loading="loading"
-    :pagination="false"
+    :pagination="pagination"
     :options="{ height: 'auto', rowKey: 'id' }"
     @selectionChange="(val: Site[]) => emit('selection-change', val)"
     @command="onCommand"
     @reload="emit('reload')"
+    @page-change="(p: number, s: number) => emit('page-change', p, s)"
   >
+    <!-- 工具栏左侧透传(添加/批量按钮由父组件注入) -->
+    <template #toolbar-left>
+      <slot name="toolbar-left" />
+    </template>
+
     <!-- 网站名 -->
     <template #name="{ row }">
       <el-button type="primary" link @click="emit('edit', row)">{{ row.name }}</el-button>
@@ -101,11 +107,15 @@ import OnTable from '@/components/OnTable/index.vue'
 import type { TableColumn } from '@/components/OnTable/types'
 import type { Site } from './types'
 
-const props = defineProps<{
-  sites: Site[]
-  loading: boolean
-  trafficMetric: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    sites: Site[]
+    loading: boolean
+    trafficMetric: string
+    pagination?: boolean | { total?: number; currentPage?: number; pageSize?: number }
+  }>(),
+  { pagination: false }
+)
 
 const emit = defineEmits<{
   edit: [site: Site]
@@ -116,6 +126,7 @@ const emit = defineEmits<{
   'selection-change': [sites: Site[]]
   'open-file-manager': [path: string]
   'update:trafficMetric': [metric: string]
+  'page-change': [page: number, size: number]
   reload: []
 }>()
 

@@ -223,8 +223,12 @@ function handleRowClick(row: any, column: any, event: Event) {
   emit("rowClick", row, column, event);
 }
 
-function handlePageChange() {
-  emit("pageChange", currentPage.value, pageSize.value);
+function handlePageChange(page: number, size: number) {
+  // ponytail: 用 OnPagination 回传的真实值并同步内部 ref,
+  // 否则 currentPage/pageSize 永远是初始化值,翻页失效
+  currentPage.value = page;
+  pageSize.value = size;
+  emit("pageChange", page, size);
 }
 
 // 暴露方法
@@ -267,5 +271,21 @@ defineExpose({
 .on-table :deep(.el-table__body-wrapper) {
   flex: 1;
   overflow-y: auto;
+}
+
+/* 表头主题化:顶部一道主色微光向下淡出到表头底色(有纵深,不是一块死板色块),
+   底部一条高饱和主色细线收尾,文字染一点主色——三处都从主题色派生,换主题即整体跟随。
+   全程混 --el-table-header-bg-color / --el-text-color-primary(暗色下自动变深),
+   不用 --el-color-primary-light-9 —— 它被 applyThemeColor 内联覆盖,暗色下不会变暗 */
+.on-table :deep(.el-table th.el-table__cell) {
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--el-color-primary) 14%, var(--el-table-header-bg-color)) 0%,
+    var(--el-table-header-bg-color) 100%
+  );
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--el-color-primary) 45%, var(--el-table-header-bg-color));
+  color: color-mix(in srgb, var(--el-color-primary) 30%, var(--el-text-color-primary));
+  font-weight: 600;
 }
 </style>

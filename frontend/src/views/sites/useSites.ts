@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import {
@@ -21,6 +21,19 @@ export function useSites() {
   const selectedSites = ref<Site[]>([])
   const loading = ref(false)
   const trafficMetric = ref<'ip' | 'pv' | 'request' | 'uv'>('ip')
+
+  // ponytail: 站点数量少,后端 /api/sites/with-certs 一次返回全部且不分页,
+  // 故在客户端切片分页,不动后端。升级路径:数据量大时改为后端分页(参考 roles 的 useCrud)
+  const page = ref(1)
+  const pageSize = ref(20)
+  const pagedSites = computed(() => {
+    const start = (page.value - 1) * pageSize.value
+    return sites.value.slice(start, start + pageSize.value)
+  })
+  function onPageChange(p: number, s: number) {
+    page.value = p
+    pageSize.value = s
+  }
 
   async function fetchSites() {
     loading.value = true
@@ -99,6 +112,10 @@ export function useSites() {
 
   return {
     sites,
+    pagedSites,
+    page,
+    pageSize,
+    onPageChange,
     selectedSites,
     loading,
     trafficMetric,
