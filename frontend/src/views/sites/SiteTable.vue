@@ -187,4 +187,8 @@ function onCommand(command: string | number, row: Site) {
 .traffic-header:hover {
   color: var(--el-color-primary);
 }
+/* el-dropdown 根是 inline-flex,比表头行盒(23px)矮,默认基线对齐显得偏上 → 垂直居中 */
+.el-dropdown {
+  vertical-align: middle;
+}
 </style>
