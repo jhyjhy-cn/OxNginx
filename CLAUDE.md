@@ -49,7 +49,7 @@ cargo build --release  # 构建 GUI
 ## 技术栈
 
 - **后端**: Rust + Axum + Tokio + SQLite + sqlx
-- **前端**: Vue3 + TypeScript + Vite + Pinia + Element Plus + Tailwind CSS + Monaco Editor + xterm
+- **前端**: Vue3 + TypeScript + Vite + Pinia + Element Plus + Tailwind CSS 4 + Monaco Editor + xterm
 - **桌面壳**: Tauri2（backend-gui）
 - **认证**: JWT + RSA 登录密码加密 + Argon2id 密码哈希
 
@@ -115,6 +115,10 @@ backend/src/
 ### 审计日志
 
 处理器上挂 `#[audit_log(module, action, capture = req)]` 宏，异步 channel 批量写库。
+
+### 过程宏
+
+`#[audit_log]`、`#[check_permission]`、`#[check_role]` 等宏定义在独立的 proc-macro crate `backend/macros/`（包名 `ox-nginx-macros`），改宏行为去这里。
 
 ### API 处理器模式
 ```rust
